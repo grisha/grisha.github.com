@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ignore | My Octopress Blog]]></title>
   <link href="http://grisha.github.com/blog/categories/ignore/atom.xml" rel="self"/>
   <link href="http://grisha.github.com/"/>
-  <updated>2013-03-25T15:33:26-04:00</updated>
+  <updated>2013-03-25T16:52:05-04:00</updated>
   <id>http://grisha.github.com/</id>
   <author>
     <name><![CDATA[Your Name]]></name>
@@ -19,6 +19,16 @@
     <updated>2013-03-25T11:46:00-04:00</updated>
     <id>http://grisha.github.com/blog/2013/03/25/how-does-this-work</id>
     <content type="html"><![CDATA[<p>This is a <a href="http://www.modpython.org/">link to modpython.org</a>.</p>
+
+<p>And here is an embedded Tweet</p>
+
+<blockquote class="twitter-tweet"><p>@<a href="https://twitter.com/lessig">lessig</a> Congratulations! You're included on this year's <a href="https://twitter.com/search/%23Twitter140">#Twitter140</a> list. <a href="http://t.co/At51onRm2l" title="http://ti.me/ZOOVR">ti.me/ZOOVR</a></p>&mdash; TIME.com (@TIME) <a href="https://twitter.com/TIME/status/316193786910871552">March 25, 2013</a></blockquote>
+
+
+<script async src="http://grisha.github.com//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+
+
 ]]></content>
   </entry>
   
