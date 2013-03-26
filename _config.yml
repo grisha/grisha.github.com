@@ -2,12 +2,14 @@
 #      Main Configs       #
 # ----------------------- #
 
-url: http://grisha.github.com
+url: http://grisha.org
 title: Grisha Trubetskoy
 subtitle: Notes to self.
 author: Gregory Trubetskoy
 simple_search: http://google.com/search
 description:
+
+addthis: false
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
@@ -85,8 +87,8 @@ delicious_user:
 delicious_count: 3
 
 # Disqus Comments
-disqus_short_name:
-disqus_show_comment_count: false
+disqus_short_name: grisha
+disqus_show_comment_count: true
 
 # Google Analytics
 google_analytics_tracking_id:
