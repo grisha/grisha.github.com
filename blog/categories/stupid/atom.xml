@@ -4,7 +4,7 @@
   <title><![CDATA[Category: stupid | Grisha Trubetskoy]]></title>
   <link href="http://grisha.github.com/blog/categories/stupid/atom.xml" rel="self"/>
   <link href="http://grisha.github.com/"/>
-  <updated>2013-03-25T20:03:10-04:00</updated>
+  <updated>2013-03-25T20:16:49-04:00</updated>
   <id>http://grisha.github.com/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -26,6 +26,11 @@
 
 
 <script async src="http://grisha.github.com//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+
+<p><a href="https://twitter.com/share" class="twitter-share-button" data-via="humblehack">Tweet</a></p>
+
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
 
 
 
