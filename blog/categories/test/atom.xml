@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: test | Grisha Trubetskoy]]></title>
-  <link href="http://grisha.github.com/blog/categories/test/atom.xml" rel="self"/>
-  <link href="http://grisha.github.com/"/>
-  <updated>2013-03-25T20:16:49-04:00</updated>
-  <id>http://grisha.github.com/</id>
+  <link href="http://grisha.org/blog/categories/test/atom.xml" rel="self"/>
+  <link href="http://grisha.org/"/>
+  <updated>2013-03-25T20:25:01-04:00</updated>
+  <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Testing out Octopress]]></title>
-    <link href="http://grisha.github.com/blog/2013/03/25/how-does-this-work/"/>
+    <link href="http://grisha.org/blog/2013/03/25/how-does-this-work/"/>
     <updated>2013-03-25T11:46:00-04:00</updated>
-    <id>http://grisha.github.com/blog/2013/03/25/how-does-this-work</id>
+    <id>http://grisha.org/blog/2013/03/25/how-does-this-work</id>
     <content type="html"><![CDATA[<p>Thanks to <a href="http://octopress.org">Octopress</a> and <a href="http://github.com">Github</a> I blog....</p>
 
 <p>And I Tweet, too?</p>
@@ -25,7 +25,7 @@
 <blockquote class="twitter-tweet"><p>Thanks to Octopress and Github pages I now have a blog: <a href="http://t.co/yKm0TVRMMu" title="http://grisha.org/">grisha.org</a></p>&mdash; Grisha Trubetskoy (@humblehack) <a href="https://twitter.com/humblehack/status/316339220371349508">March 26, 2013</a></blockquote>
 
 
-<script async src="http://grisha.github.com//platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script async src="http://grisha.org//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 
 <p><a href="https://twitter.com/share" class="twitter-share-button" data-via="humblehack">Tweet</a></p>
