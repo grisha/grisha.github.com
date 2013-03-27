@@ -4,7 +4,7 @@ title: "On keeping lots of integers in memory"
 date: 2013-03-25 22:09
 comments: true
 published: true
-categories: 
+categories: [redis, 'big memory', 'recommendations'] 
 ---
 
 Once upon a time (over a year ago) I found myself needing to store large numbers of
@@ -29,7 +29,7 @@ the only one that seemed to fit the bill exactly in the end was
 that tout graph storage as their specialty, but none of them could
 scale anywhere close to the level I needed. And in the end the term
 "graph database" turned out to be a red herring of sorts. Any language
-such as Python, Ruby or Java provides the basic data structures are
+such as Python, Ruby or Java provides the basic data structures
 quite sufficient for storing a graph as an adjacency list
 out-of-the-box. You can store a graph in any key-value store, or even
 in your favorite RDBMS. (To this day I'm not convinced there is any
@@ -37,7 +37,7 @@ good use case for the so-called graph databases out there.)
 
 There were a few things that set Redis apart: 
 
-First, it kept everything in RAM, which meant that updating this
+First, it keeps everything in RAM, which meant that updating this
 dataset would be very fast, fast enough to keep it up-to-date in real
 time.
 
