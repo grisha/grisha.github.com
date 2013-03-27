@@ -9,8 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Once upon a time (over a year ago) I found myself needing to store large numbers of
-integers in memory. The goal was to store a graph of all our &hellip;">
+  <meta name="description" content="Every item on a TODO list can be classified as urgent, important
+or neither. We should act on important items first, urgent second and
+ignore the &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +73,77 @@ integers in memory. The goal was to store a graph of all our &hellip;">
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2013/03/27/on-prioritization/">On Prioritization - Important vs Urgent</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-27T10:13:00-04:00" pubdate data-updated="true">Mar 27<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/03/27/on-prioritization/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Every item on a TODO list can be classified as <em>urgent</em>, <em>important</em>
+or <em>neither</em>. We should act on important items first, urgent second and
+ignore the rest.</p>
+
+<p>Sometimes an item lands on our TODO list described as extremely urgent
+without any explanation of importance. In this case the important item
+(and thus to be done <em>first</em>) becomes <em>determining the importance of the
+extremely urgent item in question</em>, even if it means delaying it.</p>
+
+<p>The reason I so strongly believe that understanding the importance of
+every thing we do is essential is quite simple: understanding
+the importance implies understanding of the ultimate objective. And
+inversely, not understanding the importance implies not understanding
+the objective.</p>
+
+<p>And if after some discussion and thinking one still cannot assess the
+importance of a task, and nobody can explain it, then it
+is simply not important, however urgent it may seem.</p>
+
+<p>There are exceptions, however. Sometimes importance can be difficult
+to verbalize. We should always be attuned to that. In my personal
+experience reiterated urgency in response to &#8220;why it is important&#8221; is
+a bad sign, whereas an emotional reaction of the &#8220;you just don&#8217;t get
+it, how can I explain this to you?&#8221; is a very good sign.</p>
+
+<p>And sometimes, when you trust that the person requesting something of
+you truly believes it is both important and urgent but is unable to
+verbalize the importance sufficiently well, you may have to take their
+word for it and just do it, without fully understanding the
+importance.</p>
+
+<p>It is also important to remember to always take the time to explain
+importance of things we request of others. We naturally enjoy working
+on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/">On Keeping Lots of Integers in Memory</a></h1>
     
     
@@ -119,7 +191,7 @@ the only one that seemed to fit the bill exactly in the end was
 that tout graph storage as their specialty, but none of them could
 scale anywhere close to the level I needed. And in the end the term
 &#8220;graph database&#8221; turned out to be a red herring of sorts. Any language
-such as Python, Ruby or Java provides the basic data structures are
+such as Python, Ruby or Java provides the basic data structures
 quite sufficient for storing a graph as an adjacency list
 out-of-the-box. You can store a graph in any key-value store, or even
 in your favorite RDBMS. (To this day I&#8217;m not convinced there is any
@@ -127,7 +199,7 @@ good use case for the so-called graph databases out there.)</p>
 
 <p>There were a few things that set Redis apart:</p>
 
-<p>First, it kept everything in RAM, which meant that updating this
+<p>First, it keeps everything in RAM, which meant that updating this
 dataset would be very fast, fast enough to keep it up-to-date in real
 time.</p>
 
@@ -389,16 +461,21 @@ possibly cleverer than the two above:</p>
   
     <section>
   <h1>About Me</h1>
-  <p>I live in the Grater Washington DC area and currently work at LivingSocial.</p>
-  <p>I&#8217;ve been programming professionally since my teenage years (which were entirely too long ago).</p>
-  <p>Many years ago I wrote <a href="http://modpython.org">mod_python</a>, which was a hugely succesful Open Source Project back in the day.</p>
-  <p>I&#8217;ve spent most of my career working at large ISP&#8217;s, though these days I&#8217;m more interested in Big Data.</p>
-  <p>I was born and grew up in Moscow, Russia.</p>
+  <p>I am a (Big) Data Hacker</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which was a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was teenager.
+  I&#8217;ve spent most of my early career working at large ISP&#8217;s solving industrial-scale hosting challenges. Since around 2009 I&#8217;ve become more intersted in and now work exclusively &#8220;Big Data&#8221; type stuff.</p>
+  <p>I was born and grew up in Moscow, Russia, though I&#8217;ve lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it&#8217;s gradually become home for us.</p>
 </section>
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/03/27/on-prioritization/">on prioritization - important vs urgent</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/">On keeping lots of integers in memory</a>
