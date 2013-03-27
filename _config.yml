@@ -68,6 +68,7 @@ github_skip_forks: true
 # Twitter
 twitter_user: hunblehack
 twitter_tweet_button: true
+twitter_show_follower_count:
 
 # Google +1
 google_plus_one: false
