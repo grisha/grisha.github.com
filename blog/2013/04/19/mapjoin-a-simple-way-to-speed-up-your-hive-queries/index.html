@@ -5,12 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Storm Notes - Grisha Trubetskoy</title>
+  <title>MapJoin: a simple way to speed up your Hive queries - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Some random thoughts on having tinkered with
-Storm over the past few weeks. It took me some time to understand what Storm is, and I am still not &hellip;">
+  <meta name="description" content="Mapjoin is a little-known feature of Hive. It allows a table to be
+loaded into memory so that a (very fast) join could be performed
+entirely within a &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +20,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/04/01/storm-notes">
+  <link rel="canonical" href="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -69,7 +70,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
   <header>
     
-      <h1 class="entry-title">Storm Notes</h1>
+      <h1 class="entry-title">MapJoin: A Simple Way to Speed Up Your Hive Queries</h1>
     
     
       <p class="meta">
@@ -85,7 +86,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -94,64 +95,42 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   </header>
 
 
-<div class="entry-content"><p>Some random thoughts on having tinkered with
-<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
+<div class="entry-content"><p>Mapjoin is a little-known feature of Hive. It allows a table to be
+loaded into memory so that a (very fast) join could be performed
+entirely within a mapper without having to use a Map/Reduce step. If
+your queries frequently rely on small table joins (e.g. cities or
+countries, etc.)  you might see a very substantial speed-up from using
+mapjoins.</p>
 
-<p>It took me some time to understand what Storm is, and I am still not
-clear I have found a perfect use for it. (This is not
-a criticism of Storm, the point is that the concepts it introduces are
-new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz&#8217;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
+<p>There are two ways to enable it. First is by using a hint, which looks
+like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
+should be placed immediately following the <code>SELECT</code>. It directs Hive
+to load <code>aliasname</code> (which is a table or alias of the query) into
+memory.</p>
 
-<p>In simple terms, Storm is a tool that lets you run code in parallel
-across a cluster of servers. It differs from Map/Reduce in that the
-actual algorithm is entirely up to you, and in essence all that Storm
-provides is the framework that supervises all the moving pieces of your
-application (known as a <em>topology</em>) and provides a uniform way of
-creating, testing locally, sumbitting to a cluster, logging,
-monitoring, as well as primitives for sending data between components
-such as grouping data by using hashing, etc.</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Storm is mainly meant for stream processing. A stream could be
-anything, some of the most obvious examples may be your web logs,
-tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it&#8217;s
-challenging to process it on one server, Storm provides a way to scale
-it across a cluster of servers and can handle ridiculous amounts of
-incoming data. The result is a real-time view of summary data that is
-always up to date.</p>
 
-<p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as &#8220;native&#8221;. Storm also provides a
-primitive for using pipes to a process which means that you can write
-a component in anything - from a Bash script to C, all it needs to do
-is read stdin and write stdout.</p>
+<p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
+do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
+your config, and Hive will automatically use mapjoins for any tables
+smaller than <code>hive.mapjoin.smalltable.filesize</code> (default is 25MB).</p>
 
-<p>For those who would prefer to try it out using a higher-level
-language, there is an excellent project called
-<a href="https://github.com/colinsurprenant/redstorm">Redstorm</a> which lets you
-write your topology in JRuby. While a Redstorm topology may not be as
-fast as something written in pure Java, the reduced development
-time is well worth any trade offs, and you always have the option of
-perfecting it later by porting your code to something JVM-native when
-your understanding of how it ought to work is solidified in your mind.</p>
+<p>Mapjoins have a limitation in that the same table or alias cannot be
+used to join on different columns in the same query. (This makes sense
+because presumably Hive uses a HashMap keyed on the column(s) used in
+the join, and such a HashMap would be of no use for a join on
+different keys).</p>
 
-<p>If you&#8217;re going to go the Redstorm route, a couple of gotchas that I
-came across were:</p>
+<p>The workaround is very simple - do not use the same aliases in your
+query.</p>
 
-<ul>
-<li><p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don&#8217;t know what the solution is if you absolutely must parse
-Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p></li>
-<li><p>If you&#8217;re going to use ActiveRecord (which does work fine), watch
-out for how to properly use it in a multi-threaded environment. You
-might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
-You will also need make sure your ActiveRecord connections are not
-shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p></li>
-</ul>
-
+<p>I also found that when the Hive documentation states that such queries
+are &#8221;<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>&#8221;
+ they mean that the query will fail in unexpected
+ways, sometimes with a Java traceback.</p>
 </div>
 
 
@@ -174,7 +153,7 @@ shared by concurrent threads by using
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
       
 
 
@@ -182,7 +161,7 @@ shared by concurrent threads by using
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/04/01/storm-notes/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/04/01/storm-notes/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/" >Tweet</a>
   
   
   
@@ -191,10 +170,8 @@ shared by concurrent threads by using
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/03/27/on-prioritization/" title="Previous Post: on prioritization - important vs urgent">&laquo; on prioritization - important vs urgent</a>
+        <a class="basic-alignment left" href="/blog/2013/04/02/linus-on-understanding-pointers/" title="Previous Post: Linus on understanding pointers">&laquo; Linus on understanding pointers</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/04/02/linus-on-understanding-pointers/" title="Next Post: Linus on understanding pointers">Linus on understanding pointers &raquo;</a>
       
     </p>
   </footer>
@@ -279,8 +256,8 @@ shared by concurrent threads by using
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/04/01/storm-notes/';
-        var disqus_url = 'http://grisha.org/blog/2013/04/01/storm-notes/';
+        var disqus_identifier = 'http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/';
+        var disqus_url = 'http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/';
         var disqus_script = 'embed.js';
       
     (function () {
