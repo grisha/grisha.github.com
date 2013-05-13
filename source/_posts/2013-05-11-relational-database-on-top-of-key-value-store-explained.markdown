@@ -53,7 +53,7 @@ stored in *pages*. In fact, if you look at the file
 [format of a SQLite 3 database](http://www.sqlite.org/src/artifact/eecc84f02375b2bb7a44abbcbbe3747dde73edb2)
 (who says source code comments are bad?) you'll see it states quite plainly  that the *file
 is divided into pages*. (You will also see a fantastic description of exactly
-how a B-tree works, but that's way outside the scope of this post.)
+how a B+tree works, but that's way outside the scope of this post.)
 
 The important point is that the entire file consists of pages and
 nothing else. Inside those pages live the B-tree structure, as well as
