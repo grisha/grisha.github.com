@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-05-12T20:53:39-04:00</updated>
+  <updated>2013-05-12T20:59:35-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -40,7 +40,7 @@ represented as key/value pairs, and that was the wrong path to take. I
 was focusing on the wrong layer of abstraction.</p>
 
 <p>As it turns out the
-key [NPI] to this problem is the clever data strucutre commonly used
+key [NPI] to this problem is the clever data structure commonly used
 to store data in a relational DB known as
 <em><a href="http://en.wikipedia.org/wiki/B-tree">B-Tree</a></em> (or a variation
 thereof, <em><a href="http://en.wikipedia.org/wiki/B+tree">B+Tree</a></em>).
