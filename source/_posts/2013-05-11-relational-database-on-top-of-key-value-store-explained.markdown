@@ -28,7 +28,7 @@ represented as key/value pairs, and that was the wrong path to take. I
 was focusing on the wrong layer of abstraction. 
 
 As it turns out the
-key [NPI] to this problem is the clever data strucutre commonly used
+key [NPI] to this problem is the clever data structure commonly used
 to store data in a relational DB known as
 *[B-Tree](http://en.wikipedia.org/wiki/B-tree)* (or a variation
 thereof, *[B+Tree](http://en.wikipedia.org/wiki/B+tree)*). 
