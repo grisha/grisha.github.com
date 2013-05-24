@@ -131,11 +131,13 @@ Ta-da! The above query takes a good few minutes in Hive, BTW.
 - There is no support for UDF's, so our [HiveSwarm](https://github.com/livingsocial/HiveSwarm) is of no use.
 - INSERT OVERWRITE works, which is good.
 - LZO support works too.
-- It appears that everything impala does will appear in HDFS as the
-  user under which Impala is running. Be careful with this, as you
-  might inadvertently give your users superuser privs on HDFS via Hue,
-  for example. (Oh did I mention Hue completely supports Impala
-  too?). From what I can tell there is no way to set a username, this
-  is a bit of a show-stopper for us, actually.
+- *Security Warning*: It appears that everything Impala does will
+  appear in HDFS as the user under which Impala is running. Be careful
+  with this if you're relying on HDFS permissions to prevent an
+  inadvertent "INSERT OVERWRITE", as you might inadvertently give your
+  users superuser privs on HDFS via Hue, for example. (Oh did I
+  mention Hue completely supports Impala too?). From what I can tell
+  there is no way to set a username, this is a bit of a show-stopper
+  for us, actually.
 
 
