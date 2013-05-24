@@ -278,14 +278,13 @@ short-circuit access enabled, so I had to add the following to the hdfs-site.xml
 <li>There is no support for UDF&#8217;s, so our <a href="https://github.com/livingsocial/HiveSwarm">HiveSwarm</a> is of no use.</li>
 <li>INSERT OVERWRITE works, which is good.</li>
 <li>LZO support works too.</li>
-<li><em>Security Warning</em>: It appears that everything Impala does will
-appear in HDFS as the user under which Impala is running. Be careful
-with this if you&#8217;re relying on HDFS permissions to prevent an
-inadvertent &#8220;INSERT OVERWRITE&#8221;, as you might inadvertently give your
-users superuser privs on HDFS via Hue, for example. (Oh did I
-mention Hue completely supports Impala too?). From what I can tell
-there is no way to set a username, this is a bit of a show-stopper
-for us, actually.</li>
+<li><em>Security Warning</em>: Everything Impala does will appear in HDFS as
+the user under which Impala is running. Be careful with this if
+you&#8217;re relying on HDFS permissions to prevent an accidental &#8220;INSERT
+OVERWRITE&#8221;, as you might inadvertently give your users superuser
+privs on HDFS via Hue, for example. (Oh did I mention Hue completely
+supports Impala too?). From what I can tell there is no way to set a
+username, this is a bit of a show-stopper for us, actually.</li>
 </ul>
 
 </div>
