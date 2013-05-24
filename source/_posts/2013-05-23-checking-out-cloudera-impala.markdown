@@ -41,7 +41,7 @@ $ rpm2cpio ../impala-server-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv
 
 I noticed that `usr/bin/impalad` is a shell script, and it appears to
 rely on a few environment vars for configuration, so I created a shell
-scripts that sets them which looks approximately like this:
+script that sets them which looks approximately like this:
 
 ```sh
 export JAVA_HOME=/usr/java/default
@@ -131,6 +131,11 @@ Ta-da! The above query takes a good few minutes in Hive, BTW.
 - There is no support for UDF's, so our [HiveSwarm](https://github.com/livingsocial/HiveSwarm) is of no use.
 - INSERT OVERWRITE works, which is good.
 - LZO support works too.
-
+- It appears that everything impala does will appear in HDFS as the
+  user under which Impala is running. Be careful with this, as you
+  might inadvertently give your users superuser privs on HDFS via Hue,
+  for example. (Oh did I mention Hue completely supports Impala
+  too?). From what I can tell there is no way to set a username, this
+  is a bit of a show-stopper for us, actually.
 
 
