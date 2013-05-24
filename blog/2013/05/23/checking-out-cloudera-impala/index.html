@@ -133,7 +133,7 @@ archive), and then I&#8217;d just have to &#8220;make it work&#8221;.</p>
 
 <p>I noticed that <code>usr/bin/impalad</code> is a shell script, and it appears to
 rely on a few environment vars for configuration, so I created a shell
-scripts that sets them which looks approximately like this:</p>
+script that sets them which looks approximately like this:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -278,6 +278,12 @@ short-circuit access enabled, so I had to add the following to the hdfs-site.xml
 <li>There is no support for UDF&#8217;s, so our <a href="https://github.com/livingsocial/HiveSwarm">HiveSwarm</a> is of no use.</li>
 <li>INSERT OVERWRITE works, which is good.</li>
 <li>LZO support works too.</li>
+<li>It appears that everything impala does will appear in HDFS as the
+user under which Impala is running. Be careful with this, as you
+might inadvertently give your users superuser privs on HDFS via Hue,
+for example. (Oh did I mention Hue completely supports Impala
+too?). From what I can tell there is no way to set a username, this
+is a bit of a show-stopper for us, actually.</li>
 </ul>
 
 </div>
