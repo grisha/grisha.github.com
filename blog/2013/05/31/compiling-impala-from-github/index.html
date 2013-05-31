@@ -5,13 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>MapJoin: a simple way to speed up your Hive queries - Grisha Trubetskoy</title>
+  <title>Compiling Impala from Github - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Mapjoin is a little-known feature of Hive. It allows a table to be
-loaded into memory so that a (very fast) join could be performed
-entirely within a &hellip;">
+  <meta name="description" content="Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I&#8217;m presuming that code gets &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +19,7 @@ entirely within a &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries">
+  <link rel="canonical" href="http://grisha.org/blog/2013/05/31/compiling-impala-from-github">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -70,7 +69,7 @@ entirely within a &hellip;">
   
   <header>
     
-      <h1 class="entry-title">MapJoin: A Simple Way to Speed Up Your Hive Queries</h1>
+      <h1 class="entry-title">Compiling Impala From Github</h1>
     
     
       <p class="meta">
@@ -86,7 +85,7 @@ entirely within a &hellip;">
   
 
 
-<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
+<time datetime="2013-05-31T10:48:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -95,42 +94,100 @@ entirely within a &hellip;">
   </header>
 
 
-<div class="entry-content"><p>Mapjoin is a little-known feature of Hive. It allows a table to be
-loaded into memory so that a (very fast) join could be performed
-entirely within a mapper without having to use a Map/Reduce step. If
-your queries frequently rely on small table joins (e.g. cities or
-countries, etc.)  you might see a very substantial speed-up from using
-mapjoins.</p>
+<div class="entry-content"><p>Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I&#8217;m presuming that code gets
+released to Github once undergone some level of internal scrutiny, but
+I&#8217;ve not seen any documentation on how one could tie publically
+available code to the official Impala (binary) release, currently 1.0.</p>
 
-<p>There are two ways to enable it. First is by using a hint, which looks
-like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
-should be placed immediately following the <code>SELECT</code>. It directs Hive
-to load <code>aliasname</code> (which is a table or alias of the query) into
-memory.</p>
+<p>Anyway, I tried compiling the github code last night, and here are the
+steps that worked for me.</p>
+
+<p>My setup:</p>
+
+<ul>
+<li><p>Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).</p></li>
+<li><p>CDH 4.3 installed using Cloudera RPM&#8217;s. No configuration was done, I
+just ran yum install as described in the installation guide.</p></li>
+<li><p>Impala checked out from Github, HEAD is 60cb0b75 (Mon May 13 09:36:37 2013).</p></li>
+<li><p>Boost 1.42, compiled and installed manually (see below).</p></li>
+</ul>
+
+
+<p>The steps I followed:</p>
+
+<ul>
+<li>Check out Impala:</li>
+</ul>
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>git clone git://github.com/cloudera/impala.git
+</span><span class='line'>&lt;...&gt;
+</span><span class='line'>
+</span><span class='line'>git branch -v
+</span><span class='line'>* master 60cb0b7 Fixed formatting in README
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
-do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
-your config, and Hive will automatically use mapjoins for any tables
-smaller than <code>hive.mapjoin.smalltable.filesize</code> (default is 25MB).</p>
+<ul>
+<li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
+</ul>
 
-<p>Mapjoins have a limitation in that the same table or alias cannot be
-used to join on different columns in the same query. (This makes sense
-because presumably Hive uses a HashMap keyed on the column(s) used in
-the join, and such a HashMap would be of no use for a join on
-different keys).</p>
 
-<p>The workaround is very simple - do not use the same aliases in your
-query.</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
+</span><span class='line'>    make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn <span class="se">\</span>
+</span><span class='line'>    libevent-devel cyrus-sasl-devel wget git unzip
+</span></code></pre></td></tr></table></div></figure>
 
-<p>I also found that when the Hive documentation states that such queries
-are &#8221;<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>&#8221;
- they mean that the query will fail in unexpected
-ways, sometimes with a Java traceback.</p>
+
+<ul>
+<li><p>Install LLVM. Follow the precise steps in the Impala README, it works.</p></li>
+<li><p>Make sure you have the Oracle JDK 6, not OpenJDK. I found <a href="http://www.if-not-true-then-false.com/2010/install-sun-oracle-java-jdk-jre-6-on-fedora-centos-red-hat-rhel/">this link</a> helpful.</p></li>
+<li><p>Remove the CentOS version of Boost (1.41) if you have it. Impala
+needs uuid, which is only supported in 1.42 and later:</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
+</span><span class='line'>sudo yum erase <span class="sb">`</span>rpm -qa | grep boost<span class="sb">`</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>Download and untar Boost 1.42 from <a href="http://www.boost.org/users/history/version_1_42_0.html">http://www.boost.org/users/history/version_1_42_0.html</a></p></li>
+<li><p>Compile and install Boost. I ended up up using the following:</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">cd </span>boost_1_42_0/
+</span><span class='line'>./bootstrap.sh
+</span><span class='line'><span class="c"># not sure how necessary the --libdir=/usr/lib64 is, there was a post mentioning it, i followed this advice blindly</span>
+</span><span class='line'>./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged
+</span><span class='line'>sudo ./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>Install Maven, just like the README says, only the URL didn&#8217;t work, I used
+<a href="http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz">http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz</a> instead</p></li>
+<li><p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p></li>
+</ul>
+
 </div>
 
 
@@ -153,7 +210,7 @@ ways, sometimes with a Java traceback.</p>
   
 
 
-<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
+<time datetime="2013-05-31T10:48:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
       
 
 
@@ -161,7 +218,7 @@ ways, sometimes with a Java traceback.</p>
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/05/31/compiling-impala-from-github/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/05/31/compiling-impala-from-github/" >Tweet</a>
   
   
   
@@ -170,10 +227,8 @@ ways, sometimes with a Java traceback.</p>
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/04/02/linus-on-understanding-pointers/" title="Previous Post: Linus on understanding pointers">&laquo; Linus on understanding pointers</a>
+        <a class="basic-alignment left" href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/" title="Previous Post: SQLite DB stored in a Redis hash">&laquo; SQLite DB stored in a Redis hash</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/" title="Next Post: Relational database on top of key-value store explained (or why B-trees are cool)">Relational database on top of key-value store explained (or why B-trees are cool) &raquo;</a>
       
     </p>
   </footer>
@@ -258,8 +313,8 @@ ways, sometimes with a Java traceback.</p>
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/';
-        var disqus_url = 'http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/';
+        var disqus_identifier = 'http://grisha.org/blog/2013/05/31/compiling-impala-from-github/';
+        var disqus_url = 'http://grisha.org/blog/2013/05/31/compiling-impala-from-github/';
         var disqus_script = 'embed.js';
       
     (function () {
