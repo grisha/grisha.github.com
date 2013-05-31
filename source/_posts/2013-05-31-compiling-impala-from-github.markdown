@@ -59,7 +59,7 @@ sudo yum erase `rpm -qa | grep boost`
 
 - Download and untar Boost 1.42 from [http://www.boost.org/users/history/version_1_42_0.html](http://www.boost.org/users/history/version_1_42_0.html)
 
-- Compile and install Boost. I ended up up using the following:
+- Compile and install Boost. Note that Boost *must* be compiled with multi-threaded support and the layout matters too. I ended up up using the following:
 
 ```sh
 cd boost_1_42_0/
