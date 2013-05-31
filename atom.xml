@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-05-31T12:20:45-04:00</updated>
+  <updated>2013-05-31T12:55:37-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -89,7 +89,7 @@ needs uuid, which is only supported in 1.42 and later:</p></li>
 
 <ul>
 <li><p>Download and untar Boost 1.42 from <a href="http://www.boost.org/users/history/version_1_42_0.html">http://www.boost.org/users/history/version_1_42_0.html</a></p></li>
-<li><p>Compile and install Boost. I ended up up using the following:</p></li>
+<li><p>Compile and install Boost. Note that Boost <em>must</em> be compiled with multi-threaded support and the layout matters too. I ended up up using the following:</p></li>
 </ul>
 
 
