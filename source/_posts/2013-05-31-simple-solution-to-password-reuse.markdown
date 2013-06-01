@@ -18,8 +18,8 @@ network (100% browser-side Javascript).
 (Update: apparently Chrome doesn't like pulling JS from raw.github.com, so for now use Firefox or Safari to see this in action).
 </p>
 
-<script type="text/javascript" src="https://raw.github.com/Caligatio/jsSHA/master/src/sha.js"></script>
-<script type="text/javascript" src="https://raw.github.com/lowe/zxcvbn/master/zxcvbn-async.js"></script>
+<script type="text/javascript" src="/javascripts/sha.js"></script>
+<script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
 <script type="text/javascript">
 function calc_pw(n) {
   try {
