@@ -6,11 +6,17 @@ comments: true
 categories: 
 ---
 
+<p>
 Here's a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
 problems. It requires remembering only *one* strong password, lets you
 have a virtually limitless number of passwords, and, most importantly,
 does NOT store anything anywhere or transfer anything over the
 network (100% browser-side Javascript).
+</p>
+
+<p>
+(Update: apparently Chrome doesn't like pulling JS from raw.github.com, so for now use Firefox or Safari to see this in action).
+</p>
 
 <script type="text/javascript" src="https://raw.github.com/Caligatio/jsSHA/master/src/sha.js"></script>
 <script type="text/javascript" src="https://raw.github.com/lowe/zxcvbn/master/zxcvbn-async.js"></script>
