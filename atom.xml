@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-01T00:26:45-04:00</updated>
+  <updated>2013-06-01T00:32:36-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -36,10 +36,10 @@ network (100% browser-side Javascript).
 
 
 
-<script type="text/javascript" src="https://raw.github.com/Caligatio/jsSHA/master/src/sha.js"></script>
+<script type="text/javascript" src="http://grisha.org/javascripts/sha.js"></script>
 
 
-<script type="text/javascript" src="https://raw.github.com/lowe/zxcvbn/master/zxcvbn-async.js"></script>
+<script type="text/javascript" src="http://grisha.org/javascripts/zxcvbn-async.js"></script>
 
 
 <script type="text/javascript">
