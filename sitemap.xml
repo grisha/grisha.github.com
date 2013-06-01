@@ -45,8 +45,12 @@
         <lastmod>2013-05-31T12:55:16-04:00</lastmod>
     </url>
     <url>
+        <loc>http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/</loc>
+        <lastmod>2013-05-31T23:36:31-04:00</lastmod>
+    </url>
+    <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2013-05-31T12:55:16-04:00</lastmod>
+        <lastmod>2013-05-31T23:36:31-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -54,6 +58,6 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2013-05-31T12:55:16-04:00</lastmod>
+        <lastmod>2013-05-31T23:36:31-04:00</lastmod>
     </url>
 </urlset>

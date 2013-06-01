@@ -1,0 +1,403 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Simple Solution to Password Reuse - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="Here&#8217;s a KISS solution to all your password reuse
+problems. It requires remembering only one strong password, lets you
+have a virtually &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Simple Solution to Password Reuse</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-31T17:12:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Here&#8217;s a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
+problems. It requires remembering only <em>one</em> strong password, lets you
+have a virtually limitless number of passwords, and, most importantly,
+does NOT store anything anywhere or transfer anything over the
+network (100% browser-side Javascript).</p>
+
+<script type="text/javascript" src="https://raw.github.com/github.com/Caligatio/master/src/sha.js"></script>
+
+
+<script type="text/javascript" src="https://raw.github.com/lowe/zxcvbn/master/zxcvbn-async.js"></script>
+
+
+<script type="text/javascript">
+function calc_pw(n) {
+  try {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var keyword = document.getElementById("keyword"+n);
+    var pw = document.getElementById("pw"+n);
+    var strength = document.getElementById("strength");
+    var hmacObj = new jsSHA(pw_phrase.value, "TEXT");
+    pw.value = hmacObj.getHMAC(keyword.value, "TEXT", "SHA-512", "B64").substring(5,15);
+    if (pw.value.search('!') === -1) pw.value = pw.value + '!'
+    if (pw.value.search(/[0-9]/) === -1) pw.value = pw.value + '0'
+  } catch(e) {
+    pw.value = "ERROR: " + e;
+  }
+}
+function pw_strength() {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var score = zxcvbn(pw_phrase.value).score;
+    if (score == '0') {strength.value = 'Very Weak'; strength.style.color = 'red'; }
+    else if (score == '1') {strength.value = 'Weak'; strength.style.color = 'red'; }
+    else if (score == '2') {strength.value = 'So so'; strength.style.color = 'orange'; }
+    else if (score == '3') {strength.value = 'Okay'; strength.style.color = 'blue'; }
+    else if (score == '4') {strength.value = 'Strong'; strength.style.color = 'green'; }
+    else strength.value = '';
+}
+function check_pw2_same() {
+  var pw_phrase = document.getElementById("pw_phrase");
+  var pw_phrase2 = document.getElementById("pw_phrase2");
+  var pw_same = document.getElementById("pw_same");
+  if (pw_phrase.value === pw_phrase2.value)
+    pw_same.value = 'Correct';
+  else
+    pw_same.value = 'Incorrect';
+}
+function clear_all() {
+  document.getElementById("pw_phrase").value = '';
+  document.getElementById("pw_phrase2").value = '';
+  document.getElementById("strength").value = '';
+  document.getElementById("pw_same").value = '';
+  document.getElementById("keyword1").value = 'amazon';
+  document.getElementById("keyword2").value = 'gmail';
+  document.getElementById("keyword3").value = 'yahoo';
+  document.getElementById("keyword4").value = 'foo';
+  document.getElementById("keyword5").value = 'bar';
+  document.getElementById("pw1").value = '';
+  document.getElementById("pw2").value = '';
+  document.getElementById("pw3").value = '';
+  document.getElementById("pw4").value = '';
+  document.getElementById("pw5").value = '';
+}
+</script>
+
+
+<p><form action="#" method="get">
+<fieldset style="margin: 3px 0px; border: 1px solid #000000; padding: 10px;">
+<legend>Stupid Simple Password Generator</legend></p>
+
+<h3>Step 1:</h3>
+
+
+<p>
+Think of a phrase you will always remember. Keep typing until the text
+on the right says &#8220;strong&#8221;. Punctuation, spaces, unusual words and
+mixed case while not required, are generally a good idea. The most
+important thing is that the script considers it <span style="color: green; font-weight: bold;">strong</span>.
+</p>
+
+
+
+
+<p> Make sure this passphrase is impossible to guess by people who
+know you, e.g. don&#8217;t pick quotes from your favorite song or
+movie. Don&#8217;t <em>ever</em> write it down or save it on your computer in any way or form!
+<table border=0>
+<tr><th>Passphrase: </th><td><input type="password" size="60" name="pw_phrase" id="pw_phrase" style="margin-right: 1em; margin-left: 1em;" onkeyup="pw_strength()" />
+<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
+<tr><th>Verify: </th><td><input type="password" size="60" name="pw_phrase2" id="pw_phrase2" style="margin-right: 1em; margin-left: 1em;" onkeyup="check_pw2_same()" />
+<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
+</table>
+</p>
+
+
+
+
+<h3>Step 2:</h3>
+
+
+<p> Think of a short keyword describing a password, e.g. &#8220;amazon&#8221;,
+&#8220;gmail&#8221;, etc. This word has to be easy to remember and there is no need for
+it to be unique or hard to guess.</p>
+
+
+
+
+<table border=0>
+<tr><th>Keyword</th><th>Password</th></tr>
+<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly /></td></tr>
+<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly /></td></tr>
+<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly /></td></tr>
+<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly /></td></tr>
+<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly /></td></tr>
+</table>
+
+
+<br>
+
+
+<p>That&#8217;s it! You can regenerate any of the passwords above at any time by coming back to this page, all you need to know is the passphrase (and the keywords).</p>
+
+
+<p></fieldset>
+</form>
+<span style="font-size: 12px">Fine print: This is a proof-of-concept, use at your own risk!</span>
+<body onload="clear_all()"></body></p>
+
+<h2>How does it work?</h2>
+
+
+<p>First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
+excellent <a href="https://github.com/Caligatio/jsSHA">jsSHA</a> Javascript SHA lib and
+<a href="https://github.com/lowe">Dan Wheeler&#8217;s</a> amazing <a href="https://github.com/lowe/zxcvbn">zxcvbn</a>
+password strength checking lib.</p>
+
+<p>All we are doing here is computing a SHA-512 of the passphrase +
+keyword, then selecting a substring of the result. (We also append a 0
+and/or a ! to satisfy most password checker requirements for numbers
+and punctuation).</p>
+
+<p>If you don&#8217;t trust that generated passwords are strong, just paste
+them into the passphrase field, I assure you, no password here will
+ever be weak. (Or, rather, it is <em>extremely</em> unlikely).</p>
+
+<p>Some improvements could be made, but the point here is that there is
+no reason to keep encrypted files with your passwords along with
+software to open them around, all that&#8217;s needed is <em>one</em> strong
+password and a well established and easily available algorithm.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-31T17:12:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/05/31/compiling-impala-from-github/" title="Previous Post: Compiling Impala from Github">&laquo; Compiling Impala from Github</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+<section>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/hunblehack" class="twitter-follow-button" 
+    data-show-count="">Follow @hunblehack</a>
+  </div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+  <p>I am currently a senior (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/05/31/simple-solution-to-password-reuse/">Simple Solution to Password Reuse</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/31/compiling-impala-from-github/">Compiling Impala from Github</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/">SQLite DB stored in a Redis hash</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/23/checking-out-cloudera-impala/">Checking out Cloudera Impala</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">Relational database on top of key-value store explained (or why B-trees are cool)</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2013 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/';
+        var disqus_url = 'http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
