@@ -14,10 +14,6 @@ does NOT store anything anywhere or transfer anything over the
 network (100% browser-side Javascript).
 </p>
 
-<p>
-(Update: apparently Chrome doesn't like pulling JS from raw.github.com, so for now use Firefox or Safari to see this in action).
-</p>
-
 <script type="text/javascript" src="/javascripts/sha.js"></script>
 <script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
 <script type="text/javascript">
