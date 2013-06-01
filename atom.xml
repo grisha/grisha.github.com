@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-01T00:19:09-04:00</updated>
+  <updated>2013-06-01T00:26:45-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,11 +18,23 @@
     <link href="http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/"/>
     <updated>2013-05-31T17:12:00-04:00</updated>
     <id>http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse</id>
-    <content type="html"><![CDATA[<p>Here&#8217;s a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
-problems. It requires remembering only <em>one</em> strong password, lets you
+    <content type="html"><![CDATA[<p>
+Here&#8217;s a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
+problems. It requires remembering only *one* strong password, lets you
 have a virtually limitless number of passwords, and, most importantly,
 does NOT store anything anywhere or transfer anything over the
-network (100% browser-side Javascript).</p>
+network (100% browser-side Javascript).
+</p>
+
+
+
+
+<p>
+(Update: apparently Chrome doesn&#8217;t like pulling JS from raw.github.com, so for now use Firefox or Safari to see this in action).
+</p>
+
+
+
 
 <script type="text/javascript" src="https://raw.github.com/Caligatio/jsSHA/master/src/sha.js"></script>
 
