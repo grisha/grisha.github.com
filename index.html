@@ -448,8 +448,7 @@ though). So let&#8217;s try again, this time with a default:</p>
 <ul>
 <li>There is a nice Avro-C library, but it currently does not support defaults (version 1.7.4).</li>
 <li>Some <a href="http://code.google.com/p/thrift-protobuf-compare/wiki/Benchmarking">benchmarks</a></li>
-<li>Avro&#8217;s integer encoding is same as Lucene with <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag
-encoding</a>
+<li>Avro&#8217;s integer encoding is same as Lucene with <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag encoding</a>
 on top of it. (It&#8217;s just like SQLite, only little-endian). Curiously,
 it is used for <em>all</em> integers, including array indexes internal to
 Avro, which can never be negative and thus ZigZag is of no use. This
