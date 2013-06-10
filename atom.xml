@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-09T22:39:35-04:00</updated>
+  <updated>2013-06-09T23:35:23-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -25,6 +25,7 @@
 <li>Avro supports schema resolution so that the schema can evolve over time</li>
 <li>Hive supports Avro and schema resolution nicely</li>
 <li>Impala (1.0) can read Avro tables, but does <em>not</em> support schema resolution</li>
+<li>Mixing compression codecs in the same table works in both Hive and Impala</li>
 </ul>
 
 
