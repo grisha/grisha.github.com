@@ -12,6 +12,7 @@ categories:
 - Avro supports schema resolution so that the schema can evolve over time
 - Hive supports Avro and schema resolution nicely
 - Impala (1.0) can read Avro tables, but does *not* support schema resolution
+- Mixing compression codecs in the same table works in both Hive and Impala
 
 ## The TL;DR version
 
