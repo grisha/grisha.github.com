@@ -6,7 +6,7 @@ comments: true
 categories: 
 ---
 
-Here are some un-scientific results on how Avro performs with verious
+Here are some un-scientific results on how Avro performs with various
 codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
 was done using a 100 million row table that was generated using random
 two strings and an integer.
