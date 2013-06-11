@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-11T00:38:25-04:00</updated>
+  <updated>2013-06-11T00:39:10-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,7 @@
     <link href="http://grisha.org/blog/2013/06/11/avro-performance/"/>
     <updated>2013-06-11T00:17:00-04:00</updated>
     <id>http://grisha.org/blog/2013/06/11/avro-performance</id>
-    <content type="html"><![CDATA[<p>Here are some un-scientific results on how Avro performs with verious
+    <content type="html"><![CDATA[<p>Here are some un-scientific results on how Avro performs with various
 codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
 was done using a 100 million row table that was generated using random
 two strings and an integer.</p>
