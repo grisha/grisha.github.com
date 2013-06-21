@@ -168,7 +168,7 @@ chain. The bitcoin algo is as follows:
  *   as a little endian 64-bit number (total bytes read = 9)
 ```
 
-[SQLite3](sqlite.org) uses its own variable-length integer format,
+[SQLite3](http://sqlite.org/) uses its own variable-length integer format,
 possibly cleverer than the two above:
 
 ``` c

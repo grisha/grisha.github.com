@@ -1,0 +1,72 @@
+---
+layout: post
+title: json2avro
+date: 2013-06-21 14:17
+comments: true
+categories: 
+---
+
+As you embark on converting vast quantities of JSON to Avro, you soon
+discover that things are not as simple as they seem. Here is how it might happen.
+
+A quick Google
+search eventually leads you to the
+[avro-tools](http://www.us.apache.org/dist/avro/avro-1.7.4/java/avro-tools-1.7.4.jar)
+jar, and you find yourself attempting to convert some JSON, such as:
+
+```javascript
+{"first":"John", "middle":"X", "last":"Doe"}
+{"first":"Jane", "last":"Doe"}
+```
+
+Having read Avro documentation and being the clever being that you are, you start out with:
+
+```sh
+java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema \
+ '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string"},{"name":"last","type":"string"}]}' > output.avro
+Exception in thread "main" org.apache.avro.AvroTypeException: Expected field name not found: middle
+        at org.apache.avro.io.JsonDecoder.doAction(JsonDecoder.java:477)
+        at org.apache.avro.io.parsing.Parser.advance(Parser.java:88)
+        ...
+```
+
+A brief moment of disappointment is followed by the bliss of
+enlightment: Duh, the "middle" element needs a default! And so you try
+again, this time having tacked on a default to the definition of "middle", so it looks like `{"name":"middle","type":"string","default":""}`:
+
+```sh
+java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema \
+ '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string","default":""},{"name":"last","type":"string"}]}' > output.avro
+Exception in thread "main" org.apache.avro.AvroTypeException: Expected field name not found: middle
+        at org.apache.avro.io.JsonDecoder.doAction(JsonDecoder.java:477)
+        ...
+```
+
+Why doesn't this work? Well... You don't understand Avro, as it turns
+out. You see, JSON is *not* Avro, and therefore the wonderful *Schema
+Resolution* thing you've been reading about does not apply.
+
+But do not despair. I wrote a tool just for you:
+
+[json2avro](http://github.com/grisha/json2avro). It does exactly what you want:
+
+```sh
+json2avro input.json output.avro -s \
+ '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string","default":""},{"name":"last","type":"string"}]}'
+```
+
+No errors, and we have an `output.avro` file, let's see what's in it by using the aforementioned avro-tools:
+
+```sh
+java -jar ~/src/avro/java/avro-tools-1.7.4.jar tojson output.avro 
+{"first":"John","middle":"X","last":"Doe"}
+{"first":"Jane","middle":"","last":"Doe"}
+```
+
+Let me also mention that json2avro is written in C and is *fast*, it
+support Snappy, Deflate and LZMA compression codecs, lets you pick a
+custom block size and is smart enough to (optionally) skip over lines
+it cannot parse.
+
+Enjoy!
+
