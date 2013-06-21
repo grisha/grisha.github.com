@@ -23,7 +23,10 @@ Having read Avro documentation and being the clever being that you are, you star
 
 ```sh
 java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema \
- '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string"},{"name":"last","type":"string"}]}' > output.avro
+ '{"type":"record","name":"whatever",
+   "fields":[{"name":"first", "type":"string"},
+             {"name":"middle","type":"string"},
+             {"name":"last","type":"string"}]}' > output.avro
 Exception in thread "main" org.apache.avro.AvroTypeException: Expected field name not found: middle
         at org.apache.avro.io.JsonDecoder.doAction(JsonDecoder.java:477)
         at org.apache.avro.io.parsing.Parser.advance(Parser.java:88)
@@ -36,7 +39,10 @@ again, this time having tacked on a default to the definition of "middle", so it
 
 ```sh
 java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema \
- '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string","default":""},{"name":"last","type":"string"}]}' > output.avro
+ '{"type":"record","name":"whatever",
+   "fields":[{"name":"first", "type":"string"},
+             {"name":"middle","type":"string","default":""},
+             {"name":"last","type":"string"}]}' > output.avro
 Exception in thread "main" org.apache.avro.AvroTypeException: Expected field name not found: middle
         at org.apache.avro.io.JsonDecoder.doAction(JsonDecoder.java:477)
         ...
@@ -52,7 +58,10 @@ But do not despair. I wrote a tool just for you:
 
 ```sh
 json2avro input.json output.avro -s \
- '{"type":"record","name":"whatever","fields":[{"name":"first", "type":"string"},{"name":"middle","type":"string","default":""},{"name":"last","type":"string"}]}'
+ '{"type":"record","name":"whatever",
+   "fields":[{"name":"first", "type":"string"},
+             {"name":"middle","type":"string","default":""},
+             {"name":"last","type":"string"}]}'
 ```
 
 No errors, and we have an `output.avro` file, let's see what's in it by using the aforementioned avro-tools:
