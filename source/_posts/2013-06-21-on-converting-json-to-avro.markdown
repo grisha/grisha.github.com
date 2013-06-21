@@ -73,7 +73,7 @@ java -jar ~/src/avro/java/avro-tools-1.7.4.jar tojson output.avro
 ```
 
 Let me also mention that json2avro is written in C and is *fast*, it
-support Snappy, Deflate and LZMA compression codecs, lets you pick a
+supports Snappy, Deflate and LZMA compression codecs, lets you pick a
 custom block size and is smart enough to (optionally) skip over lines
 it cannot parse.
 
