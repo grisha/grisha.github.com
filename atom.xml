@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-21T15:10:15-04:00</updated>
+  <updated>2013-06-21T16:41:08-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -41,8 +41,14 @@ jar, and you find yourself attempting to convert some JSON, such as:</p>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'>java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
-</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class='line'><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
 </span><span class='line'>Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
 </span><span class='line'>        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
 </span><span class='line'>        at org.apache.avro.io.parsing.Parser.advance<span class="o">(</span>Parser.java:88<span class="o">)</span>
@@ -59,8 +65,14 @@ again, this time having tacked on a default to the definition of &#8220;middle&#
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'>java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
-</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class='line'><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
 </span><span class='line'>Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
 </span><span class='line'>        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
 </span><span class='line'>        ...
@@ -77,8 +89,14 @@ Resolution</em> thing you&#8217;ve been reading about does not apply.</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
 </pre></td><td class='code'><pre><code class='sh'><span class='line'>json2avro input.json output.avro -s <span class="se">\</span>
-</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span>
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class='line'><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},</span>
+</span><span class='line'><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
