@@ -4,7 +4,7 @@
   <title><![CDATA[Category: recommendations | Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/blog/categories/recommendations/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-11T00:39:10-04:00</updated>
+  <updated>2013-06-21T15:10:15-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -178,7 +178,7 @@ chain. The bitcoin algo is as follows:</p>
  *   as a little endian 64-bit number (total bytes read = 9)
 </code></p>
 
-<p><a href="sqlite.org">SQLite3</a> uses its own variable-length integer format,
+<p><a href="http://sqlite.org/">SQLite3</a> uses its own variable-length integer format,
 possibly cleverer than the two above:</p>
 
 <p><code>c

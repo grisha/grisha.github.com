@@ -6,7 +6,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</loc>
-        <lastmod>2013-03-27T10:12:56-04:00</lastmod>
+        <lastmod>2013-06-21T14:21:23-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/03/27/on-prioritization/</loc>
@@ -57,8 +57,12 @@
         <lastmod>2013-06-11T00:39:01-04:00</lastmod>
     </url>
     <url>
+        <loc>http://grisha.org/blog/2013/06/21/on-converting-json-to-avro/</loc>
+        <lastmod>2013-06-21T15:09:51-04:00</lastmod>
+    </url>
+    <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2013-06-11T00:39:01-04:00</lastmod>
+        <lastmod>2013-06-21T15:09:51-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -66,6 +70,6 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2013-06-11T00:39:01-04:00</lastmod>
+        <lastmod>2013-06-21T15:09:51-04:00</lastmod>
     </url>
 </urlset>

@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-06-11T00:39:10-04:00</updated>
+  <updated>2013-06-21T15:10:15-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,95 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[json2avro]]></title>
+    <link href="http://grisha.org/blog/2013/06/21/on-converting-json-to-avro/"/>
+    <updated>2013-06-21T14:17:00-04:00</updated>
+    <id>http://grisha.org/blog/2013/06/21/on-converting-json-to-avro</id>
+    <content type="html"><![CDATA[<p>As you embark on converting vast quantities of JSON to Avro, you soon
+discover that things are not as simple as they seem. Here is how it might happen.</p>
+
+<p>A quick Google
+search eventually leads you to the
+<a href="http://www.us.apache.org/dist/avro/avro-1.7.4/java/avro-tools-1.7.4.jar">avro-tools</a>
+jar, and you find yourself attempting to convert some JSON, such as:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="p">{</span><span class="s2">&quot;first&quot;</span><span class="o">:</span><span class="s2">&quot;John&quot;</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="o">:</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="o">:</span><span class="s2">&quot;Doe&quot;</span><span class="p">}</span>
+</span><span class='line'><span class="p">{</span><span class="s2">&quot;first&quot;</span><span class="o">:</span><span class="s2">&quot;Jane&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="o">:</span><span class="s2">&quot;Doe&quot;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Having read Avro documentation and being the clever being that you are, you start out with:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class='line'>Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
+</span><span class='line'>        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
+</span><span class='line'>        at org.apache.avro.io.parsing.Parser.advance<span class="o">(</span>Parser.java:88<span class="o">)</span>
+</span><span class='line'>        ...
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A brief moment of disappointment is followed by the bliss of
+enlightment: Duh, the &#8220;middle&#8221; element needs a default! And so you try
+again, this time having tacked on a default to the definition of &#8220;middle&#8221;, so it looks like <code>{"name":"middle","type":"string","default":""}</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class='line'>Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
+</span><span class='line'>        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
+</span><span class='line'>        ...
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Why doesn&#8217;t this work? Well&#8230; You don&#8217;t understand Avro, as it turns
+out. You see, JSON is <em>not</em> Avro, and therefore the wonderful <em>Schema
+Resolution</em> thing you&#8217;ve been reading about does not apply.</p>
+
+<p>But do not despair. I wrote a tool just for you:</p>
+
+<p><a href="http://github.com/grisha/json2avro">json2avro</a>. It does exactly what you want:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>json2avro input.json output.avro -s <span class="se">\</span>
+</span><span class='line'> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},{&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>No errors, and we have an <code>output.avro</code> file, let&#8217;s see what&#8217;s in it by using the aforementioned avro-tools:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>java -jar ~/src/avro/java/avro-tools-1.7.4.jar tojson output.avro
+</span><span class='line'><span class="o">{</span><span class="s2">&quot;first&quot;</span>:<span class="s2">&quot;John&quot;</span>,<span class="s2">&quot;middle&quot;</span>:<span class="s2">&quot;X&quot;</span>,<span class="s2">&quot;last&quot;</span>:<span class="s2">&quot;Doe&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="o">{</span><span class="s2">&quot;first&quot;</span>:<span class="s2">&quot;Jane&quot;</span>,<span class="s2">&quot;middle&quot;</span>:<span class="s2">&quot;&quot;</span>,<span class="s2">&quot;last&quot;</span>:<span class="s2">&quot;Doe&quot;</span><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let me also mention that json2avro is written in C and is <em>fast</em>, it
+support Snappy, Deflate and LZMA compression codecs, lets you pick a
+custom block size and is smart enough to (optionally) skip over lines
+it cannot parse.</p>
+
+<p>Enjoy!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Avro performance]]></title>
@@ -1542,7 +1631,7 @@ chain. The bitcoin algo is as follows:</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p><a href="sqlite.org">SQLite3</a> uses its own variable-length integer format,
+<p><a href="http://sqlite.org/">SQLite3</a> uses its own variable-length integer format,
 possibly cleverer than the two above:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
