@@ -5,13 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>on prioritization - important vs urgent - Grisha Trubetskoy</title>
+  <title>Hacking on mod_python (again) - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Every item on a TODO list can be classified as urgent, important
-or neither. We should act on important items first, urgent second and
-ignore the &hellip;">
+  <meta name="description" content="Nearly eight years after my last commit
+to Mod_python I&#8217;ve decided to spend some time hacking on it again. Five years without active &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +19,7 @@ ignore the &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/03/27/on-prioritization">
+  <link rel="canonical" href="http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -70,7 +69,7 @@ ignore the &hellip;">
   
   <header>
     
-      <h1 class="entry-title">On Prioritization - Important vs Urgent</h1>
+      <h1 class="entry-title">Hacking on Mod_python (Again)</h1>
     
     
       <p class="meta">
@@ -86,7 +85,7 @@ ignore the &hellip;">
   
 
 
-<time datetime="2013-03-27T10:13:00-04:00" pubdate data-updated="true">Mar 27<span>th</span>, 2013</time>
+<time datetime="2013-08-02T16:19:00-04:00" pubdate data-updated="true">Aug 2<span>nd</span>, 2013</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -95,40 +94,66 @@ ignore the &hellip;">
   </header>
 
 
-<div class="entry-content"><p>Every item on a TODO list can be classified as <em>urgent</em>, <em>important</em>
-or <em>neither</em>. We should act on important items first, urgent second and
-ignore the rest.</p>
+<div class="entry-content"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
+to <a href="http://www.modpython.org/">Mod_python</a> I&#8217;ve decided to spend some time hacking on it again.</p>
 
-<p>Sometimes an item lands on our TODO list described as extremely urgent
-without any explanation of importance. In this case the important item
-(and thus to be done <em>first</em>) becomes <em>determining the importance of the
-extremely urgent item in question</em>, even if it means delaying it.</p>
+<p>Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.</p>
 
-<p>The reason I so strongly believe that understanding the importance of
-every thing we do is essential is quite simple: understanding
-the importance implies understanding of the ultimate objective. And
-inversely, not understanding the importance implies not understanding
-the objective.</p>
+<p>We live in this new
+<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
+Apache Httpd no longer has the market dominance it once enjoyed, while
+the latest Python frameworks run without requiring or recommending
+Mod_python. My hunch, however, is that given a thorough dusting it
+could be quite useful (perhaps more than ever) and applied in very
+interesting ways to solve the new problems. I also think the Python
+language is at a very important inflection point. Pyhton 3 is now
+mature, and is slowly but steadily becoming the preferred language of
+many interesting communities such as data science, for example.</p>
 
-<p>And if after some discussion and thinking one still cannot assess the
-importance of a task, and nobody can explain it, then it
-is simply not important, however urgent it may seem.</p>
+<p>The current status of mod_python as an Apache project is that it it&#8217;s
+in the <a href="http://attic.apache.org/">attic</a>. This means that the
+<a href="http://www.apache.org/">ASF</a> isn&#8217;t providing much in the way of
+infrastructure support any longer, nor will you see an &#8220;official&#8221; ASF
+release any time soon. (If ever - Mod_python would have to re-enter as
+an <a href="http://incubator.apache.org/">incubator</a> project and at this point
+it is entirely premature to even consider such an option).</p>
 
-<p>There are exceptions, however. Sometimes importance can be difficult
-to verbalize. We should always be attuned to that. In my personal
-experience reiterated urgency in response to &#8220;why it is important&#8221; is
-a bad sign, whereas an emotional reaction of the &#8220;you just don&#8217;t get
-it, how can I explain this to you?&#8221; is a very good sign.</p>
+<p>For now the main goal is to re-establish the community, and as part of
+that I will have to sort out how to do issue tracking, discussion
+groups, etc. At this point the only thing I&#8217;ve decided is that the
+main repository will live on
+<a href="https://github.com/grisha/mod_python">github</a>.</p>
 
-<p>And sometimes, when you trust that the person requesting something of
-you truly believes it is both important and urgent but is unable to
-verbalize the importance sufficiently well, you may have to take their
-word for it and just do it, without fully understanding the
-importance.</p>
+<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
+development goal is to bring it up to compatibility with Python 2.7
+and Apache Httpd 2.4 (I&#8217;m nearly there already), then potentially move
+on to Python 3 support. I have rolled back a few commits (most notably
+the new importer) because I did not understand them. There are still a
+few changes in Apache 2.4 that need to be addressed, but they seem
+relatively minor at this point. Authentication has been changed
+significantly in 2.4, though mod_python never had much coverage in that
+area.</p>
 
-<p>It is also important to remember to always take the time to explain
-importance of things we request of others. We naturally enjoy working
-on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
+<p>Let&#8217;s see where this takes us? And if you like this, feel free to
+star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+
+
 </div>
 
 
@@ -151,21 +176,15 @@ on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
   
 
 
-<time datetime="2013-03-27T10:13:00-04:00" pubdate data-updated="true">Mar 27<span>th</span>, 2013</time>
+<time datetime="2013-08-02T16:19:00-04:00" pubdate data-updated="true">Aug 2<span>nd</span>, 2013</time>
       
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/time-management/'>time management</a>
-  
-</span>
 
 
     </p>
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/03/27/on-prioritization/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/03/27/on-prioritization/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/" >Tweet</a>
   
   
   
@@ -174,10 +193,8 @@ on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/" title="Previous Post: On keeping lots of integers in memory">&laquo; On keeping lots of integers in memory</a>
+        <a class="basic-alignment left" href="/blog/2013/06/21/on-converting-json-to-avro/" title="Previous Post: json2avro">&laquo; json2avro</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/04/01/storm-notes/" title="Next Post: Storm Notes">Storm Notes &raquo;</a>
       
     </p>
   </footer>
@@ -262,8 +279,8 @@ on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/03/27/on-prioritization/';
-        var disqus_url = 'http://grisha.org/blog/2013/03/27/on-prioritization/';
+        var disqus_identifier = 'http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/';
+        var disqus_url = 'http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/';
         var disqus_script = 'embed.js';
       
     (function () {
