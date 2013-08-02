@@ -18,7 +18,7 @@ of all the people who contributed to its development.
 We live in this new
 [c10k](http://en.wikipedia.org/wiki/C10k_problem) world now where
 Apache Httpd no longer has the market dominance it once enjoyed, while
-the latest Python frameworks run without requiring or recommending
+the latest Python web frameworks run without requiring or recommending
 Mod_python. My hunch, however, is that given a thorough dusting it
 could be quite useful (perhaps more than ever) and applied in very
 interesting ways to solve the new problems. I also think the Python
@@ -26,7 +26,7 @@ language is at a very important inflection point. Pyhton 3 is now
 mature, and is slowly but steadily becoming the preferred language of
 many interesting communities such as data science, for example.
 
-The current status of mod_python as an Apache project is that it it's
+The current status of Mod_python as an Apache project is that it's
 in the [attic](http://attic.apache.org/). This means that the
 [ASF](http://www.apache.org/) isn't providing much in the way of
 infrastructure support any longer, nor will you see an "official" ASF
