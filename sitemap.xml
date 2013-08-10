@@ -65,8 +65,12 @@
         <lastmod>2013-08-02T18:16:15-04:00</lastmod>
     </url>
     <url>
+        <loc>http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</loc>
+        <lastmod>2013-08-10T15:48:32-04:00</lastmod>
+    </url>
+    <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2013-08-02T18:16:15-04:00</lastmod>
+        <lastmod>2013-08-10T15:48:32-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -74,6 +78,6 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2013-08-02T18:16:15-04:00</lastmod>
+        <lastmod>2013-08-10T15:48:32-04:00</lastmod>
     </url>
 </urlset>

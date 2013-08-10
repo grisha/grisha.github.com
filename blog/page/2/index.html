@@ -9,7 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="A while back Linus Torvalds answered questions on Slashdot. One of the answers was on the subject of understanding of pointers: At the opposite end &hellip;">
+  <meta name="description" content="Mapjoin is a little-known feature of Hive. It allows a table to be
+loaded into memory so that a (very fast) join could be performed
+entirely within a &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +79,79 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/">MapJoin: A Simple Way to Speed Up Your Hive Queries</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Mapjoin is a little-known feature of Hive. It allows a table to be
+loaded into memory so that a (very fast) join could be performed
+entirely within a mapper without having to use a Map/Reduce step. If
+your queries frequently rely on small table joins (e.g. cities or
+countries, etc.)  you might see a very substantial speed-up from using
+mapjoins.</p>
+
+<p>There are two ways to enable it. First is by using a hint, which looks
+like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
+should be placed immediately following the <code>SELECT</code>. It directs Hive
+to load <code>aliasname</code> (which is a table or alias of the query) into
+memory.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
+do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
+your config, and Hive will automatically use mapjoins for any tables
+smaller than <code>hive.mapjoin.smalltable.filesize</code> (default is 25MB).</p>
+
+<p>Mapjoins have a limitation in that the same table or alias cannot be
+used to join on different columns in the same query. (This makes sense
+because presumably Hive uses a HashMap keyed on the column(s) used in
+the join, and such a HashMap would be of no use for a join on
+different keys).</p>
+
+<p>The workaround is very simple - do not use the same aliases in your
+query.</p>
+
+<p>I also found that when the Hive documentation states that such queries
+are &#8221;<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>&#8221;
+ they mean that the query will fail in unexpected
+ways, sometimes with a Java traceback.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -751,6 +826,10 @@ possibly cleverer than the two above:</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/08/10/the-next-smallest-step-problem/">The Next Smallest Step Problem</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/08/02/hacking-on-mod-python-again/">Hacking on mod_python (again)</a>
       </li>
     
@@ -764,10 +843,6 @@ possibly cleverer than the two above:</p>
     
       <li class="post">
         <a href="/blog/2013/06/06/avro/">Apache Avro</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/05/31/simple-solution-to-password-reuse/">Simple Solution to Password Reuse</a>
       </li>
     
   </ul>

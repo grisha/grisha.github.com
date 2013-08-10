@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Storm Notes - Grisha Trubetskoy</title>
+  <title>The Next Smallest Step Problem - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Some random thoughts on having tinkered with
-Storm over the past few weeks. It took me some time to understand what Storm is, and I am still not &hellip;">
+  <meta name="description" content="&#8220;A journey of a thousand miles begins with a single step&#8221; Most of my journeys never begin, or cannot continue because of that one
+single &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +19,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/04/01/storm-notes">
+  <link rel="canonical" href="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -81,7 +81,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
   <header>
     
-      <h1 class="entry-title">Storm Notes</h1>
+      <h1 class="entry-title">The Next Smallest Step Problem</h1>
     
     
       <p class="meta">
@@ -97,7 +97,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -106,64 +106,71 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   </header>
 
 
-<div class="entry-content"><p>Some random thoughts on having tinkered with
-<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
+<div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">&#8220;A journey of a thousand miles begins with a single step&#8221;</a></em></p>
 
-<p>It took me some time to understand what Storm is, and I am still not
-clear I have found a perfect use for it. (This is not
-a criticism of Storm, the point is that the concepts it introduces are
-new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz&#8217;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
+<p>Most of my journeys never begin, or cannot continue because of that one
+single step, be it first or next. Because it is hard, at times
+excruciatingly so.</p>
 
-<p>In simple terms, Storm is a tool that lets you run code in parallel
-across a cluster of servers. It differs from Map/Reduce in that the
-actual algorithm is entirely up to you, and in essence all that Storm
-provides is the framework that supervises all the moving pieces of your
-application (known as a <em>topology</em>) and provides a uniform way of
-creating, testing locally, sumbitting to a cluster, logging,
-monitoring, as well as primitives for sending data between components
-such as grouping data by using hashing, etc.</p>
+<p>I recon it&#8217;s because I do not think in steps. I think of a
+destination. And where I travel, there are no signs. I have images of
+the glorious end-result. I have a dream. I can picture it with
+clarity, in detail. I know where I need to be. But what is the next
+step to get there?</p>
 
-<p>Storm is mainly meant for stream processing. A stream could be
-anything, some of the most obvious examples may be your web logs,
-tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it&#8217;s
-challenging to process it on one server, Storm provides a way to scale
-it across a cluster of servers and can handle ridiculous amounts of
-incoming data. The result is a real-time view of summary data that is
-always up to date.</p>
+<p>Here I speak of software, but this applies to many other aspects of my
+life just as well.</p>
 
-<p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as &#8220;native&#8221;. Storm also provides a
-primitive for using pipes to a process which means that you can write
-a component in anything - from a Bash script to C, all it needs to do
-is read stdin and write stdout.</p>
+<p>The problem of deciding what to do next happens to me so often that I
+even have a name for it. I call it &#8220;The Next Smallest Step&#8221;
+problem. Whenever I find myself idling, flipping over to online
+time-wasters such as HN or Facebook, I pause and ask myself &#8220;What is
+the Next Smallest Step?  Think, think!  What&#8217;s the next smallest thing
+I can do, right now?&#8221;</p>
 
-<p>For those who would prefer to try it out using a higher-level
-language, there is an excellent project called
-<a href="https://github.com/colinsurprenant/redstorm">Redstorm</a> which lets you
-write your topology in JRuby. While a Redstorm topology may not be as
-fast as something written in pure Java, the reduced development
-time is well worth any trade offs, and you always have the option of
-perfecting it later by porting your code to something JVM-native when
-your understanding of how it ought to work is solidified in your mind.</p>
+<p>It doesn&#8217;t matter how much further this small step moves me. A
+nanometer is better than standing still. It has to be something that
+is simple enough that I can just do. Right now.</p>
 
-<p>If you&#8217;re going to go the Redstorm route, a couple of gotchas that I
-came across were:</p>
+<p>Often I plan to do big things that will take many hours, days, weeks
+or months. But of all that, can I pick that one small simple and quick
+thing that I can do now?</p>
 
-<ul>
-<li><p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don&#8217;t know what the solution is if you absolutely must parse
-Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p></li>
-<li><p>If you&#8217;re going to use ActiveRecord (which does work fine), watch
-out for how to properly use it in a multi-threaded environment. You
-might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
-You will also need make sure your ActiveRecord connections are not
-shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p></li>
-</ul>
+<p>Sometimes I pencil this question on a piece of paper, and sometimes I
+just type it on the command line or in the source code. My short
+version is:</p>
 
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>WHAT NEXT?
+</span><span class='line'>bash: WHAT: <span class="nb">command </span>not found
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>(that&#8217;s right, in CAPS)</p>
+
+<p>This simple question has taken me on some of the most fascinating and
+challenging journeys ever. In restrospect, I think I would not be able
+to travel any of them without repeatedly asking it of myself, over and
+over again.</p>
+
+<p>It has resulted in most productive and gratifying days of work. Some
+of my greatest projects begun with this question. In many instances it
+established with clarity what I had to do for months ahead (years,
+even?). All beginning with this trivial act of asking.</p>
+
+<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
+gone by without any results to show for and many a great opportunity
+lost.</p>
+
+<p>I must also note that some of my next smallest steps took days of
+thinking to figure out. Nothing wrong with that.</p>
+
+<p>And so I thought I&#8217;d share this with you, just in case you might find
+it helpful. Whenever you find yourself at an impass and progress seems
+to have stopped, just ask yourself:</p>
+
+<p>&#8220;What is the Next Smallest Step?&#8221;</p>
 </div>
 
 
@@ -186,15 +193,21 @@ shared by concurrent threads by using
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
       
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/time-management/'>time-management</a>
+  
+</span>
 
 
     </p>
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/04/01/storm-notes/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/04/01/storm-notes/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" data-via="hunblehack" data-counturl="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" >Tweet</a>
   
   
   
@@ -203,10 +216,8 @@ shared by concurrent threads by using
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/03/27/on-prioritization/" title="Previous Post: on prioritization - important vs urgent">&laquo; on prioritization - important vs urgent</a>
+        <a class="basic-alignment left" href="/blog/2013/08/02/hacking-on-mod-python-again/" title="Previous Post: Hacking on mod_python (again)">&laquo; Hacking on mod_python (again)</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/04/02/linus-on-understanding-pointers/" title="Next Post: Linus on understanding pointers">Linus on understanding pointers &raquo;</a>
       
     </p>
   </footer>
@@ -291,8 +302,8 @@ shared by concurrent threads by using
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/04/01/storm-notes/';
-        var disqus_url = 'http://grisha.org/blog/2013/04/01/storm-notes/';
+        var disqus_identifier = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
+        var disqus_url = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
         var disqus_script = 'embed.js';
       
     (function () {
