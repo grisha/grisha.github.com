@@ -32,7 +32,7 @@ It doesn't matter how much further this small step moves me. A
 nanometer is better than standing still. It has to be something that
 is simple enough that I can just do. Right now.
 
-Often I plan to do big things that will take many hours, days, weeks
+I always plan to do big things that will take many hours, days, weeks
 or months. But of all that, can I pick that one small simple and quick
 thing that I can do now?
 
