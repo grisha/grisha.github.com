@@ -72,11 +72,11 @@
         <loc>
             http://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/
         </loc>
-        <lastmod>2013-09-25T20:16:35-04:00</lastmod>
+        <lastmod>2013-09-25T20:19:53-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2013-09-25T20:16:35-04:00</lastmod>
+        <lastmod>2013-09-25T20:19:53-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -84,6 +84,6 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2013-09-25T20:16:35-04:00</lastmod>
+        <lastmod>2013-09-25T20:19:53-04:00</lastmod>
     </url>
 </urlset>

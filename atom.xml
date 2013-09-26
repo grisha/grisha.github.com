@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-09-25T20:17:56-04:00</updated>
+  <updated>2013-09-25T20:20:34-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -38,7 +38,7 @@ need to do to run it under Apache is:</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>That&#8217;s all. There should be no need to become root, tweak a
+<p>That&#8217;s all. There should be no need to become root, tweak various
 configurations, place files in the right place, check permissions,
 none of that.</p>
 
