@@ -19,7 +19,7 @@ $ mod_python create /home/grisha/mysite_httpd \
 $ mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
 ```
 
-That's all. There should be no need to become root, tweak a
+That's all. There should be no need to become root, tweak various
 configurations, place files in the right place, check permissions,
 none of that.
 
