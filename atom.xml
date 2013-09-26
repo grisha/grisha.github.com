@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-08-11T04:57:49-04:00</updated>
+  <updated>2013-09-25T20:17:56-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,42 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Running a WSGI app on Apache should not be this hard]]></title>
+    <link href="http://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/"/>
+    <updated>2013-09-25T20:08:00-04:00</updated>
+    <id>http://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard</id>
+    <content type="html"><![CDATA[<p>If I have a Django app in <code>/home/grisha/mysite</code>, then all I should
+need to do to run it under Apache is:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>mod_python create /home/grisha/mysite_httpd <span class="se">\</span>
+</span><span class='line'>    --listen<span class="o">=</span>8888 <span class="se">\</span>
+</span><span class='line'>    --pythonpath<span class="o">=</span>/home/grisha/mysite <span class="se">\</span>
+</span><span class='line'>    --pythonhandler<span class="o">=</span>mod_python.wsgi <span class="se">\</span>
+</span><span class='line'>    --pythonoption<span class="o">=</span><span class="s2">&quot;wsgi.application mysite.wsgi::application&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$ </span>mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That&#8217;s all. There should be no need to become root, tweak a
+configurations, place files in the right place, check permissions,
+none of that.</p>
+
+<p>Well&#8230; With <a href="http://www.modpython.org/">mod_python</a> 3.4.0 (alpha)
+that&#8217;s exactly how it is&#8230;</p>
+
+<p>Please help me <a href="https://github.com/grisha/mod_python/issues/4">test it</a>.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[The Next Smallest Step Problem]]></title>
