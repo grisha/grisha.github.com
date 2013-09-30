@@ -14,7 +14,7 @@ $ mod_python create /home/grisha/mysite_httpd \
     --listen=8888 \
     --pythonpath=/home/grisha/mysite \
     --pythonhandler=mod_python.wsgi \
-    --pythonoption="wsgi.application mysite.wsgi::application"
+    --pythonoption="mod_python.wsgi.application mysite.wsgi::application"
 
 $ mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
 ```
