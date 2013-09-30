@@ -130,7 +130,7 @@ need to do to run it under Apache is:</p>
 </span><span class='line'>    --listen<span class="o">=</span>8888 <span class="se">\</span>
 </span><span class='line'>    --pythonpath<span class="o">=</span>/home/grisha/mysite <span class="se">\</span>
 </span><span class='line'>    --pythonhandler<span class="o">=</span>mod_python.wsgi <span class="se">\</span>
-</span><span class='line'>    --pythonoption<span class="o">=</span><span class="s2">&quot;wsgi.application mysite.wsgi::application&quot;</span>
+</span><span class='line'>    --pythonoption<span class="o">=</span><span class="s2">&quot;mod_python.wsgi.application mysite.wsgi::application&quot;</span>
 </span><span class='line'>
 </span><span class='line'><span class="nv">$ </span>mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
 </span></code></pre></td></tr></table></div></figure>
