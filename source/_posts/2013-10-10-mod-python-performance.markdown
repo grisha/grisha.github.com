@@ -1,10 +1,12 @@
 ---
 layout: post
-title: "On mod_python performance and why it matters not."
+title: "mod_python performance and why it matters not."
 date: 2013-10-10 13:04
 comments: true
 categories:
 ---
+
+*TL;DR: It's faster than you think.*
 
 Tonight I thought I'd spend some time looking into how mod_python
 fares against other frameworks of similar purpose. In this article I
@@ -137,7 +139,7 @@ make uWSGI come out on top (even if proxied uWSGI is an orange among
 the apples).
 
 
-Now the results, requests per second, fastest at the top:
+###The results, requests per second, fastest at the top:
 
 ```
 | uWSGI/nginx         | 2391 |
@@ -214,5 +216,5 @@ documentation, security, etc., are far more important than how fast it
 can crank out "Hello world!".
 
 Last, but not least, mod_python 3.4.1 (used in this article) is
-ready for pre-release testing, please help me [test it](https://github.com/grisha/mod_python/issues/4).
+ready for pre-release testing, please help me [test it](https://github.com/grisha/mod_python/issues/8)!
 
