@@ -9,9 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Tonight I thought I&#8217;d spend some time looking into how mod_python
-fares against other frameworks of similar purpose. In this article I
-am going &hellip;">
+  <meta name="description" content="TL;DR: It&#8217;s faster than you think. Tonight I thought I&#8217;d spend some time looking into how mod_python
+fares against other frameworks of &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -110,7 +109,9 @@ am going &hellip;">
   </header>
 
 
-  <div class="entry-content"><p>Tonight I thought I&#8217;d spend some time looking into how mod_python
+  <div class="entry-content"><p><em>TL;DR: It&#8217;s faster than you think.</em></p>
+
+<p>Tonight I thought I&#8217;d spend some time looking into how mod_python
 fares against other frameworks of similar purpose. In this article I
 am going to show the results of my findings, and then I will explain
 <em>why it really does not matter</em>.</p>
@@ -290,7 +291,7 @@ the front end as described
 make uWSGI come out on top (even if proxied uWSGI is an orange among
 the apples).</p>
 
-<p>Now the results, requests per second, fastest at the top:</p>
+<h3>The results, requests per second, fastest at the top:</h3>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
