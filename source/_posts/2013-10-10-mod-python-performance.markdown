@@ -8,7 +8,8 @@ categories:
 
 *TL;DR: It's faster than you think.*
 
-Tonight I thought I'd spend some time looking into how mod_python
+Tonight I thought I'd spend some time looking into how the new
+[mod_python](http://www.modpython.org/)
 fares against other frameworks of similar purpose. In this article I
 am going to show the results of my findings, and then I will explain
 *why it really does not matter*.
