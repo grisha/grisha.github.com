@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-10-10T18:01:47-04:00</updated>
+  <updated>2013-10-10T23:02:19-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,7 @@
     <link href="http://grisha.org/blog/2013/10/10/mod-python-performance/"/>
     <updated>2013-10-10T13:04:00-04:00</updated>
     <id>http://grisha.org/blog/2013/10/10/mod-python-performance</id>
-    <content type="html"><![CDATA[<p><em>TL;DR: It&#8217;s faster than you think.</em></p>
+    <content type="html"><![CDATA[<p><em>TL;DR: mod_python is faster than you think.</em></p>
 
 <p>Tonight I thought I&#8217;d spend some time looking into how the new
 <a href="http://www.modpython.org/">mod_python</a>
