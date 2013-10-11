@@ -6,7 +6,7 @@ comments: true
 categories:
 ---
 
-*TL;DR: It's faster than you think.*
+*TL;DR: mod_python is faster than you think.*
 
 Tonight I thought I'd spend some time looking into how the new
 [mod_python](http://www.modpython.org/)
