@@ -195,8 +195,8 @@ Prince once said - “You become responsible forever for what you have
 tamed”. It seems like mod_python is my rose and if I don’t water it,
 no one will.
 
-
-
+P.S. Did I mention mod_python now supports Python 3? Please help
+me [test it](https://github.com/grisha/mod_python/issues/9)!
 
 
 
