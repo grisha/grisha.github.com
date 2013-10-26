@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>My thoughts on WSGI - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="I&#8217;m not very fond of it. Here is why. CGI Origins WSGI is based on CGI, as the &#8220;GI&#8221; (Gateway Interface) suggests right
+there in the &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">My Thoughts on WSGI</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>I&#8217;m not very fond of it. Here is why.</p>
+
+<h2>CGI Origins</h2>
+
+<p>WSGI is based on CGI, as the &#8220;GI&#8221; (Gateway Interface) suggests right
+there in the name.</p>
+
+<p>CGI wasn&#8217;t meant as a standard and there was little good about it. It
+was extremely popular, but for reasons unrelated to its usability and
+performance. It became popular because it was easy to turn on by the
+provider and provided such a thick wall of isolation that admins at
+schools (initally, and then hosting providers) could turn it on for
+their users without too much concern for problems caused by
+user-generated CGI scripts.</p>
+
+<p>There is now an RFC (RFC3875) describing CGI, but (I don&#8217;t know this
+for sure, it&#8217;s just a guess) I suspect that Ken Coar wrote the RFC not
+because he thought CGI was great, but rather out of discontent with
+the present state of affairs - everyone was using CGI, yet there never
+was a formal document describing it.</p>
+
+<p>So if I were to attempt to unite all Python web applications under the
+same standard, CGI would be the last think I would consider. There
+other projects solving the same problem in more elegant ways that
+could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
+
+<h2>Headers</h2>
+
+<p>CGI dictated that HTTP headers be passed to the CGI script by way of
+environment variables. (Note this explains the origin of the term
+&#8220;environment&#8221; - in HTTP there is no &#8220;request environment&#8221;). So as to
+not clash with any other environment variables, CGI would prepend
+<code>HTTP_</code> to every header name, and because environment variables in DOS and
+Unix are typically case-insensitive, they were capitalized.</p>
+
+<p>Now how much sense does any of this make in an environemnt in which
+WSGI operates? The headers are typically read by the webserver and
+stored in some kind of a structure, in Apache this would be the
+<code>headers_in</code> table (accessible as <code>req.headers_in</code> map object in
+mod_python). What is the point of combing through that structure
+converting every key to some capitalized HTTP_ string? Why is
+<code>env['HTTP_CONTENT_LENGTH']</code> more convenient than
+<code>env['Content-length']</code>? Not to mention that the WSGI standard insists
+that <code>environment</code> be a real Python dictionary thereby dictating that a memory
+allocation happen to satisfy this requirement, <em>at every request</em>!</p>
+
+<h2>start_response()</h2>
+
+<p>In order to be able to write anything to the client a WSGI application
+must envoke the start_response() function passed to it which would
+return a write() method.</p>
+
+<p>Ten points for cuteness here, but the practicality of this solution
+eludes me. This is certainly a clever way to make the fact that the start
+of a response is an irreversible action in HTTP because the headers are
+sent first, but seriosly - do programmers who code at this level not
+know it? Why can&#8217;t the header sending part happen implicitly at the
+first write(), and why can&#8217;t an application write without sending any
+headers?</p>
+
+<p>There is also another problem here - function calls are relatively
+expensive in Python. The requirement that the app must beg for the
+write object every time introduces a completely unnecessary function
+call.</p>
+
+<p>The request object with a write() method should simply be passed in -
+this is how the rest of the world does it, this is how it has always
+worked in mod_python (cited in PEP3333 a number of times!).</p>
+
+<h2>Error handling</h2>
+
+<p>First, I must confess that after re-reading the section of the PEP3333
+describing the <code>exc_info</code> argument several times I still can&#8217;t say I
+grok what it&#8217;s saying. Looking at some implementations out there I am
+releived to know I am not the only one.</p>
+
+<p>But the gist of it that an exception can be supplied along with some
+headers. It seems to me there is confusion between HTTP errors and
+Python errors here, the two are not related. What is the expected
+outcome of passing a Python exception to an HTTP server? The server
+would probably convert it to a 500 Internal Server Error (well it only
+has so many possibilities to chose from), and what&#8217;s the point of that?</p>
+
+<p>Wouldn&#8217;t the outcome be same if the application simply raised an
+exception?</p>
+
+<p>If the spec wanted to provide means for the application Python errors
+to somehow map to HTTP errors, why not define a special exception
+class which could be used to send HTTP errors? What was wrong with
+mod_python&#8217;s:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>raise apache.SERVER_RETURN, apache.HTTP_INTERNAL_SERVER_ERROR</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I think it&#8217;s simple and self-explanatory.</p>
+
+<h2>Other things</h2>
+
+<p>What is <code>wsgi.run_once</code>, why does it matter and why should the web
+server provide it? What would be a good use case for such a thing?</p>
+
+<p>There is a long section describing &#8220;middleware&#8221;. Middleware is a
+wrapper (a container, if you will), and there doesn&#8217;t seem to be
+anything special with this concept that the spect should focus on
+it. (I also don&#8217;t like the word &#8220;middleware&#8221; - my intuition suggests
+it&#8217;s a layer between &#8220;hardware&#8221; and &#8220;software&#8221;, not a wrapper).</p>
+
+<h2>SCRIPT_NAME and PATH_INFO</h2>
+
+<p>Perhaps the most annoying part of CGI were these two mis-understood
+variables, and sadly WSGI uses them too.</p>
+
+<p>Remember that in CGI we always had a script. A typical CGI script
+resided somewhere on the filesystem to which the request URI maps. As
+part of serving the request the server traversed the URI mapping each
+element to an element of the filesystem path to locate the
+script. Once the script was found, the portion of the URI used thus far
+was assigned to the SCRIPT_NAME variable, while the remainder of the
+URI got assigned to PATH_INFO.</p>
+
+<p>But where is <em>the script</em> in WSGI? Is my Python module the script?
+What relatioship does there exist between the request URI and the
+(non-existent) script?</p>
+
+<h2>Bottom line</h2>
+
+<p>I am not convinced that there should be a universal standard for
+Python web applications to begin with. I think that what we refer to
+as &#8220;web applications&#8221; is still not very well understood by us
+programmers.</p>
+
+<p>But if we are to have one, I think that WSGI approach is not the right
+one. It brings the world of Python web development to the lowest
+common denominator - CGI and introduces some problems of its own on
+top of it.</p>
+
+<p>/end of rant/</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/10/25/mod-python-the-long-story/" title="Previous Post: mod_python: the long story">&laquo; mod_python: the long story</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+<section>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/10/the-next-smallest-step-problem/">The Next Smallest Step Problem</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2013 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/';
+        var disqus_url = 'http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
