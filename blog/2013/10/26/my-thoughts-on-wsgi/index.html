@@ -115,11 +115,11 @@ there in the name.</p>
 
 <p>CGI wasn&#8217;t meant as a standard and there was little good about it. It
 was extremely popular, but for reasons unrelated to its usability and
-performance. It became popular because it was easy to turn on by the
-provider and provided such a thick wall of isolation that admins at
-schools (initally, and then hosting providers) could turn it on for
-their users without too much concern for problems caused by
-user-generated CGI scripts.</p>
+performance. It became popular because it was easy to turn on and
+provided such a thick wall of isolation that admins at schools
+(initally, and then hosting providers) could turn it on for their
+users without too much concern for problems caused by user-generated
+CGI scripts.</p>
 
 <p>There is now an RFC (RFC3875) describing CGI, but (I don&#8217;t know this
 for sure, it&#8217;s just a guess) I suspect that Ken Coar wrote the RFC not
@@ -136,10 +136,11 @@ could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
 
 <p>CGI dictated that HTTP headers be passed to the CGI script by way of
 environment variables. (Note this explains the origin of the term
-&#8220;environment&#8221; - in HTTP there is no &#8220;request environment&#8221;). So as to
-not clash with any other environment variables, CGI would prepend
-<code>HTTP_</code> to every header name, and because environment variables in DOS and
-Unix are typically case-insensitive, they were capitalized.</p>
+&#8220;environment&#8221; - in HTTP there is no &#8220;request environment&#8221;, there is
+simply a &#8220;request&#8221;). So as to not clash with any other environment
+variables, CGI would prepend <code>HTTP_</code> to every header name, and because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized.</p>
 
 <p>Now how much sense does any of this make in an environemnt in which
 WSGI operates? The headers are typically read by the webserver and
