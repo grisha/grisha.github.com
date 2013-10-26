@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-10-26T13:09:40-04:00</updated>
+  <updated>2013-10-26T13:11:28-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -50,9 +50,10 @@ could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
 environment variables. (Note this explains the origin of the term
 &#8220;environment&#8221; - in HTTP there is no &#8220;request environment&#8221;, there is
 simply a &#8220;request&#8221;). So as to not clash with any other environment
-variables, CGI would prepend <code>HTTP_</code> to every header name, and because
-environment variables in DOS and Unix are typically case-insensitive,
-they were capitalized.</p>
+variables, CGI would prepend <code>HTTP_</code> to every header name and swap
+dashes with underscores because dashes are problematic in scripts. And
+because environment variables in DOS and Unix are typically
+case-insensitive, they were capitalized.</p>
 
 <p>Now how much sense does any of this make in an environemnt in which
 WSGI operates? The headers are typically read by the webserver and
