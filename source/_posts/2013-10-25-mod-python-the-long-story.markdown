@@ -94,7 +94,7 @@ dirty word, software development was being outsourced to India.
 For the next couple of years I made a living doing contracting work
 here and there. Needless to say, mod_python wasn’t exactly at the top
 of my priority list. But it was getting ever more popular, the mailing
-list busier, thouhg it didn’t make any money (for me at least). I
+list busier, though it didn’t make any money (for me at least). I
 tried my best to keep everything running in whatever spare time I had,
 answering emails and releasing new versions periodically. Finding time
 for it was increasingly difficult, especially given that most of the
