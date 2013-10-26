@@ -7,12 +7,12 @@ categories:
 ---
 
 This story started back in 1996. I was in my early twenties, working
-as a programmer at small company specializing in on-line reporting of
+as a programmer at a small company specializing in on-line reporting of
 certain pharmaceutical data.
 
 There was a web-based application (which was extremely cool
 considering how long ago this was), but unfortunately it was written
-in Visual Basic by a contractor and I was determined to to something
+in Visual Basic by a contractor and I was determined to do something
 about it. As was very fashionable at the time, I was very pro Open
 Source, had Linux running on my home 386 and had recently heard
 [Guido’s talk](http://boston-linux-unix-general-discussion-list.996279.n3.nabble.com/fwd-LOCAL-Washington-DC-Linux-User-Group-meeting-and-Python-talk-td3733.html)
@@ -45,7 +45,7 @@ selling to the management). I can’t say that I knew much C back then,
 but with enough tinkering around I was able to make something work,
 and lo and behold it was quite noticeably faster.
 
-And so a few days later a held a presentation in the big conference
+And so a few days later I held a presentation in the big conference
 room regarding this new tool we’ve started using called Python which
 can crunch yall’s numbers an order of magnitude faster than the
 Microsoft product we’ve been using. And oh, by the way, I quickly
@@ -53,12 +53,13 @@ hacked something together last night - let’s do a live demo, look how
 fast this is!  They were delighted.
 
 Little did they know, the app had been running in Python for months,
-and the reason for speed had little to do with the language itself. It
-was all because I was able to embed the interpreter within the web
-server. Then I thought that to make it all complete I would make my
-little tool open source and put it on my website free for everyone to
-use. I called it [NSAPy](http://www.ispol.com/home/grisha/nsapy/) as a
-combination of the Netscape Server API and Python.
+and the reason for the speed up had little to do with the language
+itself. It was all because I was able to embed the interpreter within
+the web server. Then I thought that to make it all complete I would
+make my little tool open source and put it on my website free for
+everyone to use. I called it
+[NSAPy](http://www.ispol.com/home/grisha/nsapy/) as a combination of
+the Netscape Server API and Python.
 
 But I didn’t stop there, and soon I was able to replicate this on an
 Apache web server, which was taking the Internet by storm back
@@ -66,17 +67,17 @@ then. The name mod_python came naturally since there already was a
 mod_perl.
 
 Things were going very well back then. These were the late nineties,
-the dawn of e-commerce on the World Wide Web. I was working for an ISP
-which soon transformed into a humongous Web Hosting company, we ran
-millions of sites, built new data centers with thousands of servers
-pushing gigabits of traffic and (in short) were taking over the world
-(or so it seemed). With the rise of our company’s stock price, me and
-my colleagues were on our way to becoming millionaires. Mod_python was
-doing very well too. It had a busy website, a large and very active
-mailing list and an ever growing number of devoted users. I went to
-various Open Source conferences to present about it (and couldn’t
-really believe that without exception everyone knew what mod_python
-was).
+the dawn of e-commerce on the World Wide Web. I started working for a
+tiny ISP which soon transformed into a humongous Web Hosting company,
+we ran millions of sites, built new data centers with thousands of
+servers pushing gigabits of traffic and (in short) were taking over
+the world (or so it seemed). With the rise of our company’s stock
+price, me and my colleagues were on our way to becoming
+millionaires. Mod_python was doing very well too. It had a busy
+website, a large and very active mailing list and an ever growing
+number of devoted users. I went to various Open Source conferences to
+present about it (and couldn’t really believe that without exception
+everyone knew what mod_python was).
 
 Then came 2001. We just bought a house and our second son was not even
 a year old when one beautiful sunny summer day I was summoned to a
