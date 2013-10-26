@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-10-26T03:14:32-04:00</updated>
+  <updated>2013-10-26T03:15:48-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -65,12 +65,13 @@ hacked something together last night - let’s do a live demo, look how
 fast this is!  They were delighted.</p>
 
 <p>Little did they know, the app had been running in Python for months,
-and the reason for speed had little to do with the language itself. It
-was all because I was able to embed the interpreter within the web
-server. Then I thought that to make it all complete I would make my
-little tool open source and put it on my website free for everyone to
-use. I called it <a href="http://www.ispol.com/home/grisha/nsapy/">NSAPy</a> as a
-combination of the Netscape Server API and Python.</p>
+and the reason for the speed up had little to do with the language
+itself. It was all because I was able to embed the interpreter within
+the web server. Then I thought that to make it all complete I would
+make my little tool open source and put it on my website free for
+everyone to use. I called it
+<a href="http://www.ispol.com/home/grisha/nsapy/">NSAPy</a> as a combination of
+the Netscape Server API and Python.</p>
 
 <p>But I didn’t stop there, and soon I was able to replicate this on an
 Apache web server, which was taking the Internet by storm back
