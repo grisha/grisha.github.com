@@ -245,7 +245,27 @@ one. It brings the world of Python web development to the lowest
 common denominator - CGI and introduces some problems of its own on
 top of it.</p>
 
-<p>/end of rant/</p>
+<h2>Other notes</h2>
+
+<h3>What is the Gateway in CGI</h3>
+
+<p>I did some digging into the etymology of “Common Gateway Interface”,
+because I wanted to know what the original author (Rob McCool) meant
+by it when he came up with it. From reading <a href="http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html">this</a>
+it’s apparent that he saw it as the Web daemon’s gateway to an outside
+program:</p>
+
+<p>“For example, let&#8217;s say that you wanted to &#8220;hook up&#8221; your Unix
+database to the World Wide Web, to allow people from all over the
+world to query it. Basically, you need to create a CGI program that
+the Web daemon will execute to transmit information to the database
+engine, and receive the results back again and display them to the
+client. This is an example of a gateway, and this is where CGI,
+currently version 1.1, got its origins.”</p>
+
+<p>I always perceived it the other way around, I thought the “gateway”
+was a gateway to the web server. I think that when Phillip J. Eby
+first proposed the name WSGI he was under the same misperception as I.</p>
 </div>
 
 
