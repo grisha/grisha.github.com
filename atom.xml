@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-10-30T14:03:06-04:00</updated>
+  <updated>2013-10-30T14:05:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -107,8 +107,9 @@ vise-versa. We’d all get along better if we took some time to think
 about the distinction between web applications and HTTP request
 handlers.</p>
 
-<p>P.S. This will get even more complicated when HTTP 2.0 comes
-around. And I haven’t even mentioned SSL/TLS.</p>
+<p>P.S. This will get even more complicated when HTTP 2.0 comes around
+where responses may exist without a request. And I haven’t even
+mentioned SSL/TLS.</p>
 ]]></content>
   </entry>
   
