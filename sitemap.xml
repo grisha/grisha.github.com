@@ -87,8 +87,14 @@
         <lastmod>2013-10-29T13:16:30-04:00</lastmod>
     </url>
     <url>
+        <loc>
+            http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/
+        </loc>
+        <lastmod>2013-10-30T13:46:33-04:00</lastmod>
+    </url>
+    <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2013-10-29T13:16:30-04:00</lastmod>
+        <lastmod>2013-10-30T13:46:33-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -96,6 +102,6 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2013-10-29T13:16:30-04:00</lastmod>
+        <lastmod>2013-10-30T13:46:33-04:00</lastmod>
     </url>
 </urlset>
