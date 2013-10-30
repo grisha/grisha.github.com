@@ -15,11 +15,11 @@ there in the name.
 
 CGI wasn't meant as a standard and there was little good about it. It
 was extremely popular, but for reasons unrelated to its usability and
-performance. It became popular because it was easy to turn on by the
-provider and provided such a thick wall of isolation that admins at
-schools (initally, and then hosting providers) could turn it on for
-their users without too much concern for problems caused by
-user-generated CGI scripts.
+performance. It became popular because it was easy to turn on and
+provided such a thick wall of isolation that admins at schools
+(initally, and then hosting providers) could turn it on for their
+users without too much concern for problems caused by user-generated
+CGI scripts.
 
 There is now an RFC (RFC3875) describing CGI, but (I don't know this
 for sure, it's just a guess) I suspect that Ken Coar wrote the RFC not
@@ -36,10 +36,12 @@ could be used as a model, e.g. (dare I mention?) Java Servlets.
 
 CGI dictated that HTTP headers be passed to the CGI script by way of
 environment variables. (Note this explains the origin of the term
-"environment" - in HTTP there is no "request environment"). So as to
-not clash with any other environment variables, CGI would prepend
-`HTTP_` to every header name, and because environment variables in DOS and
-Unix are typically case-insensitive, they were capitalized.
+"environment" - in HTTP there is no "request environment", there is
+simply a "request"). So as to not clash with any other environment
+variables, CGI would prepend `HTTP_` to every header name and swap
+dashes with underscores because dashes are problematic in scripts. And
+because environment variables in DOS and Unix are typically
+case-insensitive, they were capitalized.
 
 Now how much sense does any of this make in an environemnt in which
 WSGI operates? The headers are typically read by the webserver and
@@ -71,9 +73,9 @@ expensive in Python. The requirement that the app must beg for the
 write object every time introduces a completely unnecessary function
 call.
 
-The request object with a write() method should simply be passed in -
-this is how the rest of the world does it, this is how it has always
-worked in mod_python (cited in PEP3333 a number of times!).
+The request object with a write() method should simply be passed
+in. This is how it has always worked in mod_python (cited in PEP3333 a
+number of times!).
 
 ## Error handling
 
@@ -143,4 +145,24 @@ one. It brings the world of Python web development to the lowest
 common denominator - CGI and introduces some problems of its own on
 top of it.
 
-/end of rant/
+## Other notes
+
+### What is the Gateway in CGI
+
+I did some digging into the etymology of “Common Gateway Interface”,
+because I wanted to know what the original author (Rob McCool) meant
+by it when he came up with it. From reading [this](http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html)
+it’s apparent that he saw it as the Web daemon’s gateway to an outside
+program:
+
+“For example, let's say that you wanted to "hook up" your Unix
+database to the World Wide Web, to allow people from all over the
+world to query it. Basically, you need to create a CGI program that
+the Web daemon will execute to transmit information to the database
+engine, and receive the results back again and display them to the
+client. This is an example of a gateway, and this is where CGI,
+currently version 1.1, got its origins.”
+
+I always perceived it the other way around, I thought the “gateway”
+was a gateway to the web server. I think that when Phillip J. Eby
+first proposed the name WSGI he was under the same misperception as I.
