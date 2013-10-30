@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-10-30T14:05:42-04:00</updated>
+  <updated>2013-10-30T18:20:45-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -19,9 +19,9 @@
     <updated>2013-10-30T13:18:00-04:00</updated>
     <id>http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object</id>
     <content type="html"><![CDATA[<p>Are you in favor of a single request object, or two separate objects:
-request and response?  Hold on to your strong opinion here - you and
-your opponents are likely talking apples and oranges without realizing
-it.</p>
+request and response?  Hold off on expressing strong opinion here -
+it&#8217;s likely that the two options are not contractory and can actually
+coexist.</p>
 
 <p>I thouhgt I always was in favor of a single request object which I
 <a href="https://mail.python.org/pipermail/web-sig/2003-October/000162.html">expressed on the Web-SIG mailing list thread</a>
