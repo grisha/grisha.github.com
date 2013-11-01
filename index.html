@@ -351,10 +351,11 @@ mod_python&#8217;s:</p>
 server provide it? What would be a good use case for such a thing?</p>
 
 <p>There is a long section describing &#8220;middleware&#8221;. Middleware is a
-wrapper (a container, if you will), and there doesn&#8217;t seem to be
-anything special with this concept that the spect should focus on
-it. (I also don&#8217;t like the word &#8220;middleware&#8221; - my intuition suggests
-it&#8217;s a layer between &#8220;hardware&#8221; and &#8220;software&#8221;, not a wrapper).</p>
+wrapper, an example of the <a href="http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm">pipeline design pattern</a>
+and there doesn&#8217;t seem to be anything special with this concept that
+the WSGI spec should even mention it. (I also object to the term
+&#8220;middleware&#8221; - my intuition suggests it&#8217;s a layer between &#8220;hardware&#8221;
+and &#8220;software&#8221;, not a wrapper.)</p>
 
 <h2>SCRIPT_NAME and PATH_INFO</h2>
 
