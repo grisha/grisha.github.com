@@ -247,13 +247,14 @@ mentioned SSL/TLS.</p>
 <p>WSGI is based on CGI, as the &#8220;GI&#8221; (Gateway Interface) suggests right
 there in the name.</p>
 
-<p>CGI wasn&#8217;t meant as a standard and there was little good about it. It
-was extremely popular, but for reasons unrelated to its usability and
-performance. It became popular because it was easy to turn on and
-provided such a thick wall of isolation that admins at schools
-(initally, and then hosting providers) could turn it on for their
-users without too much concern for problems caused by user-generated
-CGI scripts.</p>
+<p>CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn&#8217;t a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins at schools (initally, and then hosting
+providers) could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.</p>
 
 <p>There is now an RFC (RFC3875) describing CGI, but (I don&#8217;t know this
 for sure, it&#8217;s just a guess) I suspect that Ken Coar wrote the RFC not
