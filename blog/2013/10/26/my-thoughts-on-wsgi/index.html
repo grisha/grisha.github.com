@@ -128,20 +128,22 @@ the present state of affairs - everyone was using CGI, yet there never
 was a formal document describing it.</p>
 
 <p>So if I were to attempt to unite all Python web applications under the
-same standard, CGI would be the last think I would consider. There
-other projects solving the same problem in more elegant ways that
+same standard, CGI would be the last think I would consider. There are
+other efforts at solving the same problem in more elegant ways which
 could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
 
 <h2>Headers</h2>
 
 <p>CGI dictated that HTTP headers be passed to the CGI script by way of
-environment variables. (Note this explains the origin of the term
-&#8220;environment&#8221; - in HTTP there is no &#8220;request environment&#8221;, there is
-simply a &#8220;request&#8221;). So as to not clash with any other environment
-variables, CGI would prepend <code>HTTP_</code> to every header name and swap
-dashes with underscores because dashes are problematic in scripts. And
-because environment variables in DOS and Unix are typically
-case-insensitive, they were capitalized.</p>
+<a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
+same environment that contains your <code>$PATH</code> and <code>$TERM</code>.
+(Note this also explains the origin of the term <em>environment</em> in WSGI
+- in HTTP there is no <em>request environment</em>, there is simply a
+<em>request</em>). So as to not clash with any other environment variables,
+CGI would prepend <code>HTTP_</code> to every header name and swap dashes with
+underscores because dashes are problematic in scripts. And because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized.</p>
 
 <p>Now how much sense does any of this make in an environemnt in which
 WSGI operates? The headers are typically read by the webserver and
