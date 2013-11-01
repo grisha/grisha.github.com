@@ -282,12 +282,12 @@ they were capitalized. Thus <code>"content-type"</code> would become <code>"HTTP
 <p>And how much sense applying the same transformation make in the realm
 in which WSGI operates? The headers are typically read by the
 webserver and stored in some kind of a structure, which ought to be
-easily accessible so the application can get headers in their original
-format. For example n Apache this would be the <code>req.headers_in</code> table.
-What is the point of combing through that structure converting every
-key to some capitalized HTTP_ string? Why are WSGI developers forced
-to use <code>env['HTTP_CONTENT_LENGTH']</code> rather than
-<code>env['Content-length']</code>?</p>
+directly accessible so the application can get headers in the
+original, unmodified format. For example in Apache this would be the
+<code>req.headers_in</code> table.  What is the point of combing through that
+structure converting every key to some capitalized HTTP_ string at
+every request? Why are WSGI developers forced to use
+<code>env['HTTP_CONTENT_LENGTH']</code> rather than <code>env['Content-length']</code>?</p>
 
 <p>Another thing about the environment is that the WSGI standard states
 that it must be a real Python dictionary, and thereby dictating that a
