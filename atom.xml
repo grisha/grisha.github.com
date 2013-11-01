@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-01T12:03:16-04:00</updated>
+  <updated>2013-11-01T12:18:10-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -135,11 +135,10 @@ isolation that admins at schools (initally, and then hosting
 providers) could turn it on for their users without too much concern
 for problems caused by user-generated CGI scripts.</p>
 
-<p>There is now an RFC (RFC3875) describing CGI, but (I don&#8217;t know this
-for sure, it&#8217;s just a guess) I suspect that Ken Coar wrote the RFC not
-because he thought CGI was great, but rather out of discontent with
-the present state of affairs - everyone was using CGI, yet there never
-was a formal document describing it.</p>
+<p>There is now an RFC (RFC3875) describing CGI, but I hazard that Ken
+Coar wrote the RFC not because he thought CGI was great, but rather
+out of discontent with the present state of affairs - everyone was
+using CGI, yet there never was a formal document describing it.</p>
 
 <p>So if I were to attempt to unite all Python web applications under the
 same standard, CGI wouldn&#8217;t be the first thing I would consider. There are
