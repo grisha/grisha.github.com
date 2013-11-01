@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-01T11:21:11-04:00</updated>
+  <updated>2013-11-01T11:22:04-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -149,7 +149,7 @@ could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
 
 <p>CGI dictated that HTTP headers be passed to the CGI script by way of
 <a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
-same environment that contains your <code>$PATH</code> and <code>$TERM</code>.
+same environment that contain your <code>$PATH</code> and <code>$TERM</code>.
 (Note this also explains the origin of the term <em>environment</em> in WSGI
 - in HTTP there is no <em>request environment</em>, there is simply a
 <em>request</em>). So as to not clash with any other environment variables,
