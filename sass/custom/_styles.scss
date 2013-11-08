@@ -1,2 +1,8 @@
 // This File is imported last, and will override other styles in the cascade
 // Add styles here to make changes without digging in too much
+
+th, td { padding: 5px; border: 1px solid #999; }
+
+th { font-weight:bold; }
+
+table { border: 1px solid #999; }

@@ -7,9 +7,8 @@ categories:
 ---
 
 Are you in favor of a single request object, or two separate objects:
-request and response?  Hold on to your strong opinion here - you and
-your opponents are likely talking apples and oranges without realizing
-it.
+request and response?  Could it be that the two options are not
+contradictory or even mutually exclusive?
 
 I thouhgt I always was in favor of a single request object which I
 [expressed on the Web-SIG mailing list thread](https://mail.python.org/pipermail/web-sig/2003-October/000162.html)
@@ -75,8 +74,9 @@ is) help along with this process? Certainly. Wouldn’t this code be
 part of a “web application”?  Good question. It is not uncommon for a
 web application to consider the Accept-Language header in its
 response. You could also accomplish this entirely in an http server by
-configuring it correctly. Sometimes it just depends on how you're
-looking at it, but you do have to decide for yourself which it is.
+configuring it correctly. Sometimes whether something is a web
+application just depends on how you're looking at it, but you do have
+to decide for yourself which it is.
 
 Getting to the original problem, the answer to the question of whether
 to use separate response/request objects or not depends very much on

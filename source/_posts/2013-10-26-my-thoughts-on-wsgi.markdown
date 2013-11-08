@@ -13,46 +13,52 @@ I'm not very fond of it. Here is why.
 WSGI is based on CGI, as the "GI" (Gateway Interface) suggests right
 there in the name.
 
-CGI wasn't meant as a standard and there was little good about it. It
-was extremely popular, but for reasons unrelated to its usability and
-performance. It became popular because it was easy to turn on and
-provided such a thick wall of isolation that admins at schools
-(initally, and then hosting providers) could turn it on for their
-users without too much concern for problems caused by user-generated
-CGI scripts.
+CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn't a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.
 
-There is now an RFC (RFC3875) describing CGI, but (I don't know this
-for sure, it's just a guess) I suspect that Ken Coar wrote the RFC not
-because he thought CGI was great, but rather out of discontent with
-the present state of affairs - everyone was using CGI, yet there never
-was a formal document describing it.
+There is now an RFC ([RFC3875](http://www.ietf.org/rfc/rfc3875))
+describing CGI, but I hazard that
+[Ken Coar](http://ken.coar.org/) wrote the RFC not because he thought CGI was great, but rather
+out of discontent with the present state of affairs - everyone was
+using CGI, yet there never was a formal document describing it.
 
 So if I were to attempt to unite all Python web applications under the
-same standard, CGI would be the last think I would consider. There
-other projects solving the same problem in more elegant ways that
+same standard, CGI wouldn't be the first thing I would consider. There are
+other efforts at solving the same problem in more elegant ways which
 could be used as a model, e.g. (dare I mention?) Java Servlets.
 
 ## Headers
 
 CGI dictated that HTTP headers be passed to the CGI script by way of
-environment variables. (Note this explains the origin of the term
-"environment" - in HTTP there is no "request environment", there is
-simply a "request"). So as to not clash with any other environment
-variables, CGI would prepend `HTTP_` to every header name and swap
-dashes with underscores because dashes are problematic in scripts. And
-because environment variables in DOS and Unix are typically
-case-insensitive, they were capitalized.
+[environment variables](http://en.wikipedia.org/wiki/Environment_variable). The
+same environment that contain your `$PATH` and `$TERM`.  (Note this
+also explains the origin of the term *environment* in WSGI - in HTTP
+there is no *request environment*, there is simply a *request*). So as
+to not clash with any other environment variables, CGI would prepend
+`HTTP_` to every header name. It also swapped dashes with underscores
+because dashes are not allowed in shell variable names. And because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized. Thus `"content-type"` would become `"HTTP_CONTENT_TYPE"`.
 
-Now how much sense does any of this make in an environemnt in which
-WSGI operates? The headers are typically read by the webserver and
-stored in some kind of a structure, in Apache this would be the
-`headers_in` table (accessible as `req.headers_in` map object in
-mod_python). What is the point of combing through that structure
-converting every key to some capitalized HTTP_ string? Why is
-`env['HTTP_CONTENT_LENGTH']` more convenient than
-`env['Content-length']`? Not to mention that the WSGI standard insists
-that `environment` be a real Python dictionary thereby dictating that a memory
-allocation happen to satisfy this requirement, *at every request*!
+And how much sense applying the same transformation make in the realm
+in which WSGI operates? The headers are typically read by the
+webserver and stored in some kind of a structure, which ought to be
+directly accessible so the application can get headers in the
+original, unmodified format. For example in Apache this would be the
+`req.headers_in` table.  What is the benefit of combing through that
+structure converting every key to some capitalized HTTP_ string at
+every request? Why are WSGI developers forced to use
+`env['HTTP_CONTENT_LENGTH']` rather than `env['Content-length']`?
+
+Another thing about the environment is that the WSGI standard states
+that it must be a real Python dictionary, thereby dictating that a
+memory allocation happen to satisfy this requirement, *at every
+request*.
 
 ## start_response()
 
@@ -111,10 +117,11 @@ What is `wsgi.run_once`, why does it matter and why should the web
 server provide it? What would be a good use case for such a thing?
 
 There is a long section describing "middleware". Middleware is a
-wrapper (a container, if you will), and there doesn't seem to be
-anything special with this concept that the spect should focus on
-it. (I also don't like the word "middleware" - my intuition suggests
-it's a layer between "hardware" and "software", not a wrapper).
+wrapper, an example of the [pipeline design pattern](http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm)
+and there doesn't seem to be anything special with this concept that
+the WSGI spec should even mention it. (I also object to the term
+"middleware" - my intuition suggests it's a layer between "hardware"
+and "software", not a wrapper.)
 
 ## SCRIPT_NAME and PATH_INFO
 
