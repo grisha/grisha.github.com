@@ -1,0 +1,571 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>mod_python performance part 2: high(er) concurrency - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="TL;DR As is evident from the table below, mod_python 3.5 (in pre-release
+testing as of this writing) is currently the fastest tool when it
+comes to &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2013/11/07/mod-python-performance-revisited">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Mod_python Performance Part 2: High(er) Concurrency</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-07T17:51:00-05:00" pubdate data-updated="true">Nov 7<span>th</span>, 2013</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>TL;DR</h2>
+
+<p>As is evident from the table below, mod_python 3.5 (in pre-release
+testing as of this writing) is currently the fastest tool when it
+comes to running Python in your web server, and second-fastest as a
+WSGI container.</p>
+
+<table border="1">
+  <tr>
+    <th>Server</th>
+    <th>Version</th>
+    <th>Req/s</th>
+    <th>% of httpd static</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <th><a href="https://bitbucket.org/yarosla/nxweb/wiki/Benchmarks">nxweb</a> static file</th>
+    <td>3.2.0-dev</td>
+    <td>512,767</td>
+    <td> 347.1 % </td>
+    <td>&#8220;memcache&#8221;:false. (626,270 if true)</td>
+  </tr>
+  <tr>
+    <th><a href="http://nginx.com/">nginx</a> static file</th>
+    <td>1.0.15</td>
+    <td>430,135</td>
+    <td> 291.1 %</td>
+    <td>stock CentOS 6.3 rpm</td>
+  </tr>
+  <tr>
+    <th><a href="http://httpd.apache.org/">httpd</a> static file</th>
+    <td>2.4.4, mpm_event</td>
+    <td>147,746</td>
+    <td> 100.0 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_python handler</th>
+    <td>3.5, Python 2.7.5</td>
+    <td>125,139</td>
+    <td> 84.7 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>uwsgi</th>
+    <td>1.9.18.2</td>
+    <td>119,175</td>
+    <td> 80.7 % </td>
+    <td>-p 16 &#8211;threads 1</td>
+  </tr>
+  <tr>
+    <th>mod_python wsgi</th>
+    <td>87,304</td>
+    <td>3.5, Python 2.7.5</td>
+    <td> 59.1 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_wsgi</th>
+    <td>3.4</td>
+    <td>76,251</td>
+    <td> 51.6 % </td>
+    <td>embedded mode</td>
+  </tr>
+  <tr>
+    <th>nxweb wsgi</th>
+    <td>3.2.0-dev, Python 2.7.5</td>
+    <td>15,141</td>
+    <td> 10.2 % </td>
+    <td>posibly misconfigured?</td>
+  </tr>
+</table>
+
+
+<h2>The point of this test</h2>
+
+<p>I wanted to see how mod_python compares to other tools of similar
+purpose on high-end hardware and with relatively high concurrency. As
+I&#8217;ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
+you&#8217;d be foolish to base your platform decision on these numbers
+because speed in this case matters very little. So the point of this
+is just make sure that mod_python is in the balpark with the rest and
+that there isn&#8217;t anything seriously wrong with it. And surprisingly,
+mod_python is actually pretty fast, <em>fastest</em>, even, though in its own
+category (a raw mod_python handler).</p>
+
+<h2>Test rig</h2>
+
+<p>The server is a 24-core Intel Xeon 3GHz with 64GB RAM, running Linux
+2.6.32 (CentOS 6.3).</p>
+
+<p>The testing was done with
+<a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a>, which
+was chosen after having tried
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>,
+<a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> and
+<a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a>. The exact command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Concurrency of 120 was chosen as the highest number I could run across
+all setups without getting strange errors. &#8220;Strange errors&#8221; could be
+disconnects, delays and stuck connecitons affected by anything from
+Linux kernel configuration to specific tool configs. I very much
+wanted concurrency to be at least a few times higher but it quickly
+became apparent that getting to that level would require very
+significant system tweaking for which I just didn&#8217;t have the time. 120
+concurrent requests is nothing to sneeze at though: if you sustained
+this rate for a day of python handler serving, you&#8217;d have processed
+10,812,009,600 requests. Not to mention the fact that it approaches
+the limit of network hardware (at least on my set up).</p>
+
+<p>I should also note that in my tweaking of various configurations I
+couldn&#8217;t get the requests/s numbers any significantly higher than what
+you see above. Increasing concurrency and number of workers mostly
+increased errors rather than r/s, which is also interesting because
+it&#8217;s important how gracefuly each of these tools fails, but failure
+mode is a whole different subject.</p>
+
+<p>The tests were done via the loopback (127.0.0.1) because having tried
+hitting the server from outside it became apparent that the network
+was the bottleneck.</p>
+
+<p>Keepalives were in use (-k), which means that all of the 5 million
+requests are processed over fifty thousand TCP connections (or
+slightly more). Without keepalives this would be more of the Linux
+kernel test because the bulk of the work establishing and taking down
+a connection happens in the kernel. Without keepalives each connection
+requires an ephemeral port and there are only so many of them to go
+around when all the requests originate from the same IP address.</p>
+
+<p>Before running the 5 million requests I ran 100,000 as a &#8220;warm up&#8221;.</p>
+
+<p>The actual code for the WSGI app and mod_python handlers was same as
+in <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last post on mod_python performance testing</a>.</p>
+
+<h2>Why httpress</h2>
+
+<p><a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a> simply can&#8217;t run more than about 150K requests per second, so it
+couldn&#8217;t adequately test nxweb and nginx static file serving.</p>
+
+<p><a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> looked
+promissing at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
+second cannot be trusted because it gradually increases the
+load.</p>
+
+<p><a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a> seemed
+good, but somehow got stuck on idle but not yet closed connections
+which affected the request/s negatively.</p>
+
+<p><a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a> claimed that it &#8220;promptly timeouts stucked connections,
+forces all hanging connections to close after the main run, does not
+allow hanging or interrupted connections to affect the measurement&#8221;,
+which is just what I needed. And it worked really great too.</p>
+
+<h2>The choice of contenders</h2>
+
+<p>mod_python and mod_wsgi are the obvious choices, uWSGI is often
+considered a low-resource and fast alternative and it is only
+performant when used behind a reverse proxy such as nginx. I came
+across nxweb while looking at httpress (it&#8217;s written by the same
+person (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and
+looks to be the fastest (open source) web server currently out there.</p>
+
+<h2>Specific tool notes</h2>
+
+<p>The code used for testing and configs were essentially same as what
+used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.</p>
+
+<h3>Apache</h3>
+
+<p>The key config on Apache was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ThreadsPerChild 25    # default
+</span><span class='line'>StartServers 16
+</span><span class='line'>MinSpareThreads 400</span></code></pre></td></tr></table></div></figure>
+
+
+<p>MinSpareThreads ensures that Apache starts all possible processes and
+threads on startup (25 * 16 = 400) and therefore there is no &#8220;warm
+up&#8221;.</p>
+
+<h3>uWSGI</h3>
+
+<p>The comparison with uWSGI isn&#8217;t entriely appropriate because it was
+running listening on a unix domain socket behind Ngnix. The -p 16
+&#8211;threads 1 (16 worker processes with a single thread each) was chosen
+as the best performing option after some experimentation. Upping -p to
+32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
+workers) reduced r/s to 55925. &#8211;single-interpreter didn&#8217;t seem to
+have any significant impact.</p>
+
+<p>The actual uWSGI command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A note on the uWSGI performance. Initially it seemed to be
+outperforming the mod_python handler by nearly a factor of two. Then
+after all kinds of puzzled head-scratching, I decided to verify that
+every hit ran your Python code - I did this by writing a dot to a file
+and making sure that the file size matches the number of hits in the
+end. It turned out that about one third of the requests from nginx to
+uwsgi were erroring out, but httpress didn&#8217;t see them as errors. So if
+you&#8217;re going to attempt to replicate this, watch out for this
+condition.</p>
+
+<h3>Nginx</h3>
+
+<p>The relevant parts of the nginx config were (Note: this is not the
+complete config for brevity):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>worker_processes 24;
+</span><span class='line'>...
+</span><span class='line'>events {
+</span><span class='line'>  worker_connections 1024;
+</span><span class='line'>}
+</span><span class='line'>...
+</span><span class='line'>http {
+</span><span class='line'>  server_tokens off;
+</span><span class='line'>  keepalive_timeout 65;
+</span><span class='line'>  sendfile on;
+</span><span class='line'>  tcp_nopush on;
+</span><span class='line'>  tcp_nodelay on;
+</span><span class='line'>
+</span><span class='line'>  access_log /dev/null main;
+</span><span class='line'>...
+</span><span class='line'>  upstream uwsgi {
+</span><span class='line'>     ip_hash;
+</span><span class='line'>     server unix:logs/uwsgi.sock;
+</span><span class='line'>  }
+</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Conclusion</h3>
+
+<p>Mod_python is plenty fast. Considering that unlike with other
+contenders large parts of the code are written in Python and thus are
+readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
+
+<p>I was surprised by Apache&#8217;s slow static file serving compared to Ngnix
+and Nxweb (which, although still young and in development seems like a
+very cool web server).</p>
+
+<p>On the other hand I am not all that convinced that the Ngnix/uWSGI set
+up is as cool as it is touted everywhere. Unquestionably Ngnix is a
+super solid server and Apache has some catching up to do when it comes
+to acting as a static file server or a reverse proxy. But when it
+comes to serving Python-generated content, my money would be on
+Apache. The &#8220;low&#8221; 120 concurrency level for this test was largely
+chosen because of uWSGI (Apache started going haywire on me at about
+400+ concurrent connections).</p>
+
+<p>It&#8217;s also interesting that on my laptop a mod_python handler
+outperformed the Apache static file, but it wasn&#8217;t the case on the big
+server.</p>
+
+<p>I didn&#8217;t do Python 3 testing, it would be interesting to see how much
+difference it makes as well.</p>
+
+<p>I realize this post may be missing key config data - I had to leave
+out a lot because of time contraints (and my lazyness) - so if you see
+any obvious gaps, please comment, I will try to address them.</p>
+
+<p>P.S. Did I mention mod_python 3.5 supports Python 3? Please help
+me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-07T17:51:00-05:00" pubdate data-updated="true">Nov 7<span>th</span>, 2013</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/" title="Previous Post: Separate Request and Response or a single Request object?">&laquo; Separate Request and Response or a single Request object?</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+<section>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/11/07/mod-python-performance-revisited/">mod_python performance part 2: high(er) concurrency</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2013 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/';
+        var disqus_url = 'http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

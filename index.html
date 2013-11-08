@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Are you in favor of a single request object, or two separate objects:
-request and response? Could it be that the two options are not
-contradictory or &hellip;">
+  <meta name="description" content="TL;DR As is evident from the table below, mod_python 3.5 (in pre-release
+testing as of this writing) is currently the fastest tool when it
+comes to &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +79,347 @@ contradictory or &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/11/07/mod-python-performance-revisited/">Mod_python Performance Part 2: High(er) Concurrency</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-07T17:51:00-05:00" pubdate data-updated="true">Nov 7<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/11/07/mod-python-performance-revisited/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>TL;DR</h2>
+
+<p>As is evident from the table below, mod_python 3.5 (in pre-release
+testing as of this writing) is currently the fastest tool when it
+comes to running Python in your web server, and second-fastest as a
+WSGI container.</p>
+
+<table border="1">
+  <tr>
+    <th>Server</th>
+    <th>Version</th>
+    <th>Req/s</th>
+    <th>% of httpd static</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <th><a href="https://bitbucket.org/yarosla/nxweb/wiki/Benchmarks">nxweb</a> static file</th>
+    <td>3.2.0-dev</td>
+    <td>512,767</td>
+    <td> 347.1 % </td>
+    <td>&#8220;memcache&#8221;:false. (626,270 if true)</td>
+  </tr>
+  <tr>
+    <th><a href="http://nginx.com/">nginx</a> static file</th>
+    <td>1.0.15</td>
+    <td>430,135</td>
+    <td> 291.1 %</td>
+    <td>stock CentOS 6.3 rpm</td>
+  </tr>
+  <tr>
+    <th><a href="http://httpd.apache.org/">httpd</a> static file</th>
+    <td>2.4.4, mpm_event</td>
+    <td>147,746</td>
+    <td> 100.0 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_python handler</th>
+    <td>3.5, Python 2.7.5</td>
+    <td>125,139</td>
+    <td> 84.7 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>uwsgi</th>
+    <td>1.9.18.2</td>
+    <td>119,175</td>
+    <td> 80.7 % </td>
+    <td>-p 16 &#8211;threads 1</td>
+  </tr>
+  <tr>
+    <th>mod_python wsgi</th>
+    <td>87,304</td>
+    <td>3.5, Python 2.7.5</td>
+    <td> 59.1 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_wsgi</th>
+    <td>3.4</td>
+    <td>76,251</td>
+    <td> 51.6 % </td>
+    <td>embedded mode</td>
+  </tr>
+  <tr>
+    <th>nxweb wsgi</th>
+    <td>3.2.0-dev, Python 2.7.5</td>
+    <td>15,141</td>
+    <td> 10.2 % </td>
+    <td>posibly misconfigured?</td>
+  </tr>
+</table>
+
+
+<h2>The point of this test</h2>
+
+<p>I wanted to see how mod_python compares to other tools of similar
+purpose on high-end hardware and with relatively high concurrency. As
+I&#8217;ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
+you&#8217;d be foolish to base your platform decision on these numbers
+because speed in this case matters very little. So the point of this
+is just make sure that mod_python is in the balpark with the rest and
+that there isn&#8217;t anything seriously wrong with it. And surprisingly,
+mod_python is actually pretty fast, <em>fastest</em>, even, though in its own
+category (a raw mod_python handler).</p>
+
+<h2>Test rig</h2>
+
+<p>The server is a 24-core Intel Xeon 3GHz with 64GB RAM, running Linux
+2.6.32 (CentOS 6.3).</p>
+
+<p>The testing was done with
+<a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a>, which
+was chosen after having tried
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>,
+<a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> and
+<a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a>. The exact command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Concurrency of 120 was chosen as the highest number I could run across
+all setups without getting strange errors. &#8220;Strange errors&#8221; could be
+disconnects, delays and stuck connecitons affected by anything from
+Linux kernel configuration to specific tool configs. I very much
+wanted concurrency to be at least a few times higher but it quickly
+became apparent that getting to that level would require very
+significant system tweaking for which I just didn&#8217;t have the time. 120
+concurrent requests is nothing to sneeze at though: if you sustained
+this rate for a day of python handler serving, you&#8217;d have processed
+10,812,009,600 requests. Not to mention the fact that it approaches
+the limit of network hardware (at least on my set up).</p>
+
+<p>I should also note that in my tweaking of various configurations I
+couldn&#8217;t get the requests/s numbers any significantly higher than what
+you see above. Increasing concurrency and number of workers mostly
+increased errors rather than r/s, which is also interesting because
+it&#8217;s important how gracefuly each of these tools fails, but failure
+mode is a whole different subject.</p>
+
+<p>The tests were done via the loopback (127.0.0.1) because having tried
+hitting the server from outside it became apparent that the network
+was the bottleneck.</p>
+
+<p>Keepalives were in use (-k), which means that all of the 5 million
+requests are processed over fifty thousand TCP connections (or
+slightly more). Without keepalives this would be more of the Linux
+kernel test because the bulk of the work establishing and taking down
+a connection happens in the kernel. Without keepalives each connection
+requires an ephemeral port and there are only so many of them to go
+around when all the requests originate from the same IP address.</p>
+
+<p>Before running the 5 million requests I ran 100,000 as a &#8220;warm up&#8221;.</p>
+
+<p>The actual code for the WSGI app and mod_python handlers was same as
+in <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last post on mod_python performance testing</a>.</p>
+
+<h2>Why httpress</h2>
+
+<p><a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a> simply can&#8217;t run more than about 150K requests per second, so it
+couldn&#8217;t adequately test nxweb and nginx static file serving.</p>
+
+<p><a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> looked
+promissing at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
+second cannot be trusted because it gradually increases the
+load.</p>
+
+<p><a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a> seemed
+good, but somehow got stuck on idle but not yet closed connections
+which affected the request/s negatively.</p>
+
+<p><a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a> claimed that it &#8220;promptly timeouts stucked connections,
+forces all hanging connections to close after the main run, does not
+allow hanging or interrupted connections to affect the measurement&#8221;,
+which is just what I needed. And it worked really great too.</p>
+
+<h2>The choice of contenders</h2>
+
+<p>mod_python and mod_wsgi are the obvious choices, uWSGI is often
+considered a low-resource and fast alternative and it is only
+performant when used behind a reverse proxy such as nginx. I came
+across nxweb while looking at httpress (it&#8217;s written by the same
+person (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and
+looks to be the fastest (open source) web server currently out there.</p>
+
+<h2>Specific tool notes</h2>
+
+<p>The code used for testing and configs were essentially same as what
+used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.</p>
+
+<h3>Apache</h3>
+
+<p>The key config on Apache was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ThreadsPerChild 25    # default
+</span><span class='line'>StartServers 16
+</span><span class='line'>MinSpareThreads 400</span></code></pre></td></tr></table></div></figure>
+
+
+<p>MinSpareThreads ensures that Apache starts all possible processes and
+threads on startup (25 * 16 = 400) and therefore there is no &#8220;warm
+up&#8221;.</p>
+
+<h3>uWSGI</h3>
+
+<p>The comparison with uWSGI isn&#8217;t entriely appropriate because it was
+running listening on a unix domain socket behind Ngnix. The -p 16
+&#8211;threads 1 (16 worker processes with a single thread each) was chosen
+as the best performing option after some experimentation. Upping -p to
+32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
+workers) reduced r/s to 55925. &#8211;single-interpreter didn&#8217;t seem to
+have any significant impact.</p>
+
+<p>The actual uWSGI command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A note on the uWSGI performance. Initially it seemed to be
+outperforming the mod_python handler by nearly a factor of two. Then
+after all kinds of puzzled head-scratching, I decided to verify that
+every hit ran your Python code - I did this by writing a dot to a file
+and making sure that the file size matches the number of hits in the
+end. It turned out that about one third of the requests from nginx to
+uwsgi were erroring out, but httpress didn&#8217;t see them as errors. So if
+you&#8217;re going to attempt to replicate this, watch out for this
+condition.</p>
+
+<h3>Nginx</h3>
+
+<p>The relevant parts of the nginx config were (Note: this is not the
+complete config for brevity):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>worker_processes 24;
+</span><span class='line'>...
+</span><span class='line'>events {
+</span><span class='line'>  worker_connections 1024;
+</span><span class='line'>}
+</span><span class='line'>...
+</span><span class='line'>http {
+</span><span class='line'>  server_tokens off;
+</span><span class='line'>  keepalive_timeout 65;
+</span><span class='line'>  sendfile on;
+</span><span class='line'>  tcp_nopush on;
+</span><span class='line'>  tcp_nodelay on;
+</span><span class='line'>
+</span><span class='line'>  access_log /dev/null main;
+</span><span class='line'>...
+</span><span class='line'>  upstream uwsgi {
+</span><span class='line'>     ip_hash;
+</span><span class='line'>     server unix:logs/uwsgi.sock;
+</span><span class='line'>  }
+</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Conclusion</h3>
+
+<p>Mod_python is plenty fast. Considering that unlike with other
+contenders large parts of the code are written in Python and thus are
+readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
+
+<p>I was surprised by Apache&#8217;s slow static file serving compared to Ngnix
+and Nxweb (which, although still young and in development seems like a
+very cool web server).</p>
+
+<p>On the other hand I am not all that convinced that the Ngnix/uWSGI set
+up is as cool as it is touted everywhere. Unquestionably Ngnix is a
+super solid server and Apache has some catching up to do when it comes
+to acting as a static file server or a reverse proxy. But when it
+comes to serving Python-generated content, my money would be on
+Apache. The &#8220;low&#8221; 120 concurrency level for this test was largely
+chosen because of uWSGI (Apache started going haywire on me at about
+400+ concurrent connections).</p>
+
+<p>It&#8217;s also interesting that on my laptop a mod_python handler
+outperformed the Apache static file, but it wasn&#8217;t the case on the big
+server.</p>
+
+<p>I didn&#8217;t do Python 3 testing, it would be interesting to see how much
+difference it makes as well.</p>
+
+<p>I realize this post may be missing key config data - I had to leave
+out a lot because of time contraints (and my lazyness) - so if you see
+any obvious gaps, please comment, I will try to address them.</p>
+
+<p>P.S. Did I mention mod_python 3.5 supports Python 3? Please help
+me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1429,402 +1770,6 @@ two strings and an integer.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/06/avro/">Apache Avro</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-06T22:53:00-04:00" pubdate data-updated="true">Jun 6<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/06/06/avro/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Short version</h2>
-
-<ul>
-<li>Avro is better than Json for storing table data</li>
-<li>Avro supports schema resolution so that the schema can evolve over time</li>
-<li>Hive supports Avro and schema resolution nicely</li>
-<li>Impala (1.0) can read Avro tables, but does <em>not</em> support schema resolution</li>
-<li>Mixing compression codecs in the same table works in both Hive and Impala</li>
-</ul>
-
-
-<h2>The TL;DR version</h2>
-
-<h3>Introduction</h3>
-
-<p>If you&#8217;re logging data into Hadoop to be analyzed, chances are you&#8217;re
-using JSON. JSON is great because it&#8217;s easy to generate in most any
-language, it&#8217;s human-readable, it&#8217;s universally supported and
-infinitely flexible.</p>
-
-<p>It is also space inefficient, prone to errors, the standard has a few
-ambiguities, all of which eventually catches up to you. It only takes
-one bad record to spoil a potentially massive amount of data, and
-finding the bad record and figuring out the root cause of the problem
-is usually difficult and often even impossible.</p>
-
-<p>So you might be considering a slightly more rigid and space efficient
-format, and in the Hadoop world it is <a href="http://en.wikipedia.org/wiki/Apache_Avro">Apache Avro</a>.
-<a href="http://avro.apache.org/docs/current/">Avro</a> is especially
-compelling because it is supported by
-<a href="http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/">Impala</a>,
-while JSON isn&#8217;t (not yet, at least).</p>
-
-<p>Named after a <a href="http://en.wikipedia.org/wiki/Avro">British aircraft maker</a>, Avro is a schema-enforced
-format for serializing arbitrary data. It is in the same category as
-<a href="http://en.wikipedia.org/wiki/Thrift_%28protocol%29">Thrift</a>, only it seems like Thrift has found its niche in
-RPC, whereas Avro appears more compelling as the on-disk
-format (even though both Avro and Thrift were designed for both storage
-and RPC). Thrift seems more insistent on you using its code
-generator, whereas Avro does it the old-school way, but providing
-you libraries you can use in your code. (It does code generation as
-well, if that&#8217;s your thing. I prefer to hand-write all my code).</p>
-
-<p>I actually don&#8217;t want to focus on the details of what Avro is as there
-is plenty information on that elsewhere. I want to share my findings
-regarding Avro&#8217;s suitability as an alternative to JSON used with Hive
-and JSON SerDe.</p>
-
-<h3>Schema (and its Resolution)</h3>
-
-<p>Every Avro file contains a header with the schema describing (in
-JSON!) the contents of the file&#8217;s records. This is very nice, because
-the file contains all the knowledge necessary to be able to read it.</p>
-
-<p>Avro was designed with the understanding that the schema may change
-over time (e.g. columns added or changed), and that software designed
-for a newer schema may need to read older schema files. To support
-this it provides something called Schema Resolution.</p>
-
-<p>Imagine you&#8217;ve been storing people&#8217;s names in a file. Then later on
-you decided to add &#8220;age&#8221; as another attribute. Now you&#8217;re got two
-schemas, one with &#8220;age&#8221; and one without. In JSON world you&#8217;d have to
-adjust your program to be able to read old files with some kind of an
-if/then statement to make sure that when &#8220;age&#8221; is not there the
-program knows what to do. In Avro, the new schema can specify a
-default for the age (e.g. 0), and whatever Avro lib you&#8217;d be using
-should be able to convert a record of the old schema to the new schema
-automatically, without any code modifications necessary. This is
-called <em>schema resolution</em>.</p>
-
-<h3>Avro support in Hive</h3>
-
-<p>First we need an Avro file. Our schema is just one string column named
-&#8220;test&#8221;. Here&#8217;s a quick Ruby program to generate a file of 10 random
-records (you&#8217;ll need to <code>gem install avro</code>):</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="nb">require</span> <span class="s1">&#39;rubygems&#39;</span>
-</span><span class='line'><span class="nb">require</span> <span class="s1">&#39;avro&#39;</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">schema</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:Schema</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;, &#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39; &quot;type&quot;:&quot;record&quot;, &#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39; &quot;fields&quot;: [&#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39;   {&quot;name&quot;:&quot;full_name&quot;,  &quot;type&quot;:&quot;string&quot;}]}&#39;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">writer</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:IO</span><span class="o">::</span><span class="no">DatumWriter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
-</span><span class='line'><span class="n">file</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test.avro&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span>
-</span><span class='line'><span class="n">dw</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:DataFile</span><span class="o">::</span><span class="no">Writer</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
-</span><span class='line'><span class="mi">3</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="p">{</span><span class="s1">&#39;full_name&#39;</span><span class="o">=&gt;</span><span class="s2">&quot;X</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2"> Y</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
-</span><span class='line'><span class="k">end</span>
-</span><span class='line'><span class="n">dw</span><span class="o">.</span><span class="n">flush</span>
-</span><span class='line'><span class="n">dw</span><span class="o">.</span><span class="n">close</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Then we need to create a Hive table and load our file into it:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_avro</span>
-</span><span class='line'> <span class="k">ROW</span> <span class="n">FORMAT</span> <span class="n">SERDE</span> <span class="s1">&#39;org.apache.hadoop.hive.serde2.avro.AvroSerDe&#39;</span>
-</span><span class='line'> <span class="n">STORED</span> <span class="k">AS</span> <span class="n">INPUTFORMAT</span> <span class="s1">&#39;org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat&#39;</span>
-</span><span class='line'> <span class="n">OUTPUTFORMAT</span> <span class="s1">&#39;org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat&#39;</span>
-</span><span class='line'> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
-</span><span class='line'>    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;fields&quot;: [</span>
-</span><span class='line'><span class="s1">                               {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;}]}&#39;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">LOAD</span> <span class="k">DATA</span> <span class="k">LOCAL</span> <span class="n">INPATH</span> <span class="s1">&#39;test.avro&#39;</span> <span class="n">OVERWRITE</span> <span class="k">INTO</span> <span class="k">TABLE</span> <span class="n">test_avro</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Note that the table definition needs its own schema definition, even
-though our file already contains a schema. This is not a mistake. This
-is the schema Hive will expect. And if the file that it&#8217;s reading is of
-a different schema, it will attempt to convert it using Avro schema
-resolution. Also noteworthy is that this table defines <em>no
-columns</em>. The entire definition is in the <code>avro.schema.literal</code>
-property.</p>
-
-<p>Let&#8217;s make sure this is working:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">X1800</span> <span class="n">Y9002</span>
-</span><span class='line'><span class="n">X3859</span> <span class="n">Y8971</span>
-</span><span class='line'><span class="n">X6935</span> <span class="n">Y5523</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now we also happen to have Impala running, let&#8217;s see if it&#8217;s able to read this file:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
-</span><span class='line'><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span><span class='line'><span class="o">|</span> <span class="n">full_name</span>   <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X1800</span> <span class="n">Y9002</span> <span class="o">|</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>So far so good! Now let&#8217;s create a second avro file, with one
-additional column <code>age</code>, using the following Ruby:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">schema</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:Schema</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;, &#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39; &quot;type&quot;:&quot;record&quot;, &#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39; &quot;fields&quot;: [&#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39;   {&quot;name&quot;:&quot;full_name&quot;,  &quot;type&quot;:&quot;string&quot;},&#39;</span> <span class="o">+</span>
-</span><span class='line'>                            <span class="s1">&#39;   {&quot;name&quot;:&quot;age&quot;,        &quot;type&quot;:&quot;int&quot;}]}&#39;</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">writer</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:IO</span><span class="o">::</span><span class="no">DatumWriter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
-</span><span class='line'><span class="n">file</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test2.avro&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span>
-</span><span class='line'><span class="n">dw</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:DataFile</span><span class="o">::</span><span class="no">Writer</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
-</span><span class='line'><span class="mi">3</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
-</span><span class='line'>  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="p">{</span><span class="s1">&#39;full_name&#39;</span><span class="o">=&gt;</span><span class="s2">&quot;X</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2"> Y</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="o">=&gt;</span><span class="nb">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">)}</span>
-</span><span class='line'><span class="k">end</span>
-</span><span class='line'><span class="n">dw</span><span class="o">.</span><span class="n">flush</span>
-</span><span class='line'><span class="n">dw</span><span class="o">.</span><span class="n">close</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Let&#8217;s load this into Hive and see if it still works. (No OVERWRITE
-keyword this time, we&#8217;re appending a second file to our table).</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">LOAD</span> <span class="k">DATA</span> <span class="k">LOCAL</span> <span class="n">INPATH</span> <span class="s1">&#39;test2.avro&#39;</span> <span class="k">INTO</span> <span class="k">TABLE</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">X1800</span> <span class="n">Y9002</span>
-</span><span class='line'><span class="n">X3859</span> <span class="n">Y8971</span>
-</span><span class='line'><span class="n">X6935</span> <span class="n">Y5523</span>
-</span><span class='line'><span class="n">X4720</span> <span class="n">Y1361</span>
-</span><span class='line'><span class="n">X4605</span> <span class="n">Y3067</span>
-</span><span class='line'><span class="n">X7007</span> <span class="n">Y7852</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>This is working exactly as expected. Hive has shown the 3 original
-records as before, and the 3 new ones got converted to Hive&#8217;s version
-of the schema, where the &#8220;age&#8221; column does not exist.</p>
-
-<p>Let&#8217;s see what Impala thinks of this:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
-</span><span class='line'><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span><span class='line'><span class="o">|</span> <span class="n">full_name</span>   <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X1800</span> <span class="n">Y9002</span> <span class="o">|</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
-</span><span class='line'><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
-</span><span class='line'><span class="o">+</span><span class="c1">-------------+</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Alas - we&#8217;re only getting the 3 original rows. Bummer! What&#8217;s
-worrisome is that <em>no indication</em> was given to us that 3 other rows got
-swallowed because Impala didn&#8217;t do schema resolution. (I&#8217;ve posted
-regarding this on the Impala users list, awaiting response).</p>
-
-<p>Now let&#8217;s alter the table schema so that age is part of it. (This is
-not your typical ALTER TABLE, we&#8217;re just changing <code>avro.schema.literal</code>).</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
-</span><span class='line'>    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;fields&quot;: [</span>
-</span><span class='line'><span class="s1">                              {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;},</span>
-</span><span class='line'><span class="s1">                              {&quot;name&quot;:&quot;age&quot;,  &quot;type&quot;:&quot;int&quot;}]}&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">Failed</span> <span class="k">with</span> <span class="n">exception</span> <span class="n">java</span><span class="p">.</span><span class="n">io</span><span class="p">.</span><span class="n">IOException</span><span class="p">:</span><span class="n">org</span><span class="p">.</span><span class="n">apache</span><span class="p">.</span><span class="n">avro</span><span class="p">.</span><span class="n">AvroTypeException</span><span class="p">:</span> <span class="k">Found</span> <span class="n">test_record</span><span class="p">,</span> <span class="n">expecting</span> <span class="n">test_record</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>This error should not be surprising. Hive is trying to provide a value
-for <code>age</code> for those records where it did not exist, but we neglected
-to specify a default. (The error message <em>is</em> a little cryptic,
-though). So let&#8217;s try again, this time with a default:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
-</span><span class='line'>    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
-</span><span class='line'><span class="s1">                            &quot;fields&quot;: [</span>
-</span><span class='line'><span class="s1">                              {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;},</span>
-</span><span class='line'><span class="s1">                              {&quot;name&quot;:&quot;age&quot;,  &quot;type&quot;:&quot;int&quot;, &quot;default&quot;:999}]}&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
-</span><span class='line'><span class="n">OK</span>
-</span><span class='line'><span class="n">X1800</span> <span class="n">Y9002</span>     <span class="mi">999</span>
-</span><span class='line'><span class="n">X3859</span> <span class="n">Y8971</span>     <span class="mi">999</span>
-</span><span class='line'><span class="n">X6935</span> <span class="n">Y5523</span>     <span class="mi">999</span>
-</span><span class='line'><span class="n">X4720</span> <span class="n">Y1361</span>     <span class="mi">10</span>
-</span><span class='line'><span class="n">X4605</span> <span class="n">Y3067</span>     <span class="mi">34</span>
-</span><span class='line'><span class="n">X7007</span> <span class="n">Y7852</span>     <span class="mi">17</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Woo-hoo!</p>
-
-<h3>Other notes</h3>
-
-<ul>
-<li>There is a nice Avro-C library, but it currently does not support defaults (version 1.7.4).</li>
-<li>Some <a href="http://code.google.com/p/thrift-protobuf-compare/wiki/Benchmarking">benchmarks</a></li>
-<li>Avro&#8217;s integer encoding is same as Lucene with <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag encoding</a>
-on top of it. (It&#8217;s just like SQLite, only little-endian). Curiously,
-it is used for <em>all</em> integers, including array indexes internal to
-Avro, which can never be negative and thus ZigZag is of no use. This
-is probably to keep all integer operation consistent.</li>
-<li>A curious post on how Lucene/Avro variable-integer format is <a href="http://blog.mikemccandless.com/2010/07/moving-readvint-to-c.html">CPU-unfriendly</a></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -1858,6 +1803,10 @@ is probably to keep all integer operation consistent.</li>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/07/mod-python-performance-revisited/">mod_python performance part 2: high(er) concurrency</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
       </li>
     
@@ -1871,10 +1820,6 @@ is probably to keep all integer operation consistent.</li>
     
       <li class="post">
         <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
       </li>
     
   </ul>

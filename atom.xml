@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-04T00:31:58-05:00</updated>
+  <updated>2013-11-07T22:45:49-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,318 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[mod_python performance part 2: high(er) concurrency]]></title>
+    <link href="http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/"/>
+    <updated>2013-11-07T17:51:00-05:00</updated>
+    <id>http://grisha.org/blog/2013/11/07/mod-python-performance-revisited</id>
+    <content type="html"><![CDATA[<h2>TL;DR</h2>
+
+<p>As is evident from the table below, mod_python 3.5 (in pre-release
+testing as of this writing) is currently the fastest tool when it
+comes to running Python in your web server, and second-fastest as a
+WSGI container.</p>
+
+<table border="1">
+  <tr>
+    <th>Server</th>
+    <th>Version</th>
+    <th>Req/s</th>
+    <th>% of httpd static</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <th><a href="https://bitbucket.org/yarosla/nxweb/wiki/Benchmarks">nxweb</a> static file</th>
+    <td>3.2.0-dev</td>
+    <td>512,767</td>
+    <td> 347.1 % </td>
+    <td>&#8220;memcache&#8221;:false. (626,270 if true)</td>
+  </tr>
+  <tr>
+    <th><a href="http://nginx.com/">nginx</a> static file</th>
+    <td>1.0.15</td>
+    <td>430,135</td>
+    <td> 291.1 %</td>
+    <td>stock CentOS 6.3 rpm</td>
+  </tr>
+  <tr>
+    <th><a href="http://httpd.apache.org/">httpd</a> static file</th>
+    <td>2.4.4, mpm_event</td>
+    <td>147,746</td>
+    <td> 100.0 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_python handler</th>
+    <td>3.5, Python 2.7.5</td>
+    <td>125,139</td>
+    <td> 84.7 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>uwsgi</th>
+    <td>1.9.18.2</td>
+    <td>119,175</td>
+    <td> 80.7 % </td>
+    <td>-p 16 &#8211;threads 1</td>
+  </tr>
+  <tr>
+    <th>mod_python wsgi</th>
+    <td>87,304</td>
+    <td>3.5, Python 2.7.5</td>
+    <td> 59.1 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_wsgi</th>
+    <td>3.4</td>
+    <td>76,251</td>
+    <td> 51.6 % </td>
+    <td>embedded mode</td>
+  </tr>
+  <tr>
+    <th>nxweb wsgi</th>
+    <td>3.2.0-dev, Python 2.7.5</td>
+    <td>15,141</td>
+    <td> 10.2 % </td>
+    <td>posibly misconfigured?</td>
+  </tr>
+</table>
+
+
+<h2>The point of this test</h2>
+
+<p>I wanted to see how mod_python compares to other tools of similar
+purpose on high-end hardware and with relatively high concurrency. As
+I&#8217;ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
+you&#8217;d be foolish to base your platform decision on these numbers
+because speed in this case matters very little. So the point of this
+is just make sure that mod_python is in the balpark with the rest and
+that there isn&#8217;t anything seriously wrong with it. And surprisingly,
+mod_python is actually pretty fast, <em>fastest</em>, even, though in its own
+category (a raw mod_python handler).</p>
+
+<h2>Test rig</h2>
+
+<p>The server is a 24-core Intel Xeon 3GHz with 64GB RAM, running Linux
+2.6.32 (CentOS 6.3).</p>
+
+<p>The testing was done with
+<a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a>, which
+was chosen after having tried
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>,
+<a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> and
+<a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a>. The exact command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Concurrency of 120 was chosen as the highest number I could run across
+all setups without getting strange errors. &#8220;Strange errors&#8221; could be
+disconnects, delays and stuck connecitons affected by anything from
+Linux kernel configuration to specific tool configs. I very much
+wanted concurrency to be at least a few times higher but it quickly
+became apparent that getting to that level would require very
+significant system tweaking for which I just didn&#8217;t have the time. 120
+concurrent requests is nothing to sneeze at though: if you sustained
+this rate for a day of python handler serving, you&#8217;d have processed
+10,812,009,600 requests. Not to mention the fact that it approaches
+the limit of network hardware (at least on my set up).</p>
+
+<p>I should also note that in my tweaking of various configurations I
+couldn&#8217;t get the requests/s numbers any significantly higher than what
+you see above. Increasing concurrency and number of workers mostly
+increased errors rather than r/s, which is also interesting because
+it&#8217;s important how gracefuly each of these tools fails, but failure
+mode is a whole different subject.</p>
+
+<p>The tests were done via the loopback (127.0.0.1) because having tried
+hitting the server from outside it became apparent that the network
+was the bottleneck.</p>
+
+<p>Keepalives were in use (-k), which means that all of the 5 million
+requests are processed over fifty thousand TCP connections (or
+slightly more). Without keepalives this would be more of the Linux
+kernel test because the bulk of the work establishing and taking down
+a connection happens in the kernel. Without keepalives each connection
+requires an ephemeral port and there are only so many of them to go
+around when all the requests originate from the same IP address.</p>
+
+<p>Before running the 5 million requests I ran 100,000 as a &#8220;warm up&#8221;.</p>
+
+<p>The actual code for the WSGI app and mod_python handlers was same as
+in <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last post on mod_python performance testing</a>.</p>
+
+<h2>Why httpress</h2>
+
+<p><a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a> simply can&#8217;t run more than about 150K requests per second, so it
+couldn&#8217;t adequately test nxweb and nginx static file serving.</p>
+
+<p><a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> looked
+promissing at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
+second cannot be trusted because it gradually increases the
+load.</p>
+
+<p><a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a> seemed
+good, but somehow got stuck on idle but not yet closed connections
+which affected the request/s negatively.</p>
+
+<p><a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a> claimed that it &#8220;promptly timeouts stucked connections,
+forces all hanging connections to close after the main run, does not
+allow hanging or interrupted connections to affect the measurement&#8221;,
+which is just what I needed. And it worked really great too.</p>
+
+<h2>The choice of contenders</h2>
+
+<p>mod_python and mod_wsgi are the obvious choices, uWSGI is often
+considered a low-resource and fast alternative and it is only
+performant when used behind a reverse proxy such as nginx. I came
+across nxweb while looking at httpress (it&#8217;s written by the same
+person (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and
+looks to be the fastest (open source) web server currently out there.</p>
+
+<h2>Specific tool notes</h2>
+
+<p>The code used for testing and configs were essentially same as what
+used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.</p>
+
+<h3>Apache</h3>
+
+<p>The key config on Apache was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ThreadsPerChild 25    # default
+</span><span class='line'>StartServers 16
+</span><span class='line'>MinSpareThreads 400</span></code></pre></td></tr></table></div></figure>
+
+
+<p>MinSpareThreads ensures that Apache starts all possible processes and
+threads on startup (25 * 16 = 400) and therefore there is no &#8220;warm
+up&#8221;.</p>
+
+<h3>uWSGI</h3>
+
+<p>The comparison with uWSGI isn&#8217;t entriely appropriate because it was
+running listening on a unix domain socket behind Ngnix. The -p 16
+&#8211;threads 1 (16 worker processes with a single thread each) was chosen
+as the best performing option after some experimentation. Upping -p to
+32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
+workers) reduced r/s to 55925. &#8211;single-interpreter didn&#8217;t seem to
+have any significant impact.</p>
+
+<p>The actual uWSGI command was:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A note on the uWSGI performance. Initially it seemed to be
+outperforming the mod_python handler by nearly a factor of two. Then
+after all kinds of puzzled head-scratching, I decided to verify that
+every hit ran your Python code - I did this by writing a dot to a file
+and making sure that the file size matches the number of hits in the
+end. It turned out that about one third of the requests from nginx to
+uwsgi were erroring out, but httpress didn&#8217;t see them as errors. So if
+you&#8217;re going to attempt to replicate this, watch out for this
+condition.</p>
+
+<h3>Nginx</h3>
+
+<p>The relevant parts of the nginx config were (Note: this is not the
+complete config for brevity):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>worker_processes 24;
+</span><span class='line'>...
+</span><span class='line'>events {
+</span><span class='line'>  worker_connections 1024;
+</span><span class='line'>}
+</span><span class='line'>...
+</span><span class='line'>http {
+</span><span class='line'>  server_tokens off;
+</span><span class='line'>  keepalive_timeout 65;
+</span><span class='line'>  sendfile on;
+</span><span class='line'>  tcp_nopush on;
+</span><span class='line'>  tcp_nodelay on;
+</span><span class='line'>
+</span><span class='line'>  access_log /dev/null main;
+</span><span class='line'>...
+</span><span class='line'>  upstream uwsgi {
+</span><span class='line'>     ip_hash;
+</span><span class='line'>     server unix:logs/uwsgi.sock;
+</span><span class='line'>  }
+</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Conclusion</h3>
+
+<p>Mod_python is plenty fast. Considering that unlike with other
+contenders large parts of the code are written in Python and thus are
+readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
+
+<p>I was surprised by Apache&#8217;s slow static file serving compared to Ngnix
+and Nxweb (which, although still young and in development seems like a
+very cool web server).</p>
+
+<p>On the other hand I am not all that convinced that the Ngnix/uWSGI set
+up is as cool as it is touted everywhere. Unquestionably Ngnix is a
+super solid server and Apache has some catching up to do when it comes
+to acting as a static file server or a reverse proxy. But when it
+comes to serving Python-generated content, my money would be on
+Apache. The &#8220;low&#8221; 120 concurrency level for this test was largely
+chosen because of uWSGI (Apache started going haywire on me at about
+400+ concurrent connections).</p>
+
+<p>It&#8217;s also interesting that on my laptop a mod_python handler
+outperformed the Apache static file, but it wasn&#8217;t the case on the big
+server.</p>
+
+<p>I didn&#8217;t do Python 3 testing, it would be interesting to see how much
+difference it makes as well.</p>
+
+<p>I realize this post may be missing key config data - I had to leave
+out a lot because of time contraints (and my lazyness) - so if you see
+any obvious gaps, please comment, I will try to address them.</p>
+
+<p>P.S. Did I mention mod_python 3.5 supports Python 3? Please help
+me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Separate Request and Response or a single Request object?]]></title>
@@ -2407,241 +2719,6 @@ importance.</p>
 <p>It is also important to remember to always take the time to explain
 importance of things we request of others. We naturally enjoy working
 on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[On keeping lots of integers in memory]]></title>
-    <link href="http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/"/>
-    <updated>2013-03-25T22:09:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory</id>
-    <content type="html"><![CDATA[<p>Once upon a time (over a year ago) I found myself needing to store large numbers of
-integers in memory. The goal was to store a graph of all our
-purchasers and items purchased, so that we could quickly identify
-like-minded purchasers based on common purchases and make real-time
-recommendations of the form &#8220;people like you also bought&#8221;. This
-approach is commonly known as <a href="http://en.wikipedia.org/wiki/Collaborative_filtering">collaborative filtering</a>,
-and exactly how we did it would be a subject of some future post
-(perhaps).</p>
-
-<p>At the time, I was looking at tens of millions of purchases by tens of
-millions people of hundreds of thousands of items. The only
-information I needed to store were id&#8217;s of people and items, which
-were just integers. While this seemed like a lot of data, I
-believed it was entirely feasible to store them all in memory.</p>
-
-<p>I didn&#8217;t have time to write my own implementation for storing this
-graph, so I looked at a bunch of tools out there, asked around, and
-the only one that seemed to fit the bill exactly in the end was
-<a href="http://redis.io/">Redis</a>. Yes, there are a few projects out there
-that tout graph storage as their specialty, but none of them could
-scale anywhere close to the level I needed. And in the end the term
-&#8220;graph database&#8221; turned out to be a red herring of sorts. Any language
-such as Python, Ruby or Java provides the basic data structures
-quite sufficient for storing a graph as an adjacency list
-out-of-the-box. You can store a graph in any key-value store, or even
-in your favorite RDBMS. (To this day I&#8217;m not convinced there is any
-good use case for the so-called graph databases out there.)</p>
-
-<p>There were a few things that set Redis apart:</p>
-
-<p>First, it keeps everything in RAM, which meant that updating this
-dataset would be very fast, fast enough to keep it up-to-date in real
-time.</p>
-
-<p>The second great thing about Redis is <a href="http://redis.io/commands#sorted_set">Sorted Sets</a>. This data structure
-and the operations it supports fit what we needed to do
-precisely. (Again, sorry for sparing you the details, but roughly, you
-need to store a Set of item ids for every person as well as a Set of
-person ids for every item, and &#8220;people like you&#8221; then becomes the
-union of all the Sets of items that are directly linked to &#8220;you&#8221;.)</p>
-
-<p>Thirdly, Redis supports replication, which meant that if the most
-CPU-intensive task of computing the actual recommendations (which
-requires union-ing of a large number of large Sorted Sets) becomes a
-bottle neck, we could address this by running it on slaves, and
-we could easily scale the system by simply adding more slaves.</p>
-
-<p>Last (but hardly least) is Redis&#8217; ability to persist and quickly load
-the in-memory database. You begin to appreciate the immense value of
-this once you start populating Redis by pulling historical data from
-your RDBMS and realize that it could take many hours or even days.</p>
-
-<p>Everything was going great with my plan but soon I ran into a problem.
-Not even a quarter of the way through the initial load process, I
-noticed Redis reporting 20+ GB being used, which meant that the
-particular machine I was testing this on wouldn&#8217;t have enough
-RAM. That was a bummer. Especially because it began to look like the
-whole architecture would require more memory than would be financially
-sensible for this project (yes, you could get a machine with 1TB of
-memory, but it was and still is prohibitively expensive).</p>
-
-<p>My hunch (supported by some quick back-of-the-napkin calculations) was
-that this was a software problem, not a hardware one.</p>
-
-<p>The first obvious inefficiency of storing integers on a 64-bit
-system is how much space an integer takes up. 64 bits (or 8 bytes)
-is enough to store a number as large as 92,23,372,036,854,775,807. Yet
-this number takes up exactly as much memory as 17 or 1234 (pick your
-favorite small number). In fact, the range of integers I was dealing
-with was well under 1 billion and 32 bits would more than suffice.</p>
-
-<p>Add to this that on a 64-bit system every <em>pointer</em> is also (you guessed
-it) - 64 bits. So if you&#8217;re storing a (singly) linked list of
-integers, you end up with 8 bytes for the integer and 8 bytes for the
-&#8220;next&#8221; pointer, or 16 bytes per integer. And if your data structure
-is even more complex, such as a Redis Sorted Set, which is actually
-implemented as two structures updated simultaneously (a Skip List and a
-Hash), well, then you begin to see that our integers may end up taking
-up as much if not less memory than the pointers pointing to them.</p>
-
-<p>One simple way to reduce the memory bloat was to compile Redis in
-32-bit mode.  Redis makes it super easy with &#8220;make 32bit&#8221;.  Because of
-the smaller pointer size the 32-bit mode uses much less memory, but of
-course the caveat is that the total address space is limited to 32
-bits or about 4GB.  While this did reduce the footprint by a great
-deal, it wasn&#8217;t sufficient for my data set, which still looked to be
-more than 4GB in size.</p>
-
-<p>Then I came across this page on <a href="http://redis.io/topics/memory-optimization" title="">memory optimization</a>.  Little
-did I know Redis already provided a very compact way of storing
-integers. For small lists, sets or hashes, Redis uses a special
-structure it calls <em>ziplist</em> that can store variable-length
-integers and strings. The advantage is that it is very compact, but
-the flipside is that such lists can only be processed
-sequentially. (This is because you can&#8217;t access an n-th element in
-such a list because sizes of elements vary, so you must scan from
-beginning). But it tunrs out that sequential processing is actually
-more efficient for small lists rather than following a more complex
-algorithm (hashing or whatever) because it requires no
-indirection and can be accomplished with simple pointer math.</p>
-
-<p>Redis&#8217; zset-max-ziplist-entries config setting sets a threshold - any
-Sorted Set that has fewer elements than the setting is stored as a
-ziplist and as soon as it reaches the number greater than the setting
-it is converted to the full-fledged Sorted Set data
-structure.</p>
-
-<p>What was interesting is that in my tests bumping up the value from the
-default of 128 to as high as 10000 didn&#8217;t seem to have any noticeable
-performance impact while reduced the memory usage by an order of
-magnitude. My best guess is that even at 10K elements this list is
-small enough to be processed entirely in the CPU cache.</p>
-
-<p>The effect of tweaking this setting seemed like pure magic, so I just
-had to dig deeper and figure out exactly how it works. You can see the
-description of the format in the comments for this file in Redis
-source: <a href="https://github.com/antirez/redis/blob/unstable/src/ziplist.c">src/ziplist.c</a>.</p>
-
-<p>The technique is very simple - the first 4 bits are used to identify
-the size of the integer. The relevant comment text:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11000000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int16_t</span> <span class="p">(</span><span class="mi">2</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11010000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int32_t</span> <span class="p">(</span><span class="mi">4</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11100000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int64_t</span> <span class="p">(</span><span class="mi">8</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11110000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">24</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">3</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11111110</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">8</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">1111</span><span class="n">xxxx</span><span class="o">|</span> <span class="o">-</span> <span class="p">(</span><span class="n">with</span> <span class="n">xxxx</span> <span class="n">between</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1101</span><span class="p">)</span> <span class="n">immediate</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">integer</span><span class="p">.</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Unsigned</span> <span class="n">integer</span> <span class="n">from</span> <span class="mi">0</span> <span class="n">to</span> <span class="mf">12.</span> <span class="n">The</span> <span class="n">encoded</span> <span class="n">value</span> <span class="n">is</span> <span class="n">actually</span> <span class="n">from</span>
-</span><span class='line'><span class="o">*</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">13</span> <span class="n">because</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1111</span> <span class="n">can</span> <span class="n">not</span> <span class="n">be</span> <span class="n">used</span><span class="p">,</span> <span class="n">so</span> <span class="mi">1</span> <span class="n">should</span> <span class="n">be</span>
-</span><span class='line'><span class="o">*</span> <span class="n">subtracted</span> <span class="n">from</span> <span class="n">the</span> <span class="n">encoded</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">value</span> <span class="n">to</span> <span class="n">obtain</span> <span class="n">the</span> <span class="n">right</span> <span class="n">value</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Actually, back when I looked at it, there was no 24-bit integer
-encoding, which led me to submitting a <a href="https://github.com/antirez/redis/issues/469">patch</a>, which
-was gladly accepted (and corrected for <a href="http://en.wikipedia.org/wiki/Two%27s_complement">two&#8217;s complement</a> support) by <a href="http://invece.org/">antirez</a>.</p>
-
-<p>Since that time I&#8217;ve been noticing different takes on variable-length
-integer storage in other projects.</p>
-
-<p>For example <a href="http://www.bitcoin.org">Bitcoin</a> uses <a href="https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer">variable-length integers</a> to minimize the total size of the block
-chain. The bitcoin algo is as follows:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'> <span class="o">*</span> <span class="n">Examine</span> <span class="n">at</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="n">less</span> <span class="n">than</span> <span class="mi">253</span><span class="p">,</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">use</span> <span class="n">the</span> <span class="n">byte</span> <span class="n">literally</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">253</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">two</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">16</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">254</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">four</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">32</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">255</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">eight</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>   <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">9</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a href="http://sqlite.org/">SQLite3</a> uses its own variable-length integer format,
-possibly cleverer than the two above:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">**</span> <span class="n">Cell</span> <span class="n">content</span> <span class="n">makes</span> <span class="n">use</span> <span class="n">of</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">integers</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span>
-</span><span class='line'><span class="o">**</span> <span class="n">length</span> <span class="n">integer</span> <span class="n">is</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="n">where</span> <span class="n">the</span> <span class="n">lower</span> <span class="mi">7</span> <span class="n">bits</span> <span class="n">of</span> <span class="n">each</span>
-</span><span class='line'><span class="o">**</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span><span class="p">.</span>  <span class="n">The</span> <span class="n">integer</span> <span class="n">consists</span> <span class="n">of</span> <span class="n">all</span> <span class="n">bytes</span> <span class="n">that</span> <span class="n">have</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">set</span> <span class="n">and</span>
-</span><span class='line'><span class="o">**</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">with</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">clear</span><span class="p">.</span>  <span class="n">The</span> <span class="n">most</span> <span class="n">significant</span> <span class="n">byte</span> <span class="n">of</span> <span class="n">the</span> <span class="n">integer</span>
-</span><span class='line'><span class="o">**</span> <span class="n">appears</span> <span class="n">first</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span><span class="o">-</span><span class="n">length</span> <span class="n">integer</span> <span class="n">may</span> <span class="n">not</span> <span class="n">be</span> <span class="n">more</span> <span class="n">than</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="kt">long</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span> <span class="n">As</span> <span class="n">a</span> <span class="n">special</span> <span class="k">case</span><span class="p">,</span> <span class="n">all</span> <span class="mi">8</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">the</span> <span class="mi">9</span><span class="n">th</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span> <span class="n">as</span> <span class="n">data</span><span class="p">.</span>  <span class="n">This</span>
-</span><span class='line'><span class="o">**</span> <span class="n">allows</span> <span class="n">a</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">integer</span> <span class="n">to</span> <span class="n">be</span> <span class="n">encoded</span> <span class="n">in</span> <span class="mi">9</span> <span class="n">bytes</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x00</span>                      <span class="n">becomes</span>  <span class="mh">0x00000000</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x7f</span>                      <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000080</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x82</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000100</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x80</span> <span class="mh">0x7f</span>                 <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x8a</span> <span class="mh">0x91</span> <span class="mh">0xd1</span> <span class="mh">0xac</span> <span class="mh">0x78</span>  <span class="n">becomes</span>  <span class="mh">0x12345678</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x01</span>  <span class="n">becomes</span>  <span class="mh">0x10204081</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span> <span class="n">Variable</span> <span class="n">length</span> <span class="n">integers</span> <span class="n">are</span> <span class="n">used</span> <span class="k">for</span> <span class="n">rowids</span> <span class="n">and</span> <span class="n">to</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span>
-</span><span class='line'><span class="o">**</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">key</span> <span class="n">and</span> <span class="n">data</span> <span class="n">in</span> <span class="n">a</span> <span class="n">btree</span> <span class="n">cell</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>There are also other more sophisticated techniques of storing lists of integers such as
-<a href="http://en.wikipedia.org/wiki/Elias_gamma">Elias encoding</a> and <a href="http://en.wikipedia.org/wiki/Golomb_coding">Golomb coding</a>.</p>
 ]]></content>
   </entry>
   
