@@ -317,7 +317,7 @@ any significant impact.</p>
 <p>A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
 after all kinds of puzzled head-scratching, I decided to verify that
-every hit ran may Python code - I did this by writing a dot to a file
+every hit ran my Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
 end. It turned out that about one third of the requests from Nginx to
 uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if

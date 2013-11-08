@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:27:59-05:00</updated>
+  <updated>2013-11-07T23:29:03-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -225,7 +225,7 @@ any significant impact.</p>
 <p>A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
 after all kinds of puzzled head-scratching, I decided to verify that
-every hit ran may Python code - I did this by writing a dot to a file
+every hit ran my Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
 end. It turned out that about one third of the requests from Nginx to
 uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if
