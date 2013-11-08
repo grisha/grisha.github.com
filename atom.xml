@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:00:46-05:00</updated>
+  <updated>2013-11-07T23:01:54-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -70,8 +70,8 @@ WSGI container.</p>
   </tr>
   <tr>
     <th>mod_python wsgi</th>
-    <td>87,304</td>
     <td>3.5, Python 2.7.5</td>
+    <td>87,304</td>
     <td> 59.1 % </td>
     <td></td>
   </tr>
