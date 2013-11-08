@@ -154,7 +154,7 @@ WSGI container.</p>
     <td></td>
   </tr>
   <tr>
-    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uwsgi</a></th>
+    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uWSGI</a></th>
     <td>1.9.18.2</td>
     <td>119,175</td>
     <td> 80.7 % </td>
@@ -317,8 +317,8 @@ outperforming the mod_python handler by nearly a factor of two. Then
 after all kinds of puzzled head-scratching, I decided to verify that
 every hit ran your Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
-end. It turned out that about one third of the requests from nginx to
-uwsgi were erroring out, but httpress didn&#8217;t see them as errors. So if
+end. It turned out that about one third of the requests from Nginx to
+uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if
 you&#8217;re going to attempt to replicate this, watch out for this
 condition.</p>
 
@@ -384,7 +384,7 @@ up is as cool as it is touted everywhere. Unquestionably Nginx is a
 super solid server and Apache has some catching up to do when it comes
 to acting as a static file server or a reverse proxy. But when it
 comes to serving Python-generated content, my money would be on
-Apache. The &#8220;low&#8221; 120 concurrency level for this test was largely
+Apache rather than uWSGI. The &#8220;low&#8221; 120 concurrency level for this test was largely
 chosen because of uWSGI (Apache started going haywire on me at about
 400+ concurrent connections).</p>
 
