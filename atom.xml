@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:13:45-05:00</updated>
+  <updated>2013-11-07T23:19:57-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -122,15 +122,16 @@ was chosen after having tried
 
 <p>Concurrency of 120 was chosen as the highest number I could run across
 all setups without getting strange errors. &#8220;Strange errors&#8221; could be
-disconnects, delays and stuck connections, all tunable by anything from
-Linux kernel configuration to specific tool configs. I very much
+disconnects, delays and stuck connections, all tunable by anything
+from Linux kernel configuration to specific tool configs. I very much
 wanted concurrency to be at least a few times higher but it quickly
 became apparent that getting to that level would require very
 significant system tweaking for which I just didn&#8217;t have the time. 120
 concurrent requests is nothing to sneeze at though: if you sustained
 this rate for a day of python handler serving, you&#8217;d have processed
-10,812,009,600 requests. Not to mention the fact that it approaches
-the limit of network hardware (at least on my set up).</p>
+10,812,009,600 requests (on a single server!). Not to mention the fact
+that it approaches the limit of network hardware (at least in my set
+up).</p>
 
 <p>I should also note that in my tweaking of various configurations I
 couldn&#8217;t get the requests/s numbers any significantly higher than what
