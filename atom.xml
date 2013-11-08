@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:29:03-05:00</updated>
+  <updated>2013-11-07T23:30:02-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -286,7 +286,7 @@ contenders large parts of the code are written in Python and thus are
 readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
 
 <p>I was surprised by Apache&#8217;s slow static file serving compared to Nginx
-and Nxweb (which, although still young and in development seems like a
+and Nxweb (the latter, although still young and in development seems like a
 very cool web server).</p>
 
 <p>On the other hand I am not all that convinced that the Nginx/uWSGI set
