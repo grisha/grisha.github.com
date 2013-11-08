@@ -301,8 +301,9 @@ running listening on a unix domain socket behind Nginx. The -p 16
 &#8211;threads 1 (16 worker processes with a single thread each) was chosen
 as the best performing option after some experimentation. Upping -p to
 32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
-workers) reduced r/s to 55925. &#8211;single-interpreter didn&#8217;t seem to
-have any significant impact.</p>
+workers) reduced r/s to 55925 (by half, which is weird - mod_python has no
+problems with 25 threads). &#8211;single-interpreter didn&#8217;t seem to have
+any significant impact.</p>
 
 <p>The actual uWSGI command was:</p>
 
@@ -313,7 +314,7 @@ have any significant impact.</p>
 <p>A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
 after all kinds of puzzled head-scratching, I decided to verify that
-every hit ran your Python code - I did this by writing a dot to a file
+every hit ran may Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
 end. It turned out that about one third of the requests from Nginx to
 uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if
