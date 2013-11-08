@@ -267,17 +267,18 @@ which is just what I needed. And it worked really great too.</p>
 
 <h2>The choice of contenders</h2>
 
-<p>mod_python and mod_wsgi are the obvious choices, uWSGI is often
-considered a low-resource and fast alternative and it is only
-performant when used behind a reverse proxy such as nginx. I came
-across nxweb while looking at httpress (it&#8217;s written by the same
-person (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and
-looks to be the fastest (open source) web server currently out there.</p>
+<p>mod_python and mod_wsgi are the obvious choices, uWSGI/Ngnix combo is
+known as a low-resource and fast alternative. I came across nxweb
+while looking at httpress (it&#8217;s written by the same person
+(<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and looks to be the
+fastest (open source) web server currently out there, faster than (closed source)
+G-WAN, even.</p>
 
 <h2>Specific tool notes</h2>
 
-<p>The code used for testing and configs were essentially same as what
-used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.</p>
+<p>The code used for testing and the configs were essentially same as what
+used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.
+The key differences are listed below.</p>
 
 <h3>Apache</h3>
 
