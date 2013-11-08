@@ -236,16 +236,14 @@ hitting the server from outside it became apparent that the network
 was the bottleneck.</p>
 
 <p>Keepalives were in use (-k), which means that all of the 5 million
-requests are processed over fifty thousand TCP connections (or
-slightly more). Without keepalives this would be more of the Linux
-kernel test because the bulk of the work establishing and taking down
-a connection happens in the kernel. Without keepalives each connection
-requires an ephemeral port and there are only so many of them to go
-around when all the requests originate from the same IP address.</p>
+requests are processed over only about fifty thousand TCP
+connections. Without keepalives this would be more of the Linux kernel
+test because the bulk of the work establishing and taking down a
+connection happens in the kernel.</p>
 
 <p>Before running the 5 million requests I ran 100,000 as a &#8220;warm up&#8221;.</p>
 
-<p>The actual code for the WSGI app and mod_python handlers was same as
+<p>This post does not include the actual code for the WSGI app and mod_python handlers because it was same as
 in <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last post on mod_python performance testing</a>.</p>
 
 <h2>Why httpress</h2>
