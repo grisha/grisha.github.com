@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:09:14-05:00</updated>
+  <updated>2013-11-07T23:11:36-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -175,7 +175,7 @@ which is just what I needed. And it worked really great too.</p>
 
 <h2>The choice of contenders</h2>
 
-<p>mod_python and mod_wsgi are the obvious choices, uWSGI/Ngnix combo is
+<p>mod_python and mod_wsgi are the obvious choices, uWSGI/Nginx combo is
 known as a low-resource and fast alternative. I came across nxweb
 while looking at httpress (it&#8217;s written by the same person
 (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>) and looks to be the
@@ -207,7 +207,7 @@ up&#8221;.</p>
 <h3>uWSGI</h3>
 
 <p>The comparison with uWSGI isn&#8217;t entriely appropriate because it was
-running listening on a unix domain socket behind Ngnix. The -p 16
+running listening on a unix domain socket behind Nginx. The -p 16
 &#8211;threads 1 (16 worker processes with a single thread each) was chosen
 as the best performing option after some experimentation. Upping -p to
 32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
@@ -283,12 +283,12 @@ complete config for brevity):</p>
 contenders large parts of the code are written in Python and thus are
 readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
 
-<p>I was surprised by Apache&#8217;s slow static file serving compared to Ngnix
+<p>I was surprised by Apache&#8217;s slow static file serving compared to Nginx
 and Nxweb (which, although still young and in development seems like a
 very cool web server).</p>
 
-<p>On the other hand I am not all that convinced that the Ngnix/uWSGI set
-up is as cool as it is touted everywhere. Unquestionably Ngnix is a
+<p>On the other hand I am not all that convinced that the Nginx/uWSGI set
+up is as cool as it is touted everywhere. Unquestionably Nginx is a
 super solid server and Apache has some catching up to do when it comes
 to acting as a static file server or a reverse proxy. But when it
 comes to serving Python-generated content, my money would be on
