@@ -211,7 +211,7 @@ was chosen after having tried
 
 <p>Concurrency of 120 was chosen as the highest number I could run across
 all setups without getting strange errors. &#8220;Strange errors&#8221; could be
-disconnects, delays and stuck connecitons affected by anything from
+disconnects, delays and stuck connections, all tunable by anything from
 Linux kernel configuration to specific tool configs. I very much
 wanted concurrency to be at least a few times higher but it quickly
 became apparent that getting to that level would require very
@@ -249,7 +249,7 @@ in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last p
 couldn&#8217;t adequately test nxweb and nginx static file serving.</p>
 
 <p><a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> looked
-promissing at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
+promising at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
 second cannot be trusted because it gradually increases the
 load.</p>
 
@@ -274,7 +274,7 @@ G-WAN, even.</p>
 <h2>Specific tool notes</h2>
 
 <p>The code used for testing and the configs were essentially same as what
-used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.
+I used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.
 The key differences are listed below.</p>
 
 <h3>Apache</h3>
