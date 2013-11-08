@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2013-11-07T23:01:54-05:00</updated>
+  <updated>2013-11-07T23:08:07-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -55,28 +55,28 @@ WSGI container.</p>
     <td></td>
   </tr>
   <tr>
-    <th>mod_python handler</th>
+    <th><a href="http://modpython.org/live/current/doc-html/pythonapi.html#overview-of-a-request-handler">mod_python handler</a></th>
     <td>3.5, Python 2.7.5</td>
     <td>125,139</td>
     <td> 84.7 % </td>
     <td></td>
   </tr>
   <tr>
-    <th>uwsgi</th>
+    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uwsgi</a></th>
     <td>1.9.18.2</td>
     <td>119,175</td>
     <td> 80.7 % </td>
     <td>-p 16 &#8211;threads 1</td>
   </tr>
   <tr>
-    <th>mod_python wsgi</th>
+    <th><a href="http://modpython.org/live/current/doc-html/handlers.html#wsgi-handler">mod_python wsgi</a></th>
     <td>3.5, Python 2.7.5</td>
     <td>87,304</td>
     <td> 59.1 % </td>
     <td></td>
   </tr>
   <tr>
-    <th>mod_wsgi</th>
+    <th><a href="http://code.google.com/p/modwsgi/">mod_wsgi</a></th>
     <td>3.4</td>
     <td>76,251</td>
     <td> 51.6 % </td>
