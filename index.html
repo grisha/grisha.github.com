@@ -320,7 +320,11 @@ and making sure that the file size matches the number of hits in the
 end. It turned out that about one third of the requests from Nginx to
 uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if
 you&#8217;re going to attempt to replicate this, watch out for this
-condition.</p>
+condition. EDIT: Thanks to uWSGI&#8217;s author Roberto De Ioris&#8217; help, it
+turned out that this was a result of misconfiguration on my part - the
+-l parameter should be set higher than 120. (This explains how I
+arrived at 120 as the concurrency chosen for the test too). The
+request/s number and uWSGI&#8217;s position in my table is still correct.</p>
 
 <h3>Nginx</h3>
 
@@ -383,10 +387,12 @@ very cool web server).</p>
 up is as cool as it is touted everywhere. Unquestionably Nginx is a
 super solid server and Apache has some catching up to do when it comes
 to acting as a static file server or a reverse proxy. But when it
-comes to serving Python-generated content, my money would be on
-Apache rather than uWSGI. The &#8220;low&#8221; 120 concurrency level for this test was largely
-chosen because of uWSGI (Apache started going haywire on me at about
-400+ concurrent connections).</p>
+comes to serving Python-generated content, my money would be on Apache
+rather than uWSGI. The &#8220;low&#8221; 120 concurrency level for this test was
+largely chosen because of uWSGI (Apache started going haywire on me at
+about 400+ concurrent connections). EDIT: Thanks to Roberto&#8217;s comment,
+this turned out to be an error on my part (see comments). uWSGI can
+handle higher concurrencies if -l is set higher.</p>
 
 <p>It&#8217;s also interesting that on my laptop a mod_python handler
 outperformed the Apache static file, but it wasn&#8217;t the case on the big
