@@ -1,13 +1,32 @@
-{% if site.twitter_user %}
+
+
 <section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
+  </div>
+</div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+{% if site.twitter_user %}
+  <p>
   <div style="width: 50%; margin: 0 auto;">
   <a href="http://twitter.com/{{ site.twitter_user }}" class="twitter-follow-button"
     data-show-count="{{ site.twitter_show_follower_count }}">Follow @{{ site.twitter_user }}</a>
   </div>
-</section>
+  </p>
 {% endif %}
-<section>
-  <h1>About Me</h1>
   <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>

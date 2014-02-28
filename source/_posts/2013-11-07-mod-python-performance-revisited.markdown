@@ -50,7 +50,7 @@ WSGI container.
     <td></td>
   </tr>
   <tr>
-    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uwsgi</a></th>
+    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uWSGI</a></th>
     <td>1.9.18.2</td>
     <td>119,175</td>
     <td> 80.7 % </td>
@@ -86,7 +86,7 @@ purpose on high-end hardware and with relatively high concurrency. As
 I've [written before](http://grisha.org/blog/2013/10/10/mod-python-performance/)
 you'd be foolish to base your platform decision on these numbers
 because speed in this case matters very little. So the point of this
-is just make sure that mod_python is in the balpark with the rest and
+is just make sure that mod_python is in the ballpark with the rest and
 that there isn't anything seriously wrong with it. And surprisingly,
 mod_python is actually pretty fast, *fastest*, even, though in its own
 category (a raw mod_python handler).
@@ -109,15 +109,14 @@ httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/
 
 Concurrency of 120 was chosen as the highest number I could run across
 all setups without getting strange errors. "Strange errors" could be
-disconnects, delays and stuck connections, all tunable by anything from
-Linux kernel configuration to specific tool configs. I very much
+disconnects, delays and stuck connections, all tunable by anything
+from Linux kernel configuration to specific tool configs. I very much
 wanted concurrency to be at least a few times higher but it quickly
 became apparent that getting to that level would require very
 significant system tweaking for which I just didn't have the time. 120
 concurrent requests is nothing to sneeze at though: if you sustained
 this rate for a day of python handler serving, you'd have processed
-10,812,009,600 requests. Not to mention the fact that it approaches
-the limit of network hardware (at least on my set up).
+10,812,009,600 requests (on a single server!).
 
 I should also note that in my tweaking of various configurations I
 couldn't get the requests/s numbers any significantly higher than what
@@ -162,10 +161,10 @@ which is just what I needed. And it worked really great too.
 
 ## The choice of contenders
 
-mod_python and mod_wsgi are the obvious choices, uWSGI/Ngnix combo is
+mod_python and mod_wsgi are the obvious choices, uWSGI/Nginx combo is
 known as a low-resource and fast alternative. I came across nxweb
 while looking at httpress (it's written by the same person
-([Yaroslav Stavnichiy](https://bitbucket.org/yarosla)) and looks to be the
+([Yaroslav Stavnichiy](https://bitbucket.org/yarosla)), it looks to be the
 fastest (open source) web server currently out there, faster than (closed source)
 G-WAN, even.
 
@@ -186,18 +185,19 @@ MinSpareThreads 400
 ```
 
 MinSpareThreads ensures that Apache starts all possible processes and
-threads on startup (25 * 16 = 400) and therefore there is no "warm
-up".
+threads on startup (25 * 16 = 400) so that there is no ramp up
+period and it's tsunami-ready right away.
 
 ### uWSGI
 
 The comparison with uWSGI isn't entriely appropriate because it was
-running listening on a unix domain socket behind Ngnix. The -p 16
+running listening on a unix domain socket behind Nginx. The -p 16
 --threads 1 (16 worker processes with a single thread each) was chosen
 as the best performing option after some experimentation. Upping -p to
 32 reduced r/s to 86233, 64 to 47296. Upping --threads to 2 (with 16
-workers) reduced r/s to 55925. --single-interpreter didn't seem to
-have any significant impact.
+workers) reduced r/s to 55925 (by half, which is weird - mod_python has no
+problems with 25 threads). --single-interpreter didn't seem to have
+any significant impact.
 
 The actual uWSGI command was:
 ```
@@ -207,12 +207,16 @@ uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 1
 A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
 after all kinds of puzzled head-scratching, I decided to verify that
-every hit ran your Python code - I did this by writing a dot to a file
+every hit ran my Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
-end. It turned out that about one third of the requests from nginx to
-uwsgi were erroring out, but httpress didn't see them as errors. So if
+end. It turned out that about one third of the requests from Nginx to
+uWSGI were erroring out, but httpress didn't see them as errors. So if
 you're going to attempt to replicate this, watch out for this
-condition.
+condition. EDIT: Thanks to uWSGI's author Roberto De Loris' help, it
+turned out that this was a result of misconfiguration on my part - the
+-l parameter should be set higher than 120. (This explains how I
+arrived at 120 as the concurrency chosen for the test too). The
+request/s number and uWSGI's position in my table is still correct.
 
 ### Nginx
 
@@ -248,18 +252,20 @@ Mod_python is plenty fast. Considering that unlike with other
 contenders large parts of the code are written in Python and thus are
 readable and debuggable by not just C programmers, it's quite a feat.
 
-I was surprised by Apache's slow static file serving compared to Ngnix
-and Nxweb (which, although still young and in development seems like a
+I was surprised by Apache's slow static file serving compared to Nginx
+and Nxweb (the latter, although still young and in development seems like a
 very cool web server).
 
-On the other hand I am not all that convinced that the Ngnix/uWSGI set
-up is as cool as it is touted everywhere. Unquestionably Ngnix is a
+On the other hand I am not all that convinced that the Nginx/uWSGI set
+up is as cool as it is touted everywhere. Unquestionably Nginx is a
 super solid server and Apache has some catching up to do when it comes
 to acting as a static file server or a reverse proxy. But when it
-comes to serving Python-generated content, my money would be on
-Apache. The "low" 120 concurrency level for this test was largely
-chosen because of uWSGI (Apache started going haywire on me at about
-400+ concurrent connections).
+comes to serving Python-generated content, my money would be on Apache
+rather than uWSGI. The "low" 120 concurrency level for this test was
+largely chosen because of uWSGI (Apache started going haywire on me at
+about 400+ concurrent connections). EDIT: Thanks to Roberto's comment,
+this turned out to be an error on my part (see comments). uWSGI can
+handle higher concurrencies if -l is set higher.
 
 It's also interesting that on my laptop a mod_python handler
 outperformed the Apache static file, but it wasn't the case on the big
