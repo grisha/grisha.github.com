@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2014-06-03T23:16:20-04:00</updated>
+  <updated>2014-06-03T23:21:21-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -83,7 +83,7 @@ stdin/err/out) to be inherited by new process.</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>In the above code netListener is a pointer to
+<p>In the above code <code>netListener</code> is a pointer to
 <a href="http://golang.org/pkg/net/#Listener">net.Listener</a> listening for HTTP
 requests. The <code>path</code> variable should contain the path to the new
 executable if you&#8217;re upgrading (which may be the same as the currently
