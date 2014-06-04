@@ -110,7 +110,7 @@ on occasion to upgrade the binary or change some configuration. And if &hellip;"
 on occasion to upgrade the binary or change some configuration. And if
 you (like me) have been taking graceful restart for granted because
 the webserver took care of it, you may find this recipe very handy
-because with Golang you need to roll your own graceful restart.</p>
+because with Golang you need to roll your own.</p>
 
 <p>There are actually two problems that need to be solved here. First is
 the UNIX side of the graceful restart, i.e. the mechanism by which a
@@ -135,8 +135,10 @@ parent to stop accepting connecitons and terminate.</li>
 for this particular case
 <a href="http://golang.org/pkg/os/exec/#Command">exec.Command</a> is the way to
 go. This is because the <a href="http://golang.org/pkg/os/exec/#Cmd">Cmd struct</a> this function returns has
-the ExtraFiles member. <code>ExtraFiles</code> specifies open files (in addition to
+this <code>ExtraFiles</code> member, which specifies open files (in addition to
 stdin/err/out) to be inherited by new process.</p>
+
+<p>Here is what this looks like:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -172,7 +174,8 @@ stdin/err/out) to be inherited by new process.</p>
 <p>In the above code netListener is a pointer to
 <a href="http://golang.org/pkg/net/#Listener">net.Listener</a> listening for HTTP
 requests. The <code>path</code> variable should contain the path to the new
-executable (if you&#8217;re upgrading).</p>
+executable if you&#8217;re upgrading (which may be the same as the currently
+running one).</p>
 
 <p>An important point in the above code is that <code>netListener.File()</code>
 returns a
