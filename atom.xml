@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2014-08-19T16:52:25-04:00</updated>
+  <updated>2014-08-19T16:54:47-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -57,14 +57,14 @@ layer is documented in
 understand every detail of this process:
 <a href="http://tools.ietf.org/html/rfc4120">RFC4120</a>,
 <a href="http://tools.ietf.org/html/rfc2222">RFC2222</a>,
-<a href="http://tools.ietf.org/html/rfc2743">RFC2743</a>,
+<a href="http://tools.ietf.org/html/rfc2743">RFC2743</a> and
 <a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>. Fun!</p>
 
 <h2>The Handshake in Ruby</h2>
 
 <p>First, you&#8217;ll need some form of binding to the GSSAPI libraries. I&#8217;ve
 been using the most excellent <a href="https://github.com/zenchild/gssapi">GSSAPI gem</a>
-by <a href="http://distributed-frostbite.blogspot.ru/">Dan Wanek</a> which wraps the MIT GSSAPI library..</p>
+by <a href="http://distributed-frostbite.blogspot.ru/">Dan Wanek</a> which wraps the MIT GSSAPI library.</p>
 
 <p>If you follow the code in
 <a href="https://github.com/grisha/rbhive/blob/gssapi/lib/thrift/sasl_client_transport.rb">sasl_client_transport.rb</a>,
