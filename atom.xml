@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2014-06-03T23:21:21-04:00</updated>
+  <updated>2014-08-19T16:52:25-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,227 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Ruby, HiveServer2 and Kerberos]]></title>
+    <link href="http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/"/>
+    <updated>2014-08-19T08:03:00-04:00</updated>
+    <id>http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos</id>
+    <content type="html"><![CDATA[<p>Recently I found myself needing to connect to HiveServer2 with
+Kerberos authentication enabled from a Ruby app. As it turned out
+<a href="https://github.com/forward3d/rbhive">rbhive gem</a> we were using did not have
+support for Kerberos authentication. So I had to
+<a href="https://github.com/forward3d/rbhive/pull/23">roll my own</a>.</p>
+
+<p>This post is to document the experience of figuring out the details of
+a SASL/GSSAPI connection before it is lost forever in my neurons and synapses.</p>
+
+<p>First, the terminology. The authentication system that Hadoop uses is
+<em>Kerberos</em>. Note that <a href="http://www.ietf.org/rfc/rfc4120.txt">Kerberos</a> is not a
+network protocol. It describes the method by which
+authentication happens, but not the format of how to send Kerberos
+tickets and what not over the wire. For that, you need <em>SASL</em> and
+<em>GSSAPI</em>.</p>
+
+<p><a href="http://tools.ietf.org/html/rfc2222">SASL</a> is a generic protocol
+designed to be able to wrap just about any authentication
+handshake. It&#8217;s very simple: the client sends a START followed by some
+payload, and expects an OK, BAD or COMPLETE from the server. OK means
+that there are more steps to this conversation, BAD is
+self-explanatory and COMPLETE means &#8220;I&#8217;m satisfied&#8221;. The objective is
+to go from START via a series of OK&#8217;s to each side sending the other a
+COMPLETE.</p>
+
+<p>SASL doesn&#8217;t define the payload of each message. The payload is
+specified by <a href="http://tools.ietf.org/html/rfc2743">GSSAPI</a>
+protocol. GSSAPI is another generic protocol. Unlike SASL it is
+actually very complex and covers a variety of authentication methods,
+including Kerberos.</p>
+
+<p>The combination of SASL and GSSAPI and what happens at the network
+layer is documented in
+<a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>.</p>
+
+<p>Bottom line is you need to read at least four RFC&#8217;s to be able to
+understand every detail of this process:
+<a href="http://tools.ietf.org/html/rfc4120">RFC4120</a>,
+<a href="http://tools.ietf.org/html/rfc2222">RFC2222</a>,
+<a href="http://tools.ietf.org/html/rfc2743">RFC2743</a>,
+<a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>. Fun!</p>
+
+<h2>The Handshake in Ruby</h2>
+
+<p>First, you&#8217;ll need some form of binding to the GSSAPI libraries. I&#8217;ve
+been using the most excellent <a href="https://github.com/zenchild/gssapi">GSSAPI gem</a>
+by <a href="http://distributed-frostbite.blogspot.ru/">Dan Wanek</a> which wraps the MIT GSSAPI library..</p>
+
+<p>If you follow the code in
+<a href="https://github.com/grisha/rbhive/blob/gssapi/lib/thrift/sasl_client_transport.rb">sasl_client_transport.rb</a>,
+you&#8217;ll see the following steps are required to establish a connection.</p>
+
+<p>First, we instantiate a GSSAPI object passing it the remote host and
+the remote principal. Note that there is no TCP port number to be
+specifies anywhere, because this isn&#8217;t to establish a TCP connection,
+but only for Kerberos <em>host authentication</em>. (Kerberos requires that
+not only the client authenticates itself to the host, but also that
+the host authenticates itself to the client.)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Thrift::SaslClientTransport.initialize()</span>
+</span><span class='line'><span class="vi">@gsscli</span> <span class="o">=</span> <span class="ss">GSSAPI</span><span class="p">:</span><span class="ss">:Simple</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@sasl_remote_host</span><span class="p">,</span> <span class="vi">@sasl_remote_principal</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The rest of the action takes place in the
+<code>initiate_hand_shake_gssapi()</code> method.</p>
+
+<p>First, we call <code>@gsscli.init_context()</code> with no arguments. This call
+creates a token based on our current Kerberos credentials. (If there
+are no credentials in our cache, this call will fail).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">token</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Next we compose a SASL message which consists of START (0x01)
+followed by payload length, followed by the actual payload, which is
+the SASL mechanism name: &#8216;GSSAPI&#8217;. Without waiting for response, we
+also send an OK (0x02) and the token returned from init_context().</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:START</span><span class="o">]</span><span class="p">,</span> <span class="vi">@sasl_mechanism</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="vi">@sasl_mechanism</span>
+</span><span class='line'>  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="n">token</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">token</span>
+</span><span class='line'>  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Next we read 5 bytes of response. The first byte is the status
+returned from the server, which hopefully is OK, followed by the
+length of the payload, and then we read the payload itself:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">case</span> <span class="n">status</span>
+</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class='line'>    <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class='line'>    <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at initial stage&quot;</span>
+</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class='line'>    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The payload is a <em>challenge</em> created for us by the server. We can
+verify this challenge by calling <code>init_context()</code> a second time, this
+time passing in the challenge to verify it:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">raise</span> <span class="s2">&quot;GSSAPI: challenge provided by server could not be verified&quot;</span>
+</span><span class='line'>    <span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If the challenge verifies, then it is our turn to send an OK (with an
+empty payload this time):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="mi">0</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>At this point in the SASL &#8216;conversation&#8217; we have verified that the
+server is who they claim to be.</p>
+
+<p>Next the server sends us another challenge, this one is so that we can
+authenticate ourselves to the server and at the same time agree on the
+<em>protection level</em> for the communication channel.</p>
+
+<p>We need to decrypt (&#8220;unwrap&#8221; in the GSSAPI terminology) the challenge,
+examine the protection level and if it is acceptable, encrypt it on
+our side and send it back to the server in a SASL COMPLETE message. In
+this particular case we&#8217;re agreeable to any level of protection (which
+is none in case of HiveServer2, i.e. the conversation is not
+encrypted). Otherwise there are additional steps that RFC4752
+describes whereby the client can select an acceptable protection
+level.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">status2</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">status2</span>
+</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class='line'>      <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class='line'>      <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at second stage&quot;</span>
+</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class='line'>      <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class='line'>      <span class="n">unwrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">unwrap_message</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">rewrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">wrap_message</span><span class="p">(</span><span class="n">unwrapped</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span><span class="p">,</span> <span class="n">rewrapped</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>      <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">rewrapped</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The server should then respond with COMPLETE as well, at which point
+we&#8217;re done with the authentication process and cat start sending
+whatever we want over this connection:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'>      <span class="n">status3</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">case</span> <span class="n">status3</span>
+</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class='line'>        <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class='line'>        <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class='line'>        <span class="vi">@sasl_complete</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class='line'>        <span class="k">raise</span> <span class="s2">&quot;Failed to complete GSS challenge exchange&quot;</span>
+</span><span class='line'>      <span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Graceful restart in Golang]]></title>
@@ -2952,72 +3173,6 @@ and <code>-&gt;</code>) and one assignment, and neither of those three things is
 atomic. This is a common misconception, but alas pretty much <em>nothing</em>
 in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
 operators)!</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Storm Notes]]></title>
-    <link href="http://grisha.org/blog/2013/04/01/storm-notes/"/>
-    <updated>2013-04-01T17:05:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/04/01/storm-notes</id>
-    <content type="html"><![CDATA[<p>Some random thoughts on having tinkered with
-<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
-
-<p>It took me some time to understand what Storm is, and I am still not
-clear I have found a perfect use for it. (This is not
-a criticism of Storm, the point is that the concepts it introduces are
-new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz&#8217;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
-
-<p>In simple terms, Storm is a tool that lets you run code in parallel
-across a cluster of servers. It differs from Map/Reduce in that the
-actual algorithm is entirely up to you, and in essence all that Storm
-provides is the framework that supervises all the moving pieces of your
-application (known as a <em>topology</em>) and provides a uniform way of
-creating, testing locally, sumbitting to a cluster, logging,
-monitoring, as well as primitives for sending data between components
-such as grouping data by using hashing, etc.</p>
-
-<p>Storm is mainly meant for stream processing. A stream could be
-anything, some of the most obvious examples may be your web logs,
-tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it&#8217;s
-challenging to process it on one server, Storm provides a way to scale
-it across a cluster of servers and can handle ridiculous amounts of
-incoming data. The result is a real-time view of summary data that is
-always up to date.</p>
-
-<p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as &#8220;native&#8221;. Storm also provides a
-primitive for using pipes to a process which means that you can write
-a component in anything - from a Bash script to C, all it needs to do
-is read stdin and write stdout.</p>
-
-<p>For those who would prefer to try it out using a higher-level
-language, there is an excellent project called
-<a href="https://github.com/colinsurprenant/redstorm">Redstorm</a> which lets you
-write your topology in JRuby. While a Redstorm topology may not be as
-fast as something written in pure Java, the reduced development
-time is well worth any trade offs, and you always have the option of
-perfecting it later by porting your code to something JVM-native when
-your understanding of how it ought to work is solidified in your mind.</p>
-
-<p>If you&#8217;re going to go the Redstorm route, a couple of gotchas that I
-came across were:</p>
-
-<ul>
-<li><p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don&#8217;t know what the solution is if you absolutely must parse
-Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p></li>
-<li><p>If you&#8217;re going to use ActiveRecord (which does work fine), watch
-out for how to properly use it in a multi-threaded environment. You
-might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
-You will also need make sure your ActiveRecord connections are not
-shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p></li>
-</ul>
-
 ]]></content>
   </entry>
   
