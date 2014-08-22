@@ -45,14 +45,14 @@ Bottom line is you need to read at least four RFC's to be able to
 understand every detail of this process:
 [RFC4120](http://tools.ietf.org/html/rfc4120),
 [RFC2222](http://tools.ietf.org/html/rfc2222),
-[RFC2743](http://tools.ietf.org/html/rfc2743),
+[RFC2743](http://tools.ietf.org/html/rfc2743) and
 [RFC4752](http://tools.ietf.org/html/rfc4752). Fun!
 
 ## The Handshake in Ruby
 
 First, you'll need some form of binding to the GSSAPI libraries. I've
 been using the most excellent [GSSAPI gem](https://github.com/zenchild/gssapi)
-by [Dan Wanek](http://distributed-frostbite.blogspot.ru/) which wraps the MIT GSSAPI library..
+by [Dan Wanek](http://distributed-frostbite.blogspot.ru/) which wraps the MIT GSSAPI library.
 
 If you follow the code in
 [sasl_client_transport.rb](https://github.com/grisha/rbhive/blob/gssapi/lib/thrift/sasl_client_transport.rb),
