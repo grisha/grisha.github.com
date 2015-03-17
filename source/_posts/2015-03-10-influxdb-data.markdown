@@ -73,17 +73,16 @@ Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
 finally databases.
 
-A database contains a bunch of (or just one) retention
-policies. Somewhat surprisingly a retention policy is actually a
-bucket. It makes sense if you think about the problem of having to
-expire data points - you can remove them all by simply dropping the
-entire bucket.
+A database contains a one or more retention policies. Somewhat
+surprisingly a retention policy is actually a bucket. It makes sense
+if you think about the problem of having to expire data points - you
+can remove them all by simply dropping the entire bucket.
 
 If we declare a retention policy of 1 day, then we can logically
 divide the timeline into a sequence of single days from beginning of
 the epoch. Any incoming data point falls into its corresponding
 segment, which is a retention policy bucket. When clean up time comes
-around, we can delete all days except for the most current time.
+around, we can delete all days except for the most current day.
 
 Each retention policy bucket is further divided into shard groups, one
 shard group per series. The purpose of a shard group is to balance
