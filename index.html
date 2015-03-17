@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Recently I found myself needing to connect to HiveServer2 with
-Kerberos authentication enabled from a Ruby app. As it turned out
-rbhive gem we were &hellip;">
+  <meta name="description" content="A nice, reliable, horizontally scalable database designed specifically
+to tackle the problem of Time Series data, and does not require
+you to set up &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +79,155 @@ rbhive gem we were &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/03/10/influxdb-data/">How InfluxDB Stores Data</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-10T15:52:00-04:00" pubdate data-updated="true">Mar 10<span>th</span>, 2015</time>
+        
+         | <a href="/blog/2015/03/10/influxdb-data/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>A nice, reliable, horizontally scalable database designed specifically
+to tackle the problem of Time Series data, and does not require
+you to set up a Hadoop cluster is very much missing from the Open
+Source Universe right now.</p>
+
+<p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
+
+<p>I was curious about how it structures and stores its data and since
+there wasn&#8217;t much documentation on the subject, I figured I&#8217;d document
+my findings.</p>
+
+<p>I only looked at the new (currently 0.9.0 in RC stage) version, the
+previous versions are significantly different.</p>
+
+<p>First of all, InfluxDB is distributed. You can run one node, or a
+bunch, it seems like a more typical number may be 3 or 5. The nodes
+use <a href="https://github.com/goraft/raft">Raft</a> to establish consensus and maintain data consistency.</p>
+
+<p>The data model that InfluxDB is a little unusual - it feels a little
+like a relational database in some aspects but not in others.</p>
+
+<p>The top level container is a <em>database</em>. A InfluxDB database is very
+much like what a database is in MySQL, it&#8217;s a collection of contains
+other things.</p>
+
+<p>&#8220;Other things&#8221; are called <em>data points</em>, <em>series</em>, <em>measurements</em>,
+<em>tags</em> and <em>retention policies</em>. Under the hood (i.e. you never deal
+with them directly) there are <em>shards</em> and <em>shard groups</em>.</p>
+
+<p>The very first thing you need to do in InfluxDB is create a database
+and at least one retention policy for this database. Once you have
+these two things, you can start writing data.</p>
+
+<p>A retention policy is the time period after which the data expires. It
+can be set to be infinite. A data point, which is a measurement
+consisting of any number of values and tags associated with a
+particular point in time, must be associated with a database and a
+retention policy. A retention policy also specifies the <em>replication
+factor</em> for the data point.</p>
+
+<p>Let&#8217;s say we are tracking disk usage across a whole bunch of
+servers. Each server runs some sort of an agent which periodically
+reports the usage of each disk to InfluxDB. Such a report might look
+like this (in JSON):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{"database" : "foo", "retentionPolicy" : "bar",
+</span><span class='line'> "points" :
+</span><span class='line'>   {"name" : "disk",
+</span><span class='line'>    "tags" : {"server" : "bwi23", "unit" : "1"},
+</span><span class='line'>    "timestamp" : "2015-03-16T01:02:26.234Z",
+</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In the above example, &#8220;disk&#8221; is a measurement. Thus we can operate on
+anything &#8220;disk&#8221;, regardless of what &#8220;server&#8221; or &#8220;unit&#8221; it applies
+to. The data point as a whole belongs to a (time) series identified by
+the combination of the measurement name and the tags.</p>
+
+<p>There is no need to create series or measurements, they are created on
+the fly.</p>
+
+<p>Under the hood the data is stored in shards, which are grouped by
+shard groups, which in turn are grouped by retention policies, and
+finally databases.</p>
+
+<p>A database contains a bunch of (or just one) retention
+policies. Somewhat surprisingly a retention policy is actually a
+bucket. It makes sense if you think about the problem of having to
+expire data points - you can remove them all by simply dropping the
+entire bucket.</p>
+
+<p>If we declare a retention policy of 1 day, then we can logically
+divide the timeline into a sequence of single days from beginning of
+the epoch. Any incoming data point falls into its corresponding
+segment, which is a retention policy bucket. When clean up time comes
+around, we can delete all days except for the most current time.</p>
+
+<p>Each retention policy bucket is further divided into shard groups, one
+shard group per series. The purpose of a shard group is to balance
+data across the nodes of the cluster. If we have a cluster of 3 nodes,
+we want the data points to be evenly distributed across these
+nodes. InfluxDB will create 3 shards, one on each of the nodes. The 3
+shards comprise the shard group. This is assuming the replication
+factor is 1.</p>
+
+<p>But if the replication factor was 2, then there needs to be 2
+identical copies of every shard. The shard copies must be on separate
+nodes. With 3 modes and replication factor of 2, it is impossible to
+do any distribution across the nodes - the shard group will have a
+size of 1, and contain 1 shard, replicated across 2 nodes. In this set
+up, the third node will have no data for this particular retention
+policy.</p>
+
+<p>If we had a cluster of 5 nodes and the replication factor of 2, then
+the shard group can have a size of 2, for 2 shards, replicated across
+2 nodes each. Shard one replicas could live on nodes 1 and 3, while
+shard two replicas on nodes 2 and 4. Now the data is distributed as
+well as redundant. Note that the 5th node doesn&#8217;t do anything. If we
+up the replication factor to 3 then just like before, the cluster is
+too small to have any distribution, we only have enough nodes for
+redundancy.</p>
+
+<p>The shards themselves are instances of <a href="https://github.com/boltdb/bolt">Bolt db</a> - a simple to use key/value store
+written in Go. There is also a separate Bolt db file called meta which
+stores the metadata, i.e. information about databases, retention
+policies, measurements, series, etc.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2096,103 +2245,6 @@ has stopped, ask yourself:</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/08/02/hacking-on-mod-python-again/">Hacking on Mod_python (Again)</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-02T16:19:00-04:00" pubdate data-updated="true">Aug 2<span>nd</span>, 2013</time>
-        
-         | <a href="/blog/2013/08/02/hacking-on-mod-python-again/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
-to <a href="http://www.modpython.org/">Mod_python</a> I&#8217;ve decided to spend some time hacking on it again.</p>
-
-<p>Five years without active development and thirteen since its first
-release, it still seems to me an entirely useful and viable tool. The
-code is exceptionally clean, the documentation is amazing, and the
-test suite is awesome.  Which is a real testament to the noble efforts
-of all the people who contributed to its development.</p>
-
-<p>We live in this new
-<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
-Apache Httpd no longer has the market dominance it once enjoyed, while
-the latest Python web frameworks run without requiring or recommending
-Mod_python. My hunch, however, is that given a thorough dusting it
-could be quite useful (perhaps more than ever) and applied in very
-interesting ways to solve the new problems. I also think the Python
-language is at a very important inflection point. Pyhton 3 is now
-mature, and is slowly but steadily becoming the preferred language of
-many interesting communities such as data science, for example.</p>
-
-<p>The current status of Mod_python as an Apache project is that it&#8217;s
-in the <a href="http://attic.apache.org/">attic</a>. This means that the
-<a href="http://www.apache.org/">ASF</a> isn&#8217;t providing much in the way of
-infrastructure support any longer, nor will you see an &#8220;official&#8221; ASF
-release any time soon. (If ever - Mod_python would have to re-enter as
-an <a href="http://incubator.apache.org/">incubator</a> project and at this point
-it is entirely premature to even consider such an option).</p>
-
-<p>For now the main goal is to re-establish the community, and as part of
-that I will have to sort out how to do issue tracking, discussion
-groups, etc. At this point the only thing I&#8217;ve decided is that the
-main repository will live on
-<a href="https://github.com/grisha/mod_python">github</a>.</p>
-
-<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
-development goal is to bring it up to compatibility with Python 2.7
-and Apache Httpd 2.4 (I&#8217;m nearly there already), then potentially move
-on to Python 3 support. I have rolled back a few commits (most notably
-the new importer) because I did not understand them. There are still a
-few changes in Apache 2.4 that need to be addressed, but they seem
-relatively minor at this point. Authentication has been changed
-significantly in 2.4, though mod_python never had much coverage in that
-area.</p>
-
-<p>Let&#8217;s see where this takes us? And if you like this, feel free to
-star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
-
-<p>
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
-
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
-
-<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-</p>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2246,6 +2298,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/03/10/influxdb-data/">How InfluxDB Stores Data</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
@@ -2259,10 +2315,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
       </li>
     
   </ul>
@@ -2279,7 +2331,7 @@ google_ad_type = "image";
   </div>
   <footer role="contentinfo"><p>
   <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
-  Copyright &copy; 2014 - Gregory Trubetskoy -
+  Copyright &copy; 2015 - Gregory Trubetskoy -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

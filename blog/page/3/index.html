@@ -9,8 +9,7 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Some random thoughts on having tinkered with
-Storm over the past few weeks. It took me some time to understand what Storm is, and I am still not &hellip;">
+  <meta name="description" content="A while back Linus Torvalds answered questions on Slashdot. One of the answers was on the subject of understanding of pointers: At the opposite end &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -78,6 +77,168 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/02/linus-on-understanding-pointers/">Linus on Understanding Pointers</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-02T10:52:00-04:00" pubdate data-updated="true">Apr 2<span>nd</span>, 2013</time>
+        
+         | <a href="/blog/2013/04/02/linus-on-understanding-pointers/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>A while back <a href="http://en.wikipedia.org/wiki/Linus_Torvalds">Linus Torvalds</a> <a href="http://meta.slashdot.org/story/12/10/11/0030249/linus-torvalds-answers-your-questions">answered questions on Slashdot</a>.</p>
+
+<p>One of the answers was on the subject of understanding of pointers:</p>
+
+<blockquote><p><small>At the opposite end of the spectrum, I actually wish more people
+understood the really core low-level kind of coding. Not big, complex
+stuff like the lockless name lookup, but simply good use of
+pointers-to-pointers etc. For example, I&#8217;ve seen too many people who
+delete a singly-linked list entry by keeping track of the &#8220;prev&#8221;
+entry, and then to delete the entry, doing something like</small></p>
+
+<p><small>if (prev)<br/>
+  prev->next = entry->next;<br/>
+else<br/>
+  list_head = entry->next;<br/>
+</small></p>
+
+<p><small>and whenever I see code like that, I just go &#8220;This person doesn&#8217;t
+understand pointers&#8221;. And it&#8217;s sadly quite common.</small></p>
+
+<p><small>People who understand pointers just use a &#8220;pointer to the entry
+pointer&#8221;, and initialize that with the address of the list_head. And
+then as they traverse the list, they can remove the entry without
+using any conditionals, by just doing a &#8220;*pp = entry->next&#8221;</small></p></blockquote>
+
+<p>There were a few comments, but none explained what he really
+meant. So here it is.</p>
+
+<p>Imagine you have a linked list defined as:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">list_entry</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">list_entry</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="n">list_entry</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You need to iterate over it from the begining to end and remove a
+specific element whose value equals the value of <code>to_remove</code>. The more
+obvious way to do this would be:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span> <span class="cm">/* assuming head exists and is the first entry of the list */</span>
+</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>     <span class="cm">/* this is the one to remove */</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">prev</span><span class="p">)</span>
+</span><span class='line'>           <span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span> <span class="cm">/* remove the entry */</span>
+</span><span class='line'>        <span class="k">else</span>
+</span><span class='line'>            <span class="n">head</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>      <span class="cm">/* special case - first entry */</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/* move on to the next entry */</span>
+</span><span class='line'>    <span class="n">prev</span> <span class="o">=</span> <span class="n">entry</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>What we are doing above is iterating over the list until <code>entry</code> is
+NULL, which means we&#8217;ve reached the end of the list (line 4). When we
+come across an entry we want removed (line 5), we assign the value of
+current <code>next</code> pointer to the previous one, thus eliminating the
+current element (line 7).</p>
+
+<p>There is a special case above - at the beginning of the iteration
+there is no previous entry (<code>prev</code> is NULL), and so to remove the
+first entry in the list you have to modify <code>head</code> itself (line 9).</p>
+
+<p>What Linus was saying is that the above code could be simplified by
+making the previous element a <em>pointer to a pointer</em> rather than just a
+pointer. The code then looks like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">**</span><span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span> <span class="cm">/* pointer to a pointer */</span>
+</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>
+</span><span class='line'>        <span class="o">*</span><span class="n">pp</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The above code is very similar to the previous variant, but notice how
+we no longer need to watch for the special case of the first element
+of the list, since <code>pp</code> is not NULL at the beginning. Simple and
+clever.</p>
+
+<p>Also, someone in that thread commented that the reason this is better
+is because <code>*pp = entry-&gt;next</code> is <em>atomic</em>.  It is most certainly NOT
+atomic. The above expression contains two dereference operators (<code>*</code>
+and <code>-&gt;</code>) and one assignment, and neither of those three things is
+atomic. This is a common misconception, but alas pretty much <em>nothing</em>
+in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
+operators)!</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -610,6 +771,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/03/10/influxdb-data/">How InfluxDB Stores Data</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
@@ -623,10 +788,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
       </li>
     
   </ul>
@@ -643,7 +804,7 @@ google_ad_type = "image";
   </div>
   <footer role="contentinfo"><p>
   <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
-  Copyright &copy; 2014 - Gregory Trubetskoy -
+  Copyright &copy; 2015 - Gregory Trubetskoy -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 
