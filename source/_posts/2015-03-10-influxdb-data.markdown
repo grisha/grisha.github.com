@@ -28,9 +28,9 @@ use [Raft](https://github.com/goraft/raft) to establish consensus and maintain d
 InfluxDB feels a little like a relational database in some aspects
 (e.g. it has a SQL-like query language) but not in others.
 
-The top level container is a _database_. A InfluxDB database is very
-much like what a database is in MySQL, it's a collection of contains
-other things.
+The top level container is a _database_. An InfluxDB database is very
+much like what a database is in MySQL, it's a collection of other
+things.
 
 "Other things" are called _data points_, _series_, _measurements_,
 _tags_ and _retention policies_. Under the hood (i.e. you never deal
