@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-17T15:55:34-04:00</updated>
+  <updated>2015-03-17T17:24:08-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,10 +18,10 @@
     <link href="http://grisha.org/blog/2015/03/10/influxdb-data/"/>
     <updated>2015-03-10T15:52:00-04:00</updated>
     <id>http://grisha.org/blog/2015/03/10/influxdb-data</id>
-    <content type="html"><![CDATA[<p>A nice, reliable, horizontally scalable database designed specifically
-to tackle the problem of Time Series data, and does not require
-you to set up a Hadoop cluster is very much missing from the Open
-Source Universe right now.</p>
+    <content type="html"><![CDATA[<p>A nice, reliable, horizontally scalable database that is designed
+specifically to tackle the problem of Time Series data (and does not
+require you to stand up a Hadoop cluster) is very much missing from the
+Open Source Universe right now.</p>
 
 <p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
 
