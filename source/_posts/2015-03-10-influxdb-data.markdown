@@ -6,10 +6,10 @@ comments: true
 categories:
 ---
 
-A nice, reliable, horizontally scalable database designed specifically
-to tackle the problem of Time Series data, and does not require
-you to set up a Hadoop cluster is very much missing from the Open
-Source Universe right now.
+A nice, reliable, horizontally scalable database that is designed
+specifically to tackle the problem of Time Series data (and does not
+require you to stand up a Hadoop cluster) is very much missing from the
+Open Source Universe right now.
 
 [InfluxDB](https://github.com/influxdb/influxdb) might be able to fill this gap, it certainly aims to.
 
