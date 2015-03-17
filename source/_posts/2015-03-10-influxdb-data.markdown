@@ -25,8 +25,8 @@ First of all, InfluxDB is distributed. You can run one node, or a
 bunch, it seems like a more typical number may be 3 or 5. The nodes
 use [Raft](https://github.com/goraft/raft) to establish consensus and maintain data consistency.
 
-The data model that InfluxDB uses is a little unusual - it feels a
-little like a relational database in some aspects but not in others.
+InfluxDB feels a little like a relational database in some aspects
+(e.g. it has a SQL-like query language) but not in others.
 
 The top level container is a _database_. A InfluxDB database is very
 much like what a database is in MySQL, it's a collection of contains
