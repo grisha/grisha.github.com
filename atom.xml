@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-17T17:27:35-04:00</updated>
+  <updated>2015-03-17T17:28:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -39,9 +39,9 @@ use <a href="https://github.com/goraft/raft">Raft</a> to establish consensus and
 <p>InfluxDB feels a little like a relational database in some aspects
 (e.g. it has a SQL-like query language) but not in others.</p>
 
-<p>The top level container is a <em>database</em>. A InfluxDB database is very
-much like what a database is in MySQL, it&#8217;s a collection of contains
-other things.</p>
+<p>The top level container is a <em>database</em>. An InfluxDB database is very
+much like what a database is in MySQL, it&#8217;s a collection of other
+things.</p>
 
 <p>&#8220;Other things&#8221; are called <em>data points</em>, <em>series</em>, <em>measurements</em>,
 <em>tags</em> and <em>retention policies</em>. Under the hood (i.e. you never deal
