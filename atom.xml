@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-17T17:24:08-04:00</updated>
+  <updated>2015-03-17T17:25:46-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -25,7 +25,7 @@ Open Source Universe right now.</p>
 
 <p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
 
-<p>I was curious about how it structures and stores its data and since
+<p>I was curious about how it structures and stores data and since
 there wasn&#8217;t much documentation on the subject, I figured I&#8217;d document
 my findings.</p>
 
@@ -36,8 +36,8 @@ previous versions are significantly different.</p>
 bunch, it seems like a more typical number may be 3 or 5. The nodes
 use <a href="https://github.com/goraft/raft">Raft</a> to establish consensus and maintain data consistency.</p>
 
-<p>The data model that InfluxDB is a little unusual - it feels a little
-like a relational database in some aspects but not in others.</p>
+<p>The data model that InfluxDB uses is a little unusual - it feels a
+little like a relational database in some aspects but not in others.</p>
 
 <p>The top level container is a <em>database</em>. A InfluxDB database is very
 much like what a database is in MySQL, it&#8217;s a collection of contains
