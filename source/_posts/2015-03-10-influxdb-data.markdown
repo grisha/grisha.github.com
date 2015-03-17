@@ -14,7 +14,7 @@ Open Source Universe right now.
 [InfluxDB](https://github.com/influxdb/influxdb) might be able to fill this gap, it certainly aims to.
 
 
-I was curious about how it structures and stores its data and since
+I was curious about how it structures and stores data and since
 there wasn't much documentation on the subject, I figured I'd document
 my findings.
 
@@ -25,8 +25,8 @@ First of all, InfluxDB is distributed. You can run one node, or a
 bunch, it seems like a more typical number may be 3 or 5. The nodes
 use [Raft](https://github.com/goraft/raft) to establish consensus and maintain data consistency.
 
-The data model that InfluxDB is a little unusual - it feels a little
-like a relational database in some aspects but not in others.
+The data model that InfluxDB uses is a little unusual - it feels a
+little like a relational database in some aspects but not in others.
 
 The top level container is a _database_. A InfluxDB database is very
 much like what a database is in MySQL, it's a collection of contains
