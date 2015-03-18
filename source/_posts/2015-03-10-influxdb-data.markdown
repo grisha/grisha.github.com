@@ -73,7 +73,7 @@ Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
 finally databases.
 
-A database contains a one or more retention policies. Somewhat
+A database contains one or more retention policies. Somewhat
 surprisingly a retention policy is actually a bucket. It makes sense
 if you think about the problem of having to expire data points - you
 can remove them all by simply dropping the entire bucket.
@@ -84,10 +84,23 @@ the epoch. Any incoming data point falls into its corresponding
 segment, which is a retention policy bucket. When clean up time comes
 around, we can delete all days except for the most current day.
 
+To better understand the following paragraphs, consider that having
+multiple nodes provides the option for two things: _redundancy_ and
+_distribution_. Redundancy gives you the ability to lose a node
+without losing any data. The number of copies of the data is
+controlled by the replication factor specified as part of the
+retention policy. Distribution spreads the data across nodes which
+allows for concurrency: data can be written, read and processed in
+parallel. For example if we become constrained by write performance,
+we can solve this by simply adding more nodes.
+
+InfluxDB favors redundancy over distribution when having to chose
+between the two.
+
 Each retention policy bucket is further divided into shard groups, one
 shard group per series. The purpose of a shard group is to balance
-data across the nodes of the cluster. If we have a cluster of 3 nodes,
-we want the data points to be evenly distributed across these
+series data across the nodes of the cluster. If we have a cluster of 3
+nodes, we want the data points to be evenly distributed across these
 nodes. InfluxDB will create 3 shards, one on each of the nodes. The 3
 shards comprise the shard group. This is assuming the replication
 factor is 1.
@@ -113,3 +126,10 @@ The shards themselves are instances of [Bolt db](https://github.com/boltdb/bolt)
 written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.
+
+I couldn't quite figure out the process for typical cluster operations
+- recovery from node failure or what happens (or should happen) when
+nodes are added to existing cluster, whether there is a way to
+decommission a node, etc. I think as of this writing this has not been
+fully implemented yet, and there is no documentation, but hopefully
+it's coming soon.
