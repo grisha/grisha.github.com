@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-18T13:31:50-04:00</updated>
+  <updated>2015-03-18T13:35:41-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -25,12 +25,11 @@ Open Source Universe right now.</p>
 
 <p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
 
-<p>I was curious about how it structures and stores data and since
-there wasn&#8217;t much documentation on the subject, I figured I&#8217;d document
-my findings.</p>
-
-<p>I only looked at the new (currently 0.9.0 in RC stage) version, the
-previous versions are significantly different.</p>
+<p>I was curious about how it structures and stores data and since there
+wasn&#8217;t much documentation on the subject and I ended up just reading
+the code, I figured I&#8217;d write this up. I only looked at the new
+(currently 0.9.0 in RC stage) version, the previous versions are
+significantly different.</p>
 
 <p>First of all, InfluxDB is distributed. You can run one node, or a
 bunch, it seems like a more typical number may be 3 or 5. The nodes
@@ -108,10 +107,8 @@ controlled by the replication factor specified as part of the
 retention policy. Distribution spreads the data across nodes which
 allows for concurrency: data can be written, read and processed in
 parallel. For example if we become constrained by write performance,
-we can solve this by simply adding more nodes.</p>
-
-<p>InfluxDB favors redundancy over distribution when having to choose
-between the two.</p>
+we can solve this by simply adding more nodes. InfluxDB favors
+redundancy over distribution when having to choose between the two.</p>
 
 <p>Each retention policy bucket is further divided into shard groups, one
 shard group per series. The purpose of a shard group is to balance
