@@ -14,12 +14,11 @@ Open Source Universe right now.
 [InfluxDB](https://github.com/influxdb/influxdb) might be able to fill this gap, it certainly aims to.
 
 
-I was curious about how it structures and stores data and since
-there wasn't much documentation on the subject, I figured I'd document
-my findings.
-
-I only looked at the new (currently 0.9.0 in RC stage) version, the
-previous versions are significantly different.
+I was curious about how it structures and stores data and since there
+wasn't much documentation on the subject and I ended up just reading
+the code, I figured I'd write this up. I only looked at the new
+(currently 0.9.0 in RC stage) version, the previous versions are
+significantly different.
 
 First of all, InfluxDB is distributed. You can run one node, or a
 bunch, it seems like a more typical number may be 3 or 5. The nodes
@@ -92,10 +91,8 @@ controlled by the replication factor specified as part of the
 retention policy. Distribution spreads the data across nodes which
 allows for concurrency: data can be written, read and processed in
 parallel. For example if we become constrained by write performance,
-we can solve this by simply adding more nodes.
-
-InfluxDB favors redundancy over distribution when having to choose
-between the two.
+we can solve this by simply adding more nodes. InfluxDB favors
+redundancy over distribution when having to choose between the two.
 
 Each retention policy bucket is further divided into shard groups, one
 shard group per series. The purpose of a shard group is to balance
