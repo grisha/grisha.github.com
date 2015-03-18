@@ -94,7 +94,7 @@ allows for concurrency: data can be written, read and processed in
 parallel. For example if we become constrained by write performance,
 we can solve this by simply adding more nodes.
 
-InfluxDB favors redundancy over distribution when having to chose
+InfluxDB favors redundancy over distribution when having to choose
 between the two.
 
 Each retention policy bucket is further divided into shard groups, one
@@ -107,7 +107,7 @@ factor is 1.
 
 But if the replication factor was 2, then there needs to be 2
 identical copies of every shard. The shard copies must be on separate
-nodes. With 3 modes and replication factor of 2, it is impossible to
+nodes. With 3 nodes and replication factor of 2, it is impossible to
 do any distribution across the nodes - the shard group will have a
 size of 1, and contain 1 shard, replicated across 2 nodes. In this set
 up, the third node will have no data for this particular retention
@@ -128,8 +128,9 @@ stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.
 
 I couldn't quite figure out the process for typical cluster operations
-- recovery from node failure or what happens (or should happen) when
-nodes are added to existing cluster, whether there is a way to
-decommission a node, etc. I think as of this writing this has not been
-fully implemented yet, and there is no documentation, but hopefully
-it's coming soon.
+such as recovery from node failure or what happens (or should happen)
+when nodes are added to existing cluster, whether there is a way to
+decommission a node or re-balance the cluster similar to the Hadoop
+balancer, etc. I think as of this writing this has not been fully
+implemented yet, and there is no documentation, but hopefully it's
+coming soon.
