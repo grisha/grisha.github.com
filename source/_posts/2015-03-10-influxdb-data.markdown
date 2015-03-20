@@ -53,11 +53,11 @@ like this (in JSON):
 
 ```
 {"database" : "foo", "retentionPolicy" : "bar",
- "points" :
+ "points" : [
    {"name" : "disk",
     "tags" : {"server" : "bwi23", "unit" : "1"},
     "timestamp" : "2015-03-16T01:02:26.234Z",
-    "fields" : {"total" : 100, "used" : 40, "free" : 60}}}
+    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}
 ```
 
 In the above example, "disk" is a measurement. Thus we can operate on
@@ -67,6 +67,43 @@ the combination of the measurement name and the tags.
 
 There is no need to create series or measurements, they are created on
 the fly.
+
+For example, to list the measurements, we can use `SHOW MEASUREMENTS`:
+```
+> show measurements
+name            tags    name
+----            ----    ----
+measurements            disk
+```
+We can use `SHOW SERIES` to list the series:
+```
+> show series
+name    tags    id      server   unit
+----    ----    --      -------  ----
+disk            1       bw123    1
+```
+
+If we send a record that contains different tags, we automatically
+create a different series, for example if we send this (not we changed
+"unit" to "foo"):
+```
+{"database" : "foo", "retentionPolicy" : "bar",
+ "points" : [
+   {"name" : "disk",
+    "tags" : {"server" : "bwi23", "foo" : "bar"},
+    "timestamp" : "2015-03-16T01:02:26.234Z",
+    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}
+```
+
+we get
+
+```
+> show series
+name    tags    id      foo     server  unit
+----    ----    --      ---     ------  ----
+disk            1               bwi23   1
+disk            2       bar     bwi23
+```
 
 Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
