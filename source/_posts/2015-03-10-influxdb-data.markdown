@@ -161,6 +161,9 @@ written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.
 
+As of RC15 distributed queries are not yet implemented, so you will
+always get an error if you have more than one shard in a group.
+
 I couldn't quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)
 when nodes are added to existing cluster, whether there is a way to
@@ -168,3 +171,5 @@ decommission a node or re-balance the cluster similar to the Hadoop
 balancer, etc. I think as of this writing this has not been fully
 implemented yet, and there is no documentation, but hopefully it's
 coming soon.
+
+
