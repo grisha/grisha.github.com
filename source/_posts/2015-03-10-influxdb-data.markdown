@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "How InfluxDB Stores Data"
-date: 2015-03-10 15:52
+date: 2015-03-20 15:52
 comments: true
 categories:
 ---
