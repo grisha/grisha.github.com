@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-20T18:25:26-04:00</updated>
+  <updated>2015-03-20T18:35:58-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -195,6 +195,9 @@ redundancy.</p>
 written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.</p>
+
+<p>As of RC15 distributed queries are not yet implemented, so you will
+always get an error if you have more than one shard in a group.</p>
 
 <p>I couldn&#8217;t quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)

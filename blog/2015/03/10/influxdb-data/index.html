@@ -285,6 +285,9 @@ written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.</p>
 
+<p>As of RC15 distributed queries are not yet implemented, so you will
+always get an error if you have more than one shard in a group.</p>
+
 <p>I couldn&#8217;t quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)
 when nodes are added to existing cluster, whether there is a way to
