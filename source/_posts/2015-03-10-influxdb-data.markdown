@@ -84,8 +84,8 @@ disk            1       bw123    1
 ```
 
 If we send a record that contains different tags, we automatically
-create a different series, for example if we send this (not we changed
-"unit" to "foo"):
+create a different series (or so it seems), for example if we send
+this (not we changed "unit" to "foo"):
 ```
 {"database" : "foo", "retentionPolicy" : "bar",
  "points" : [
@@ -104,6 +104,14 @@ name    tags    id      foo     server  unit
 disk            1               bwi23   1
 disk            2       bar     bwi23
 ```
+
+This is where the distinction between measurement and series becomes a
+little confusing to me. In actuality (from looking at the code and the
+actual files InfluxDB created) there is only one series here called
+"disk". I understand the intent, but not sure that _series_ is the
+right terminology here. I think I'd prefer if measurements were simply
+called series, and to get the equivalent of `SHOW SERIES` you'd use
+something like `SHOW SERIES TAGS`. (May be I'm missing something.)
 
 Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
@@ -156,13 +164,13 @@ up the replication factor to 3 then just like before, the cluster is
 too small to have any distribution, we only have enough nodes for
 redundancy.
 
+As of RC15 distributed queries are not yet implemented, so you will
+always get an error if you have more than one shard in a group.
+
 The shards themselves are instances of [Bolt db](https://github.com/boltdb/bolt) - a simple to use key/value store
 written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.
-
-As of RC15 distributed queries are not yet implemented, so you will
-always get an error if you have more than one shard in a group.
 
 I couldn't quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)
