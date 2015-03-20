@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-20T18:49:22-04:00</updated>
+  <updated>2015-03-20T19:08:16-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -84,7 +84,7 @@ the combination of the measurement name and the tags.</p>
 <p>There is no need to create series or measurements, they are created on
 the fly.</p>
 
-<p>For example, to list the measurements, we can use <code>SHOW MEASUREMENTS</code>:</p>
+<p>To list the measurements, we can use <code>SHOW MEASUREMENTS</code>:</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -110,7 +110,7 @@ the fly.</p>
 
 <p>If we send a record that contains different tags, we automatically
 create a different series (or so it seems), for example if we send
-this (not we changed &#8220;unit&#8221; to &#8220;foo&#8221;):</p>
+this (note we changed &#8220;unit&#8221; to &#8220;foo&#8221;):</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
