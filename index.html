@@ -161,11 +161,11 @@ like this (in JSON):</p>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 </pre></td><td class='code'><pre><code class=''><span class='line'>{"database" : "foo", "retentionPolicy" : "bar",
-</span><span class='line'> "points" :
+</span><span class='line'> "points" : [
 </span><span class='line'>   {"name" : "disk",
 </span><span class='line'>    "tags" : {"server" : "bwi23", "unit" : "1"},
 </span><span class='line'>    "timestamp" : "2015-03-16T01:02:26.234Z",
-</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}}</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure>
 
 
 <p>In the above example, &#8220;disk&#8221; is a measurement. Thus we can operate on
@@ -175,6 +175,62 @@ the combination of the measurement name and the tags.</p>
 
 <p>There is no need to create series or measurements, they are created on
 the fly.</p>
+
+<p>For example, to list the measurements, we can use <code>SHOW MEASUREMENTS</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show measurements
+</span><span class='line'>name            tags    name
+</span><span class='line'>----            ----    ----
+</span><span class='line'>measurements            disk</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can use <code>SHOW SERIES</code> to list the series:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show series
+</span><span class='line'>name    tags    id      server   unit
+</span><span class='line'>----    ----    --      -------  ----
+</span><span class='line'>disk            1       bw123    1</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we send a record that contains different tags, we automatically
+create a different series, for example if we send this (not we changed
+&#8220;unit&#8221; to &#8220;foo&#8221;):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{"database" : "foo", "retentionPolicy" : "bar",
+</span><span class='line'> "points" : [
+</span><span class='line'>   {"name" : "disk",
+</span><span class='line'>    "tags" : {"server" : "bwi23", "foo" : "bar"},
+</span><span class='line'>    "timestamp" : "2015-03-16T01:02:26.234Z",
+</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>we get</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show series
+</span><span class='line'>name    tags    id      foo     server  unit
+</span><span class='line'>----    ----    --      ---     ------  ----
+</span><span class='line'>disk            1               bwi23   1
+</span><span class='line'>disk            2       bar     bwi23</span></code></pre></td></tr></table></div></figure>
+
 
 <p>Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
