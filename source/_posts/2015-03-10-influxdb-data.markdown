@@ -68,7 +68,7 @@ the combination of the measurement name and the tags.
 There is no need to create series or measurements, they are created on
 the fly.
 
-For example, to list the measurements, we can use `SHOW MEASUREMENTS`:
+To list the measurements, we can use `SHOW MEASUREMENTS`:
 ```
 > show measurements
 name            tags    name
@@ -85,7 +85,7 @@ disk            1       bw123    1
 
 If we send a record that contains different tags, we automatically
 create a different series (or so it seems), for example if we send
-this (not we changed "unit" to "foo"):
+this (note we changed "unit" to "foo"):
 ```
 {"database" : "foo", "retentionPolicy" : "bar",
  "points" : [
