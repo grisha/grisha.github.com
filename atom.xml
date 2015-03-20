@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-20T18:35:58-04:00</updated>
+  <updated>2015-03-20T18:48:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -109,8 +109,8 @@ the fly.</p>
 
 
 <p>If we send a record that contains different tags, we automatically
-create a different series, for example if we send this (not we changed
-&#8220;unit&#8221; to &#8220;foo&#8221;):</p>
+create a different series (or so it seems), for example if we send
+this (not we changed &#8220;unit&#8221; to &#8220;foo&#8221;):</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -139,6 +139,14 @@ create a different series, for example if we send this (not we changed
 </span><span class='line'>disk            1               bwi23   1
 </span><span class='line'>disk            2       bar     bwi23</span></code></pre></td></tr></table></div></figure>
 
+
+<p>This is where the distinction between measurement and series becomes a
+little confusing to me. In actuality (from looking at the code and the
+actual files InfluxDB created) there is only one series here called
+&#8220;disk&#8221;. I understand the intent, but not sure that <em>series</em> is the
+right terminology here. I think I&#8217;d prefer if measurements were simply
+called series, and to get the equivalent of <code>SHOW SERIES</code> you&#8217;d use
+something like <code>SHOW SERIES TAGS</code>. (May be I&#8217;m missing something.)</p>
 
 <p>Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
@@ -191,13 +199,13 @@ up the replication factor to 3 then just like before, the cluster is
 too small to have any distribution, we only have enough nodes for
 redundancy.</p>
 
+<p>As of RC15 distributed queries are not yet implemented, so you will
+always get an error if you have more than one shard in a group.</p>
+
 <p>The shards themselves are instances of <a href="https://github.com/boltdb/bolt">Bolt db</a> - a simple to use key/value store
 written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.</p>
-
-<p>As of RC15 distributed queries are not yet implemented, so you will
-always get an error if you have more than one shard in a group.</p>
 
 <p>I couldn&#8217;t quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)
