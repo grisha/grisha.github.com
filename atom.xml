@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-20T18:48:42-04:00</updated>
+  <updated>2015-03-20T18:49:22-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[How InfluxDB Stores Data]]></title>
-    <link href="http://grisha.org/blog/2015/03/10/influxdb-data/"/>
-    <updated>2015-03-10T15:52:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/03/10/influxdb-data</id>
+    <link href="http://grisha.org/blog/2015/03/20/influxdb-data/"/>
+    <updated>2015-03-20T15:52:00-04:00</updated>
+    <id>http://grisha.org/blog/2015/03/20/influxdb-data</id>
     <content type="html"><![CDATA[<p>A nice, reliable, horizontally scalable database that is designed
 specifically to tackle the problem of Time Series data (and does not
 require you to stand up a Hadoop cluster) is very much missing from the
