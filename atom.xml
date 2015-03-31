@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-31T13:56:57-04:00</updated>
+  <updated>2015-03-31T14:00:30-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -82,9 +82,8 @@ good at interpreting a visual representation of a relationship between
 streams of numbers while completely incapable of making any sense of
 it when presented in tabular form. When plotting, no matter how much
 data is being examined, the end result is limited to however many
-pixels are available on the display. I should also point out that
-aggregation is useful even when using raw data, most any use of time
-series data is in an aggregated form.</p>
+pixels are available on the display. Even plotting aside, most any use
+of time series data is in an aggregated form.</p>
 
 <p>The process of consolidating datapoints into a smaller number (e.g.
 the pixel width of the chart), sometimes called <em>downsampling</em>, involves
