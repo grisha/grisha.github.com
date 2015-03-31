@@ -64,14 +64,14 @@ growing and growing.
 
 ## Downsampling
 
-Aside from a few corner cases, most often TS data is used to generate
-charts. This is an artifact of the human brain being spectacularly
-good at interpreting a visual representation of a relationship between
-streams of numbers while completely incapable of making any sense of
-it when presented in tabular form. When plotting, no matter how much
-data is being examined, the end result is limited to however many
-pixels are available on the display. Even plotting aside, most any use
-of time series data is in an aggregated form.
+Very often TS data is used to generate charts. This is an artifact of
+the human brain being spectacularly good at interpreting a visual
+representation of a relationship between streams of numbers while
+nearly incapable of making sense of data in tabular form. When
+plotting, no matter how much data is being examined, the end result is
+limited to however many pixels are available on the display. Even
+plotting aside, most any use of time series data is in an aggregated
+form.
 
 The process of consolidating datapoints into a smaller number (e.g.
 the pixel width of the chart), sometimes called _downsampling_, involves
