@@ -1,0 +1,468 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Is Time Series even a Thing? - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="The Great Reversal Time Series is on its way to becoming a buzzword in the Big Data
+circles. This has to do with the looming Internet of Things which &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2015/03/28/on-time-series">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Is Time Series Even a Thing?</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-28T15:40:00-04:00" pubdate data-updated="true">Mar 28<span>th</span>, 2015</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>The Great Reversal</h2>
+
+<p>Time Series is on its way to becoming a buzzword in the Big Data
+circles. This has to do with the looming Internet of Things which
+shall cause the Great Reversal of Internet whereby upstream flow of
+data produced by said Things is expected to exceed the downstream
+flow. Much of this data is expected to be of the Time Series kind.</p>
+
+<p>This, of course, is a money-making opportunity of the Big Data
+proportions all over again, and I imagine we&#8217;re going to see a lot of
+Time Series support of various shapes and forms appearing in all
+manners of (mostly commercial) software.</p>
+
+<p>But is there really such a thing as the problem specifically inherent
+to Time Series data which warrants a specialized solution? I&#8217;ve been
+pondering this for some time now, and I am still undecided. This
+here is my attempt at arguing that TS is <em>not</em> a special problem and
+that it can be done by using a database like PostgreSQL.</p>
+
+<h2>Influx of data and write speeds</h2>
+
+<p>One frequently cited issue with time series data is that it arrives in
+large volumes at a steady pace which renders buffered writes
+useless. The number of incoming data streams can also be large
+typically causing a disk seek per stream and further complicating the
+write situation. TS data also has a property where often more data is
+written than read because it&#8217;s possible for a data point to be
+collected and examined only once, if ever. In short, TS is very
+write-heavy.</p>
+
+<p>But is this unique? For example logs have almost identical
+properties. The real question here is whether our tried and true
+databases such as PostgreSQL are ill-equipped to deal with large
+volumes of incoming data requiring an alternative solution.</p>
+
+<p>When considering incoming data I am tempted to imagine every US
+household sending it, which, of course, would require massive
+infrastructure. But this (unrealistic) scenario is not a TS data
+problem, it&#8217;s one of scale, the same one from which the Hadoops and
+Cassandras of this world were born. What is really happening here is
+that TS happens to be yet another thing that requires the difficult to
+deal with &#8220;big data&#8221; infrastructure and reiterates the need for an
+easy-to-setup horizontally scalable database.</p>
+
+<p>The only thing that is certain here is that we can expect more &#8220;Big
+Data&#8221; stuff as we inch closer to the Internet of Things being a
+reality. Perhaps this need will finally result in PostgreSQL natively
+supporting clustering.</p>
+
+<h2>The backfill problem</h2>
+
+<p>This is the problem of having to import vast amounts of historical
+data. For example OpenTSDB goes to great lengths to optimize
+back-filling by structuring it in specific ways and storing compressed
+blobs of data.</p>
+
+<p>But just like the write problem, it&#8217;s not unique to TS. It
+is another problem that is becoming more and more pertinent as our
+backlogs of data going back to when we stopped using paper keep
+growing and growing.</p>
+
+<h2>Downsampling</h2>
+
+<p>Aside from a few corner cases, most often TS data is used to generate
+charts. This is an artifact of the human brain being spectacularly
+good at interpreting a visual representation of a relationship between
+streams of numbers while completely incapable of making any sense of
+it when presented in tabular form. When plotting, no matter how much
+data is being examined, the end result is limited to however many
+pixels are available on the display. I should also point out that
+aggregation is useful even when using raw data, most any use of time
+series data is in an aggregated form.</p>
+
+<p>The process of consolidating datapoints into a smaller number (e.g.
+the pixel width of the chart), sometimes called <em>downsampling</em>, involves
+aggregation around a particular time interval or simply picking every
+Nth datapoint.</p>
+
+<p>As an aside, selecting every Nth row of a table is an interesting SQL
+challenge, in PostgreSQL it looks like this (for every 100th row):</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'> SELECT time, data FROM
+</span><span class='line'>   (SELECT *, row_number() OVER (ORDER BY time) as n FROM data_points) dp
+</span><span class='line'>      WHERE dp.n % 100 = 0 ORDER BY time</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Aggregation over a time interval similar to how InfluxDB does it with
+the <code>GROUP BY time(1d)</code> syntax can be easily achieved via the
+<code>date_trunc('day', time)</code>.</p>
+
+<p>Another aspect of downsampling is that since TS data is immutable,
+there is no need to repeatedly recompute the consolidated version. It
+makes more sense to downsample immediately upon the receipt of the
+data and to store it permanently in this form. RRDTool&#8217;s Round-Robin
+database is based entirely on this notion. InfluxDB&#8217;s continuous
+queries is another way persistent downsampling is addressed.</p>
+
+<p>Again, there is nothing TS-specific here. Storing data in summary form
+is quite common in the data analytics world and a &#8220;continuous query&#8221;
+is easily implemented via a trigger.</p>
+
+<h2>Derivatives</h2>
+
+<p>Sometimes the data from various devices exists in the form of a
+counter, which requires the database to derive a rate by comparing
+with a previous data point. An example of this is number of bytes sent
+over a network interface. Only the rate of change of this value is
+relevant, not the number itself. The rate of change is the difference
+with the previous value divided over the time interval passed.</p>
+
+<p>Referring to a previous row is also a bit tricky but perfectly doable
+in SQL. It can accomplished by using windowing functions such as
+<code>lag()</code>.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>SELECT time,
+</span><span class='line'>  (bytes - lag(bytes, 1) OVER w) / extract(epoch from (time - lag(time, 1) OVER w))::numeric
+</span><span class='line'>    AS bytes_per_sec
+</span><span class='line'>  FROM data_points
+</span><span class='line'>  WINDOW w AS (ORDER BY time)
+</span><span class='line'>  ORDER BY time</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Expiration</h2>
+
+<p>It is useful to downsample data to a less granular form as it ages,
+aggregating over an ever larger period of time and possibly purging
+records eventually. For example we might want to store minutely data
+for a week, hourly for 3 months, daily for 3 years and drop all data
+beyond 3 years.</p>
+
+<p>Databases do not do this &#8220;natively&#8221; like Cassandra or Redis, but it
+shouldn&#8217;t be too hard to accomplish via some sort of a periodic cron
+job or possibly even just triggers.</p>
+
+<h2>Heartbeat and Interval Filling</h2>
+
+<p>It is possible for a time series stream to stop, and this can be
+interpreted in different ways: we can attempt to fill in missing data,
+or treat it as unknown. More likely we&#8217;d want to start treating it as
+unknown after some period of silence. RRDTool addresses this by
+introducing the notion of a <em>heartbeat</em> and the number of missed beats
+before data is treated as unknown.</p>
+
+<p>Regardless of whether the value is unknown, it is useful to be able to
+fill in a gap (missing rows) in data. In PostgreSQL this can be
+accomplished by a join with a result set from the <code>generate_series()</code>
+function.</p>
+
+<h2>Data Seclusion</h2>
+
+<p>With many specialized Time Series tools the TS data ends up being
+secluded in a separate system not easily accessible from the rest of
+the business data. You cannot join your customer records with data in
+RRDTool or Graphite or InfluxDB, etc.</p>
+
+<h2>Conclusion</h2>
+
+<p>If there is a problem with using PosgreSQL or some other database for
+Time Series data, it is mainly that of having to use advanced SQL
+syntax and possibly requiring some cookie cutter method for managing
+Time Series, especially when it is a large number and high volume.</p>
+
+<p>There is also complexity in horizontally scaling a relational database
+because it involves setting up replication, sharding, methods for
+recovery from failure and balancing the data. But these are not
+TS-specific problem, they are typical general scaling problems.</p>
+
+<p>Having written this up, I&#8217;m inclined to think that perhaps there is
+no need for a specialized &#8220;Time Series Database&#8221;, instead it can be
+accomplished by an application which uses a database for storage and
+abstracts the users from the complexities of SQL and potentially even
+scaling, while still allowing for direct access to the data via the
+rich set of tools that a database like PostgreSQL provides.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-28T15:40:00-04:00" pubdate data-updated="true">Mar 28<span>th</span>, 2015</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2015/03/28/on-time-series/" data-via="humblehack" data-counturl="http://grisha.org/blog/2015/03/28/on-time-series/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/03/20/influxdb-data/" title="Previous Post: How InfluxDB Stores Data">&laquo; How InfluxDB Stores Data</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
+  </div>
+</div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/03/28/on-time-series/">Is Time Series even a Thing?</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/06/03/graceful-restart-in-golang/">Graceful restart in Golang</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/07/mod-python-performance-revisited/">mod_python performance part 2: high(er) concurrency</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2015 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2015/03/28/on-time-series/';
+        var disqus_url = 'http://grisha.org/blog/2015/03/28/on-time-series/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
