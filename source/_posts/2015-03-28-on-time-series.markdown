@@ -6,7 +6,7 @@ comments: true
 categories:
 ---
 
-## Is it a even thing?
+## Is it even a thing?
 
 Time Series is on its way to becoming a buzzword in the Information
 Technology circles. This has to do with the looming Internet of Things
