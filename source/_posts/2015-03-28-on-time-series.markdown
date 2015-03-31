@@ -15,7 +15,7 @@ of data produced by said Things is expected to exceed the downstream
 flow. Much of this data is expected to be of the Time Series kind.
 
 This, of course, is a money-making opportunity of the Big Data
-proportions all over again, and I imagine we're going to see a lot of
+proportions all over again, and I predict we're going to see a lot of
 Time Series support of various shapes and forms appearing in all
 manners of (mostly commercial) software.
 
@@ -32,7 +32,7 @@ large volumes at a steady pace which renders buffered writes
 useless. The number of incoming data streams can also be large
 typically causing a disk seek per stream and further complicating the
 write situation. TS data also has a property where often more data is
-written than read because it's possible for a data point to be
+written than read because it's possible for a datapoint to be
 collected and examined only once, if ever. In short, TS is very
 write-heavy.
 
@@ -112,7 +112,7 @@ is easily implemented via a trigger.
 
 Sometimes the data from various devices exists in the form of a
 counter, which requires the database to derive a rate by comparing
-with a previous data point. An example of this is number of bytes sent
+with a previous datapoint. An example of this is number of bytes sent
 over a network interface. Only the rate of change of this value is
 relevant, not the number itself. The rate of change is the difference
 with the previous value divided over the time interval passed.
