@@ -1,12 +1,12 @@
 ---
 layout: post
-title: "Is Time Series even a Thing?"
+title: "On Time Series"
 date: 2015-03-28 15:40
 comments: true
 categories:
 ---
 
-## The Great Reversal
+## Is it a even thing?
 
 Time Series is on its way to becoming a buzzword in the Big Data
 circles. This has to do with the looming Internet of Things which
