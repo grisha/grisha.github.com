@@ -138,7 +138,7 @@ job or possibly even just triggers.
 
 ## Heartbeat and Interval Filling
 
-It is possible for a time series stream to stop, and this can be
+It is possible for a time series stream to pause, and this can be
 interpreted in different ways: we can attempt to fill in missing data,
 or treat it as unknown. More likely we'd want to start treating it as
 unknown after some period of silence. RRDTool addresses this by
