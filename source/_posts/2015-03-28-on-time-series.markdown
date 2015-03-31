@@ -132,7 +132,7 @@ records eventually. For example we might want to store minutely data
 for a week, hourly for 3 months, daily for 3 years and drop all data
 beyond 3 years.
 
-Databases do not do this "natively" like Cassandra or Redis, but it
+Databases do not expire rows "natively" like Cassandra or Redis, but it
 shouldn't be too hard to accomplish via some sort of a periodic cron
 job or possibly even just triggers.
 
