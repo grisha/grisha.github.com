@@ -161,13 +161,14 @@ RRDTool or Graphite or InfluxDB, etc.
 
 If there is a problem with using PosgreSQL or some other database for
 Time Series data, it is mainly that of having to use advanced SQL
-syntax and possibly requiring some cookie cutter method for managing
-Time Series, especially when it is a large number and high volume.
+syntax and possibly requiring some cookie-cutter method for managing
+Time Series, especially when it is a large number or series and high
+volume.
 
 There is also complexity in horizontally scaling a relational database
 because it involves setting up replication, sharding, methods for
 recovery from failure and balancing the data. But these are not
-TS-specific problem, they are typical general scaling problems.
+TS-specific problems, they are scaling problems.
 
 Having written this up, I'm inclined to think that perhaps there is
 no need for a specialized "Time Series Database", instead it can be
