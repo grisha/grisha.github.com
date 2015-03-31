@@ -48,12 +48,7 @@ problem, it's one of scale, the same one from which the Hadoops and
 Cassandras of this world were born. What is really happening here is
 that TS happens to be yet another thing that requires the difficult to
 deal with "big data" infrastructure and reiterates the need for an
-easy-to-setup horizontally scalable database.
-
-The only thing that is certain here is that we can expect more "Big
-Data" stuff as we inch closer to the Internet of Things being a
-reality. Perhaps this need will finally result in PostgreSQL natively
-supporting clustering.
+easy-to-setup horizontally scalable database (which PostgreSQL isn't).
 
 ## The backfill problem
 
