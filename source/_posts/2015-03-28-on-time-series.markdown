@@ -8,10 +8,10 @@ categories:
 
 ## Is it a even thing?
 
-Time Series is on its way to becoming a buzzword in the Big Data
-circles. This has to do with the looming Internet of Things which
-shall cause the Great Reversal of Internet whereby upstream flow of
-data produced by said Things is expected to exceed the downstream
+Time Series is on its way to becoming a buzzword in the Information
+Technology circles. This has to do with the looming Internet of Things
+which shall cause the Great Reversal of Internet whereby upstream flow
+of data produced by said Things is expected to exceed the downstream
 flow. Much of this data is expected to be of the Time Series kind.
 
 This, of course, is a money-making opportunity of the Big Data
