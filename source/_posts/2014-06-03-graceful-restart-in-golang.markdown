@@ -6,6 +6,10 @@ comments: true
 categories:
 ---
 
+Update (Apr 2015): [Florian von Bock](https://github.com/fvbock) has
+turned what is described in this article into a nice Go package called
+[endless](https://github.com/fvbock/endless).
+
 If you have a Golang HTTP service, chances are, you will need to restart it
 on occasion to upgrade the binary or change some configuration. And if
 you (like me) have been taking graceful restart for granted because
