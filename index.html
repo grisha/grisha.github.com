@@ -806,7 +806,11 @@ whatever we want over this connection:</p>
   </header>
 
 
-  <div class="entry-content"><p>If you have a Golang HTTP service, chances are, you will need to restart it
+  <div class="entry-content"><p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
 on occasion to upgrade the binary or change some configuration. And if
 you (like me) have been taking graceful restart for granted because
 the webserver took care of it, you may find this recipe very handy

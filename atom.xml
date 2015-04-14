@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-03-31T14:22:17-04:00</updated>
+  <updated>2015-04-14T14:50:15-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -628,7 +628,11 @@ whatever we want over this connection:</p>
     <link href="http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/"/>
     <updated>2014-06-03T12:49:00-04:00</updated>
     <id>http://grisha.org/blog/2014/06/03/graceful-restart-in-golang</id>
-    <content type="html"><![CDATA[<p>If you have a Golang HTTP service, chances are, you will need to restart it
+    <content type="html"><![CDATA[<p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
 on occasion to upgrade the binary or change some configuration. And if
 you (like me) have been taking graceful restart for granted because
 the webserver took care of it, you may find this recipe very handy

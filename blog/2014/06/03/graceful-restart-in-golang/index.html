@@ -9,8 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="If you have a Golang HTTP service, chances are, you will need to restart it
-on occasion to upgrade the binary or change some configuration. And if &hellip;">
+  <meta name="description" content="Update (Apr 2015): Florian von Bock has
+turned what is described in this article into a nice Go package called
+endless. If you have a Golang HTTP &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -106,7 +107,11 @@ on occasion to upgrade the binary or change some configuration. And if &hellip;"
   </header>
 
 
-<div class="entry-content"><p>If you have a Golang HTTP service, chances are, you will need to restart it
+<div class="entry-content"><p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
 on occasion to upgrade the binary or change some configuration. And if
 you (like me) have been taking graceful restart for granted because
 the webserver took care of it, you may find this recipe very handy
