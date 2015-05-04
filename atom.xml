@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-04T19:11:39-04:00</updated>
+  <updated>2015-05-04T19:28:40-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -45,9 +45,9 @@ much easier.</p>
 But there is a complex subtelty lurking when it comes to assigning data points to slot.</p>
 
 <p><a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
-for example, just changes the timestamp of the datapoint to
-the last nearest slot.  If multiple data points arrive, then the last
-one &#8220;wins&#8221;.</p>
+for example, just changes the timestamp of the datapoint to the
+beginning of the slot.  If multiple data points arrive in the same
+step, then the last one &#8220;wins&#8221;.</p>
 
 <p>On the surface there is little wrong with this approach. In fact,
 under right circumstances, there is absolutely nothing wrong with
