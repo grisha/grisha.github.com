@@ -22,7 +22,7 @@ For example, if our interval size is 10 seconds (I may sometimes refer
 to it as the _step_), we could divide the entire timeline starting
 from the [beginning of the epoch](http://en.wikipedia.org/wiki/Unix_time) and until the end of
 universe into 10 second slots. Since the first slot begins at 0, any
-10-second sized slot time series will have slots starting at the exact
+10-second-step time series will have slots starting at the exact
 same time. Now correlation across series or other time values becomes
 much easier.
 
