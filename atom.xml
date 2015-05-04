@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-04T19:29:34-04:00</updated>
+  <updated>2015-05-04T19:31:10-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -34,7 +34,7 @@ particular size and assign datapoints to the intervals.</p>
 to it as the <em>step</em>), we could divide the entire timeline starting
 from the <a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a> and until the end of
 universe into 10 second slots. Since the first slot begins at 0, any
-10-second sized slot time series will have slots starting at the exact
+10-second-step time series will have slots starting at the exact
 same time. Now correlation across series or other time values becomes
 much easier.</p>
 
