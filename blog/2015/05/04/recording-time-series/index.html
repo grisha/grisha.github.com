@@ -126,7 +126,7 @@ universe into 10 second slots. Since the first slot begins at 0, any
 same time. Now correlation across series or other time values becomes
 much easier.</p>
 
-<p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> is the
+<p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> being
 <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
 But there is a complex subtelty lurking when it comes to assigning data points to slot.</p>
 
@@ -160,10 +160,10 @@ files open. The consequnce of the 50 being dropped is that we will
 never know it existed, but towards the end of the 10 second interval
 it went down to 10, which is still a true fact. If we really wanted to
 know about the variations within a 10 second interval, we should have
-chosen a smaller step, e.g. 1 second. When we decided that the step is
+chosen a smaller step, e.g. 1 second. By deciding that the step is
 going to be 10 seconds, we thus declared that <em>variations within a
-smaller period are of no interest</em>, and from this perspective,
-Graphite is correct.</p>
+smaller period are of no interest</em> to us, and from this perspective,
+Graphite <em>is correct</em>.</p>
 
 <p>But what if those numbers are the price of a stock. There may be
 hundreds of thousand of trades within a 10 second interval, yet we do
