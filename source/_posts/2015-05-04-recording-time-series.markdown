@@ -33,9 +33,9 @@ Calculating the slot is trivially easy: `time % step` (`%` is the
 But there is a complex subtelty lurking when it comes to assigning data points to slot.
 
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
-for example, just changes the timestamp of the datapoint to
-the last nearest slot.  If multiple data points arrive, then the last
-one "wins".
+for example, just changes the timestamp of the datapoint to the
+beginning of the slot.  If multiple data points arrive in the same
+step, then the last one "wins".
 
 On the surface there is little wrong with this approach. In fact,
 under right circumstances, there is absolutely nothing wrong with
