@@ -11,9 +11,7 @@ focuses on different methods and the implications.
 
 A time series is simply a sequence of `(time, value)` tuples. The most
 naive method of recording a time series is to store timestamps as
-is. (In this write up I do not wish to focus on the specifics of the
-data storage - it can be a disk file, a database, a key-value store,
-etc.)
+is.
 
 Since the data points might arrive at arbitrary intervals, to
 correlate the series with a particular point in time might be tricky.
