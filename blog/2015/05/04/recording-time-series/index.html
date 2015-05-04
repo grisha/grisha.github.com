@@ -270,8 +270,9 @@ exactly the number of trinkets sold during that period: 220.</li>
 
 
 <p>Last, but hardly the least, consider what happens when we consolidate
-data points into larger interval. Let&#8217;s say 20 seconds, twice our
-step. If we average the second and the third steps, we would get:</p>
+data points into larger intervals by averaging the values. Let&#8217;s say
+20 seconds, twice our step. If we consolidate the second and the third
+steps, we would get:</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -279,10 +280,11 @@ step. If we average the second and the third steps, we would get:</p>
 </span><span class='line'>RRDTool:   average(22,30) = 26  =&gt; 520 trinkets in 20 seconds</span></code></pre></td></tr></table></div></figure>
 
 
-<p>While the Graphite numbers were off to begin with, we have no reason
+<p>Since the Graphite numbers were off to begin with, we have no reason
 to trust the 400 trinkets number. But using the RRDTool, the new
 number happens to still be 100% accurate even after the data points
-have been consolidated.</p>
+have been consolidated. This is a very useful property of rates in
+time series..</p>
 
 <p>If you&#8217;re interested in learning more about this, I recommend reading
 the documentation for <a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool
