@@ -9,8 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Is it even a thing? Time Series is on its way to becoming a buzzword in the Information
-Technology circles. This has to do with the looming Internet &hellip;">
+  <meta name="description" content="Different tools record Time Series in different ways, this write up
+focuses on different methods and the implications. A time series is simply a &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -78,6 +78,228 @@ Technology circles. This has to do with the looming Internet &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/05/04/recording-time-series/">Recording Time Series</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-04T17:40:00-04:00" pubdate data-updated="true">May 4<span>th</span>, 2015</time>
+        
+         | <a href="/blog/2015/05/04/recording-time-series/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Different tools record Time Series in different ways, this write up
+focuses on different methods and the implications.</p>
+
+<p>A time series is simply a sequence of <code>(time, value)</code> tuples. The most
+naive method of recording a time series is to store timestamps as
+is. (In this write up I do not wish to focus on the specifics of the
+data storage - it can be a disk file, a database, a key-value store,
+etc.)</p>
+
+<p>Since the data points might arrive at arbitrary intervals, to
+correlate the series with a particular point in time might be tricky.
+One way to improve upon this is to divide time into intervals of a
+particular size and assign datapoints to the intervals.</p>
+
+<p>For example, if our interval size is 10 seconds (I may sometimes refer
+to it as the <em>step</em>), we could divide the entire timeline starting
+from the <a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a> and until the end of
+universe into 10 second slots. Since the first slot begins at 0, any
+10-second sized slot time series will have slots starting at the exact
+same time. Now correlation across series or other time values becomes
+much easier.</p>
+
+<p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> is the
+<a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
+But there is a complex subtelty lurking when it comes to assigning data points to slot.</p>
+
+<p><a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
+for example, just changes the timestamp of the datapoint to
+the last nearest slot.  If multiple data points arrive, then the last
+one &#8220;wins&#8221;.</p>
+
+<p>On the surface there is little wrong with this approach. In fact,
+under right circumstances, there is absolutely nothing wrong with
+it. Consider the following example:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Graphite, 10 second step.
+</span><span class='line'>
+</span><span class='line'>Actual Time   Adjuste Time
+</span><span class='line'>1430701282    1430701280     50  &lt;-- This datapoint is lost
+</span><span class='line'>1430701288    1430701280     10
+</span><span class='line'>1430701293    1430701290     30
+</span><span class='line'>1430701301    1430701300     30</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&#8217;s pretend those values are some system metric like the number of
+files open. The consequnce of the 50 being dropped is that we will
+never know it existed, but towards the end of the 10 second interval
+it went down to 10, which is still a true fact. If we really wanted to
+know about the variations within a 10 second interval, we should have
+chosen a smaller step, e.g. 1 second. When we decided that the step is
+going to be 10 seconds, we thus declared that <em>variations within a
+smaller period are of no interest</em>, and from this perspective,
+Graphite is correct.</p>
+
+<p>But what if those numbers are the price of a stock. There may be
+hundreds of thousand of trades within a 10 second interval, yet we do
+not want to (or cannot, for technical reasons) record every single one
+of them. In this scenario having the last value override all previous
+ones doesn&#8217;t exactly seem correct.</p>
+
+<p>Enter <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a> which uses a
+different method. RRDTool keeps track of the last timestamp and
+calculates a weight for every incoming datapoint based on time since
+last update or beginning of the step and the step length. Here is what
+the same sequence of points looks like in RRDTool. The lines marked
+with a <code>*</code> are not actual data points, but are the last value for the
+preceeding step, it&#8217;s used for computing the value for the remainder
+of the step after a new one has begun.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>RRDTool, 10 second step.
+</span><span class='line'>
+</span><span class='line'>  Time          Value       Time since  Weight  Adjusted   Recorded
+</span><span class='line'>                            last                value      value
+</span><span class='line'>  1430701270    0           N/A
+</span><span class='line'>* 1430701280    50         10s          1       50* 1= 50
+</span><span class='line'>                                                           50
+</span><span class='line'>  1430701282    50          2s          .2      50*.2= 10
+</span><span class='line'>  1430701288    10          6s          .6      10*.6= 6
+</span><span class='line'>* 1430701290    30          2s          .2      30*.2= 6
+</span><span class='line'>                                                           10+6+6= 22
+</span><span class='line'>  1430701293    30          3s          .3      30*.3= 9
+</span><span class='line'>* 1430701300    30          7s          .7      30*.7= 21
+</span><span class='line'>                                                           9+21=   30
+</span><span class='line'>  1430701301    30   # this data point is incomplete</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So to compare the results of the two tools:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Time Slot     Graphite    RRDTool
+</span><span class='line'>1430701270       N/A        50
+</span><span class='line'>1430701280       10         22
+</span><span class='line'>1430701290       30         30
+</span><span class='line'>1430701300       N/A        N/A
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Before you say &#8220;so what, I don&#8217;t really understand the difference&#8221;,
+let&#8217;s pretend that those numbers were actually the rate of sale of
+trinkets from our website (per second).</p>
+
+<p>At 1430701282 we recorded selling 50 trinkets per second. Assuming we
+started selling at the beginning of our timeline, i.e. 12 seconds
+earlier, we can state that during the first step we sold exactly 500
+trinkets. Then 2 seconds into the second step we sold another 100
+(we&#8217;re still selling at 50/s). Then for the next 6 seconds we were
+selling at 10/s, thus another 60 trinkets, and for the last 2 seconds
+of the slot we sold another 60 at 30/s. In the third step we were
+selling steadily at 30/s, thus exactly 300 were sold. But according to
+Graphite, the story is different:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Trinkets per second:
+</span><span class='line'>   Time Slot     Graphite Trinkets     RRDTool Trinkets
+</span><span class='line'>1. 1430701270      N/A      N/A          50      500
+</span><span class='line'>2. 1430701280       10      100          22      220 (100+60+60)
+</span><span class='line'>3. 1430701290       30      300          30      300
+</span><span class='line'>4. 1430701300       30      N/A          N/A     N/A
+</span><span class='line'>                          -----                -----
+</span><span class='line'>   TOTAL:                   400                 1020
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Two important observations here:</p>
+
+<ol>
+<li>The totals are vastly different.</li>
+<li>The rate recorded by RRDTool for the second slot (22/s), yields
+exactly the number of trinkets sold during that period: 220.</li>
+</ol>
+
+
+<p>Last, but hardly the least, consider what happens when we consolidate
+data points into larger interval. Let&#8217;s say 20 seconds, twice our
+step. If we average the second and the third steps, we would get:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Graphite:  average(10,30) = 20  =&gt; 400 trinkets in 20 seconds
+</span><span class='line'>RRDTool:   average(22,30) = 26  =&gt; 520 trinkets in 20 seconds</span></code></pre></td></tr></table></div></figure>
+
+
+<p>While the Graphite numbers were off to begin with, we have no reason
+to trust the 400 trinkets number. But using the RRDTool, the new
+number happens to still be 100% accurate even after the data points
+have been consolidated.</p>
+
+<p>If you&#8217;re interested in learning more about this, I recommend reading
+the documentation for <a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool
+create</a>, in
+particular the &#8220;It&#8217;s always a Rate&#8221; section, as well as <a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
+by Alex van den Bogaerdt.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2380,71 +2602,6 @@ ready for pre-release testing, please help me <a href="https://github.com/grisha
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI App on Apache Should Not Be This Hard</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-09-25T20:08:00-04:00" pubdate data-updated="true">Sep 25<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>If I have a Django app in <code>/home/grisha/mysite</code>, then all I should
-need to do to run it under Apache is:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>mod_python create /home/grisha/mysite_httpd <span class="se">\</span>
-</span><span class='line'>    --listen<span class="o">=</span>8888 <span class="se">\</span>
-</span><span class='line'>    --pythonpath<span class="o">=</span>/home/grisha/mysite <span class="se">\</span>
-</span><span class='line'>    --pythonhandler<span class="o">=</span>mod_python.wsgi <span class="se">\</span>
-</span><span class='line'>    --pythonoption<span class="o">=</span><span class="s2">&quot;mod_python.wsgi.application mysite.wsgi::application&quot;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nv">$ </span>mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>That&#8217;s all. There should be no need to become root, tweak various
-configurations, place files in the right place, check permissions,
-none of that.</p>
-
-<p>Well&#8230; With <a href="http://www.modpython.org/">mod_python</a> 3.4.0 (alpha)
-that&#8217;s exactly how it is&#8230;</p>
-
-<p>Please help me <a href="https://github.com/grisha/mod_python/issues/4">test it</a>.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2498,6 +2655,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/05/04/recording-time-series/">Recording Time Series</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
       </li>
     
@@ -2511,10 +2672,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2014/06/03/graceful-restart-in-golang/">Graceful restart in Golang</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/11/07/mod-python-performance-revisited/">mod_python performance part 2: high(er) concurrency</a>
       </li>
     
   </ul>
