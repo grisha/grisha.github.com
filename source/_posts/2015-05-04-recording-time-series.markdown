@@ -42,7 +42,7 @@ universe into 10 second slots. Since the first slot begins at 0, any
 times. Now correlation across series or other time values becomes much
 easier.
 
-Calculating the slot is trivially easy: `time % step` (`%` being
+Calculating the slot is trivially easy: `time - time % step` (`%` being
 the [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
 There is, however, a subtle complexity lurking when it comes to
 storing the datapoint with the adjusted (or _aligned_) timestamp.
