@@ -12,26 +12,25 @@ one by
 the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
 the implications.
 
-A time series is simply a sequence of `(time, value)` tuples. The most
-naive method of recording a time series is to store timestamps as
-is.
+So a time series is simply a sequence of `(time, value)` tuples. The
+most naive method of recording a time series is to store timestamps as
+is. Since the data points might arrive at arbitrary and inexact
+intervals, to correlate the series with a particular point in time
+might be tricky. If datapoints are arriving somewhere in between one
+minute bounaries (as they always naturally would), to answer the
+question of what happened during a particular minute would require
+specifying a range, which is not as clean as being able to specify a
+precise value. To join two series on an imprecise timestemp is even trickier.
 
-Since the data points might arrive at arbitrary and inexact intervals,
-to correlate the series with a particular point in time might be
-tricky. For example if I have a datapoints arriving somewhere in
-between minute bounaries, to answer the question of what happened
-during a particular minute would require specifying a range, which is
-not as clean as being able to specify a precise value. One way to
-improve upon this is to divide time into intervals of a particular
-size and assign datapoints to the intervals.
-
-For example, if our interval size is 10 seconds (I may sometimes refer
-to it as the _step_), we could divide the entire timeline starting
-from the [beginning of the epoch](http://en.wikipedia.org/wiki/Unix_time) and until the end of
-universe into 10 second slots. Since the first slot begins at 0, any
-10-second-step time series will have slots starting at the exact
-same time. Now correlation across series or other time values becomes
-much easier.
+One way to improve upon this is to divide time into intervals of a
+particular size and assign datapoints to the intervals. For example,
+if our interval size is 10 seconds (I may sometimes refer to it as the
+_step_), we could divide the entire timeline starting from the
+[beginning of the epoch](http://en.wikipedia.org/wiki/Unix_time) and
+until the end of universe into 10 second slots. Since the first slot
+begins at 0, any 10-second-step time series will have slots starting
+at the exact same time. Now correlation across series or other time
+values becomes much easier.
 
 Calculating the slot is trivially easy: `time % step` (`%` being
 [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
