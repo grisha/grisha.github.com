@@ -150,14 +150,14 @@ selling steadily at 30/s, thus exactly 300 were sold.
 Comparing RRDTool and Graphite side-by-side, the stories are quite different:
 
 ```
-Trinkets per second:
+Trinkets per second and sold:
    Time Slot     Graphite Trinkets     RRDTool Trinkets
 1. 1430701270      N/A      N/A          50      500
 2. 1430701280       10      100          22      220 (100+60+60)
 3. 1430701290       30      300          30      300
 4. 1430701300       30      N/A          N/A     N/A
                           -----                -----
-   TOTAL:                   400                 1020
+   TOTAL SOLD:              400                 1020
 
 ```
 
