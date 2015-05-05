@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Recording Time Series - Graphite vs RRDTool"
+title: "Time Series Accuracy - Graphite vs RRDTool"
 date: 2015-05-04 17:40
 comments: true
 categories:
