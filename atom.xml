@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-04T19:38:58-04:00</updated>
+  <updated>2015-05-04T20:06:52-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -80,7 +80,7 @@ Graphite <em>is correct</em>.</p>
 <p>But what if those numbers are the price of a stock. There may be
 hundreds of thousand of trades within a 10 second interval, yet we do
 not want to (or cannot, for technical reasons) record every single one
-of them. In this scenario having the last value override all previous
+of them? In this scenario having the last value override all previous
 ones doesn&#8217;t exactly seem correct.</p>
 
 <p>Enter <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a> which uses a
@@ -141,7 +141,18 @@ of the step after a new one has begun.</p>
 
 <p>Before you say &#8220;so what, I don&#8217;t really understand the difference&#8221;,
 let&#8217;s pretend that those numbers were actually the rate of sale of
-trinkets from our website (per second).</p>
+trinkets from our website (per second). Here is a horizontal ascii-art
+rendition of our timeline, 0 is 1430701270.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>0         10        20        30
+</span><span class='line'>+.........+.........+.........+.....-&gt; time
+</span><span class='line'>|           |     |    |       |
+</span><span class='line'>0           50    10   30      30</span></code></pre></td></tr></table></div></figure>
+
 
 <p>At 1430701282 we recorded selling 50 trinkets per second. Assuming we
 started selling at the beginning of our timeline, i.e. 12 seconds
@@ -150,8 +161,9 @@ trinkets. Then 2 seconds into the second step we sold another 100
 (we&#8217;re still selling at 50/s). Then for the next 6 seconds we were
 selling at 10/s, thus another 60 trinkets, and for the last 2 seconds
 of the slot we sold another 60 at 30/s. In the third step we were
-selling steadily at 30/s, thus exactly 300 were sold. But according to
-Graphite, the story is different:</p>
+selling steadily at 30/s, thus exactly 300 were sold.</p>
+
+<p>Comparing RRDTool and Graphite side-by-side, the stories are quite different:</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
