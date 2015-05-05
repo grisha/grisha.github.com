@@ -164,7 +164,7 @@ RRDTool:   average(22,30) = 26  => 520 trinkets in 20 seconds
 ```
 
 Since the Graphite numbers were off to begin with, we have no reason
-to trust the 400 trinkets number. But using the RRDTool, the new
+to trust the 400 trinkets number. But using the RRDTool data, the new
 number happens to still be 100% accurate even after the data points
 have been consolidated. This is a very useful property of rates in
 time series..
