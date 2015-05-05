@@ -57,7 +57,7 @@ it. Consider the following example:
 ```
 Graphite, 10 second step.
 
-Actual Time   Adjusted Time
+Actual Time   Aligned Time
 1430701282    1430701280     50  <-- This data point is lost
 1430701288    1430701280     10
 1430701293    1430701290     30
