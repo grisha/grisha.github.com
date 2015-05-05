@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-05T13:01:47-04:00</updated>
+  <updated>2015-05-05T13:03:37-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -55,14 +55,14 @@ times. Now correlation across series or other time values becomes much
 easier.</p>
 
 <p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> being
-<a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
-There is, however, a subtle complexity lurking when it comes to storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.</p>
-
-<p>Graphite simply changes the timestamp of the data point to
-the beginning of the slot. If multiple data points arrive in the same
+the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
+There is, however, a subtle complexity lurking when it comes to
+storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.
+Graphite simply changes the timestamp of the data point to the
+beginning of the slot. If multiple data points arrive in the same
 step, then the last one &#8220;wins&#8221;.</p>
 
-<p>On the surface there is little wrong with this approach. In fact,
+<p>On the surface there is little wrong with Graphite&#8217;s approach. In fact,
 under right circumstances, there is absolutely nothing wrong with
 it. Consider the following example:</p>
 
