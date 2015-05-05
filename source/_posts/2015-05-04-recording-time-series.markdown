@@ -165,7 +165,7 @@ Two important observations here:
 
 1. The totals are vastly different.
 1. The rate recorded by RRDTool for the second slot (22/s), yields
-   exactly the number of trinkets sold during that period: 220.
+   _exactly_ the number of trinkets sold during that period: 220.
 
 Last, but hardly the least, consider what happens when we consolidate
 data points into larger intervals by averaging the values. Let's say
