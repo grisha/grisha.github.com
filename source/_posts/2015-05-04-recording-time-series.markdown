@@ -16,7 +16,7 @@ with the one used by [RRDTool](https://oss.oetiker.ch/rrdtool/).
 Graphite uses
 [Whisper](http://graphite.wikidot.com/whisper) to store data, which in
 the FAQ is portrayed as a [better alternative](http://graphite.wikidot.com/whisper#toc1) to RRDTool, but
-this is potentially deceiving, because the flexibility afforded by the
+this is potentially misleading, because the flexibility afforded by the
 design of Whisper comes at the price of inaccuracy.
 
 So a time series is simply a sequence of `(time, value)` tuples. The
