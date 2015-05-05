@@ -47,7 +47,7 @@ the [modulo operator](https://docs.python.org/3.4/reference/expressions.html#ind
 There is, however, a subtle complexity lurking when it comes to
 storing the datapoint with the adjusted (or _aligned_) timestamp.
 Graphite simply changes the timestamp of the data point to the
-beginning of the slot. If multiple data points arrive in the same
+aligned one. If multiple data points arrive in the same
 step, then the last one "wins".
 
 On the surface there is little wrong with Graphite's approach. In fact,
