@@ -43,14 +43,14 @@ times. Now correlation across series or other time values becomes much
 easier.
 
 Calculating the slot is trivially easy: `time % step` (`%` being
-[modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
-There is, however, a subtle complexity lurking when it comes to storing the datapoint with the adjusted (or _aligned_) timestamp.
-
-Graphite simply changes the timestamp of the data point to
-the beginning of the slot. If multiple data points arrive in the same
+the [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
+There is, however, a subtle complexity lurking when it comes to
+storing the datapoint with the adjusted (or _aligned_) timestamp.
+Graphite simply changes the timestamp of the data point to the
+beginning of the slot. If multiple data points arrive in the same
 step, then the last one "wins".
 
-On the surface there is little wrong with this approach. In fact,
+On the surface there is little wrong with Graphite's approach. In fact,
 under right circumstances, there is absolutely nothing wrong with
 it. Consider the following example:
 
