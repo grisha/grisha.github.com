@@ -181,8 +181,25 @@ RRDTool:   average(22,30) = 26  => 520 trinkets in 20 seconds
 Since the Graphite numbers were off to begin with, we have no reason
 to trust the 400 trinkets number. But using the RRDTool data, the new
 number happens to still be 100% accurate even after the data points
-have been consolidated. This is a very useful property of rates in
+have been consolidated. This is a very useful property of _rates_ in
 time series.
+
+It also explains why RRDTool does not permit updating data prior to
+the last update: RRD is _always accurate_. (Back in my ISP days, we
+actually used data stored in RRDs to bill our customers. I wouldn't
+try this with Graphite.)
+
+As an exercise, try seeing it for yourself: pretent the value of 10 in
+the second step never arrived, which should make the final value of
+the second slot 34. If the 10 arrived some time later, averaging it in
+will not give you the correct 22.
+
+Whisper allows past updates, but is quazi accurate by definition - I'm
+not sure I understand which is better - _inaccurate_ data with a data
+point missing, or the _whole inaccurate_ data. RRD could accomplish
+the same thing by adding some `--inaccurate` flag, though it would
+seem like more of a bug than a feature to me.
+
 
 If you're interested in learning more about this, I recommend reading
 the documentation for
