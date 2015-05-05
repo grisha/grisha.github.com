@@ -13,7 +13,7 @@
 one used by
 Graphite,
 the other by RRDTool and describes
-the implications. So &hellip;">
+the implications. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -113,7 +113,13 @@ the implications. So &hellip;">
 one used by
 <a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
 the other by <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a> and describes
-the implications.</p>
+the implications. Graphite uses
+<a href="http://graphite.wikidot.com/whisper">Whisper</a> to store data, which in
+the FAQ portrayed as a <a href="http://graphite.wikidot.com/whisper#toc1">better alternative</a> to RRDTool, but
+this is potentially deceiving, because the flexibility afforded by the
+design of Whisper comes at the price of loss of accuracy. It took me some
+time to get to the bottom of it, and so I thought others might find this information
+useful.</p>
 
 <p>So a time series is simply a sequence of <code>(time, value)</code> tuples. The
 most naive method of recording a time series is to store timestamps as
@@ -224,6 +230,15 @@ begun.</p>
 </span><span class='line'>  1430701301    30   # this data point is incomplete</span></code></pre></td></tr></table></div></figure>
 
 
+<p>Note, by the way, that the Whisper FAQ says that &#8220;RRD will store your
+updates in a temporary workspace area and after the minute has passed,
+aggregate them and store them in the archive&#8221;, which to me sounds like
+there is some sort of a temporary storage area holding all the unsaved
+updates. In fact, to be able to compute the weighted average, RRD only
+needs to store the time of the last update and the current sum, i.e.
+exactly just two variables, regardless of the number of updates in a
+single step. This is evident from the above figure.</p>
+
 <p>So to compare the results of the two tools:</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -308,7 +323,7 @@ steps, we would get:</p>
 to trust the 400 trinkets number. But using the RRDTool data, the new
 number happens to still be 100% accurate even after the data points
 have been consolidated. This is a very useful property of rates in
-time series..</p>
+time series.</p>
 
 <p>If you&#8217;re interested in learning more about this, I recommend reading
 the documentation for
