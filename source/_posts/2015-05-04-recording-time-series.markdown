@@ -10,17 +10,16 @@ Back in my ISP days, we actually used data stored in RRDs to bill our
 customers. I wouldn't try this with Graphite.
 
 In this write up I try
-to explain why by analyzing the two different methods of recording time series,
-one used by
+to explain why is is so by comparing the method of recording time series
+used by
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
-the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
-the implications. Graphite uses
+with the one used by [RRDTool](https://oss.oetiker.ch/rrdtool/).
+
+Graphite uses
 [Whisper](http://graphite.wikidot.com/whisper) to store data, which in
 the FAQ is portrayed as a [better alternative](http://graphite.wikidot.com/whisper#toc1) to RRDTool, but
 this is potentially deceiving, because the flexibility afforded by the
-design of Whisper comes at the price of inaccuracy. It took me some
-time to get to the bottom of it, and so I thought others might find this information
-useful.
+design of Whisper comes at the price of inaccuracy.
 
 So a time series is simply a sequence of `(time, value)` tuples. The
 most naive method of recording a time series is to store timestamps as
