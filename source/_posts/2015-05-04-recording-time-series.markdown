@@ -26,13 +26,12 @@ might be tricky. If data points are arriving somewhere in between one
 minute bounaries (as they always naturally would), to answer the
 question of what happened during a particular minute would require
 specifying a range, which is not as clean as being able to specify a
-precise value. To join two series on an imprecise timestamp is even
-trickier.
+precise value. To join two series on a range is even more problematic.
 
 One way to improve upon this is to divide time into equal intervals
 and assign data points to the intervals. We could then use the
-beginning of the interval instead of the actual data point time,
-thereby giving us more consistency. For example, if our interval size
+beginning of the interval instead of the actual data point timestamp,
+thereby giving us more uniformity. For example, if our interval size
 is 10 seconds (I may sometimes refer to it as the _step_), we could
 divide the entire timeline starting from the
 [beginning of the epoch](http://en.wikipedia.org/wiki/Unix_time)
