@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-04T23:30:12-04:00</updated>
+  <updated>2015-05-04T23:31:11-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Recording Time Series - Graphite vs RRDTool]]></title>
+    <title type="html"><![CDATA[Time Series Accuracy - Graphite vs RRDTool]]></title>
     <link href="http://grisha.org/blog/2015/05/04/recording-time-series/"/>
     <updated>2015-05-04T17:40:00-04:00</updated>
     <id>http://grisha.org/blog/2015/05/04/recording-time-series</id>
