@@ -1,13 +1,16 @@
 ---
 layout: post
-title: "Recording Time Series"
+title: "Recording Time Series - Graphite vs RRDTool"
 date: 2015-05-04 17:40
 comments: true
 categories:
 ---
 
-Different tools record Time Series in different ways, this write up
-focuses on different methods and the implications.
+This write up focuses on different methods of recording time series,
+one by
+[Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
+the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
+the implications.
 
 A time series is simply a sequence of `(time, value)` tuples. The most
 naive method of recording a time series is to store timestamps as
@@ -30,9 +33,8 @@ Calculating the slot is trivially easy: `time % step` (`%` being
 [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
 But there is a complex subtelty lurking when it comes to assigning data points to slot.
 
-[Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
-for example, just changes the timestamp of the datapoint to the
-beginning of the slot.  If multiple data points arrive in the same
+Graphite, for example, just changes the timestamp of the datapoint to
+the beginning of the slot.  If multiple data points arrive in the same
 step, then the last one "wins".
 
 On the surface there is little wrong with this approach. In fact,
@@ -65,14 +67,14 @@ not want to (or cannot, for technical reasons) record every single one
 of them? In this scenario having the last value override all previous
 ones doesn't exactly seem correct.
 
-Enter [RRDTool](https://oss.oetiker.ch/rrdtool/) which uses a
-different method. RRDTool keeps track of the last timestamp and
-calculates a weight for every incoming datapoint based on time since
-last update or beginning of the step and the step length. Here is what
-the same sequence of points looks like in RRDTool. The lines marked
-with a `*` are not actual data points, but are the last value for the
-preceeding step, it's used for computing the value for the remainder
-of the step after a new one has begun.
+Enter RRDTool which uses a different method. RRDTool keeps track of
+the last timestamp and calculates a weight for every incoming
+datapoint based on time since last update or beginning of the step and
+the step length. Here is what the same sequence of points looks like
+in RRDTool. The lines marked with a `*` are not actual data points,
+but are the last value for the preceeding step, it's used for
+computing the value for the remainder of the step after a new one has
+begun.
 
 ```
 RRDTool, 10 second step.
