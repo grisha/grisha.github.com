@@ -16,10 +16,14 @@ A time series is simply a sequence of `(time, value)` tuples. The most
 naive method of recording a time series is to store timestamps as
 is.
 
-Since the data points might arrive at arbitrary intervals, to
-correlate the series with a particular point in time might be tricky.
-One way to improve upon this is to divide time into intervals of a
-particular size and assign datapoints to the intervals.
+Since the data points might arrive at arbitrary and inexact intervals,
+to correlate the series with a particular point in time might be
+tricky. For example if I have a datapoints arriving somewhere in
+between minute bounaries, to answer the question of what happened
+during a particular minute would require specifying a range, which is
+not as clean as being able to specify a precise value. One way to
+improve upon this is to divide time into intervals of a particular
+size and assign datapoints to the intervals.
 
 For example, if our interval size is 10 seconds (I may sometimes refer
 to it as the _step_), we could divide the entire timeline starting
