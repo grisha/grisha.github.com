@@ -6,8 +6,8 @@ comments: true
 categories:
 ---
 
-This write up focuses on different methods of recording time series,
-one by
+This write up compares two different methods of recording time series,
+one used by
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
 the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
 the implications.
