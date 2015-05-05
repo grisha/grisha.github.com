@@ -143,7 +143,7 @@ universe into 10 second slots. Since the first slot begins at 0, any
 times. Now correlation across series or other time values becomes much
 easier.</p>
 
-<p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> being
+<p>Calculating the slot is trivially easy: <code>time - time % step</code> (<code>%</code> being
 the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
 There is, however, a subtle complexity lurking when it comes to
 storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.

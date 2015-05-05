@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-05T13:03:37-04:00</updated>
+  <updated>2015-05-05T13:05:49-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -54,7 +54,7 @@ universe into 10 second slots. Since the first slot begins at 0, any
 times. Now correlation across series or other time values becomes much
 easier.</p>
 
-<p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> being
+<p>Calculating the slot is trivially easy: <code>time - time % step</code> (<code>%</code> being
 the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
 There is, however, a subtle complexity lurking when it comes to
 storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.
