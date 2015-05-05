@@ -6,7 +6,11 @@ comments: true
 categories:
 ---
 
-This write up compares two different methods of recording time series,
+Back in my ISP days, we actually used data stored in RRDs to bill our
+customers. I wouldn't try this with Graphite.
+
+In this write up I try
+to explain why by analyzing the two different methods of recording time series,
 one used by
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
 the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
@@ -181,12 +185,8 @@ Since the Graphite numbers were off to begin with, we have no reason
 to trust the 400 trinkets number. But using the RRDTool data, the new
 number happens to still be 100% accurate even after the data points
 have been consolidated. This is a very useful property of _rates_ in
-time series.
-
-It also explains why RRDTool does not permit updating data prior to
-the last update: RRD is _always accurate_. (Back in my ISP days, we
-actually used data stored in RRDs to bill our customers. I wouldn't
-try this with Graphite.)
+time series. It also explains why RRDTool does not permit updating
+data prior to the last update: RRD is _always accurate_.
 
 As an exercise, try seeing it for yourself: pretent the value of 10 in
 the second step never arrived, which should make the final value of
