@@ -5,12 +5,15 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Recording Time Series - Grisha Trubetskoy</title>
+  <title>Recording Time Series - Graphite vs RRDTool - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Different tools record Time Series in different ways, this write up
-focuses on different methods and the implications. A time series is simply a &hellip;">
+  <meta name="description" content="This write up focuses on different methods of recording time series,
+one by
+Graphite,
+the other by RRDTool and describes
+the implications. A time &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,7 +84,7 @@ focuses on different methods and the implications. A time series is simply a &he
   
   <header>
     
-      <h1 class="entry-title">Recording Time Series</h1>
+      <h1 class="entry-title">Recording Time Series - Graphite vs RRDTool</h1>
     
     
       <p class="meta">
@@ -106,8 +109,11 @@ focuses on different methods and the implications. A time series is simply a &he
   </header>
 
 
-<div class="entry-content"><p>Different tools record Time Series in different ways, this write up
-focuses on different methods and the implications.</p>
+<div class="entry-content"><p>This write up focuses on different methods of recording time series,
+one by
+<a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
+the other by <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a> and describes
+the implications.</p>
 
 <p>A time series is simply a sequence of <code>(time, value)</code> tuples. The most
 naive method of recording a time series is to store timestamps as
@@ -130,9 +136,8 @@ much easier.</p>
 <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
 But there is a complex subtelty lurking when it comes to assigning data points to slot.</p>
 
-<p><a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
-for example, just changes the timestamp of the datapoint to the
-beginning of the slot.  If multiple data points arrive in the same
+<p>Graphite, for example, just changes the timestamp of the datapoint to
+the beginning of the slot.  If multiple data points arrive in the same
 step, then the last one &#8220;wins&#8221;.</p>
 
 <p>On the surface there is little wrong with this approach. In fact,
@@ -171,14 +176,14 @@ not want to (or cannot, for technical reasons) record every single one
 of them? In this scenario having the last value override all previous
 ones doesn&#8217;t exactly seem correct.</p>
 
-<p>Enter <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a> which uses a
-different method. RRDTool keeps track of the last timestamp and
-calculates a weight for every incoming datapoint based on time since
-last update or beginning of the step and the step length. Here is what
-the same sequence of points looks like in RRDTool. The lines marked
-with a <code>*</code> are not actual data points, but are the last value for the
-preceeding step, it&#8217;s used for computing the value for the remainder
-of the step after a new one has begun.</p>
+<p>Enter RRDTool which uses a different method. RRDTool keeps track of
+the last timestamp and calculates a weight for every incoming
+datapoint based on time since last update or beginning of the step and
+the step length. Here is what the same sequence of points looks like
+in RRDTool. The lines marked with a <code>*</code> are not actual data points,
+but are the last value for the preceeding step, it&#8217;s used for
+computing the value for the remainder of the step after a new one has
+begun.</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -402,7 +407,7 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2015/05/04/recording-time-series/">Recording Time Series</a>
+        <a href="/blog/2015/05/04/recording-time-series/">Recording Time Series - Graphite vs RRDTool</a>
       </li>
     
       <li class="post">
