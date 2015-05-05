@@ -14,7 +14,7 @@ the implications. Graphite uses
 [Whisper](http://graphite.wikidot.com/whisper) to store data, which in
 the FAQ portrayed as a [better alternative](http://graphite.wikidot.com/whisper#toc1) to RRDTool, but
 this is potentially deceiving, because the flexibility afforded by the
-design of Whisper comes at the price of loss of accuracy. It took me some
+design of Whisper comes at the price of inaccuracy. It took me some
 time to get to the bottom of it, and so I thought others might find this information
 useful.
 
