@@ -44,7 +44,7 @@ easier.
 
 Calculating the slot is trivially easy: `time % step` (`%` being
 [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
-There is, hoever, a subtle complexity lurking when it comes to storing the datapoint with the adjusted (or aligned) timestamp.
+There is, however, a subtle complexity lurking when it comes to storing the datapoint with the adjusted (or _aligned_) timestamp.
 
 Graphite simply changes the timestamp of the data point to
 the beginning of the slot. If multiple data points arrive in the same
