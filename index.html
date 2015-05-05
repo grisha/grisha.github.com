@@ -151,7 +151,7 @@ the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">mo
 There is, however, a subtle complexity lurking when it comes to
 storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.
 Graphite simply changes the timestamp of the data point to the
-beginning of the slot. If multiple data points arrive in the same
+aligned one. If multiple data points arrive in the same
 step, then the last one &#8220;wins&#8221;.</p>
 
 <p>On the surface there is little wrong with Graphite&#8217;s approach. In fact,
