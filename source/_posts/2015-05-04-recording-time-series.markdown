@@ -19,7 +19,7 @@ the FAQ is portrayed as a [better alternative](http://graphite.wikidot.com/whisp
 this is potentially misleading, because the flexibility afforded by the
 design of Whisper comes at the price of inaccuracy.
 
-So a time series is simply a sequence of `(time, value)` tuples. The
+A time series is simply a sequence of `(time, value)` tuples. The
 most naive method of recording a time series is to store timestamps as
 is. Since the data points might arrive at arbitrary and inexact
 intervals, to correlate the series with a particular point in time
