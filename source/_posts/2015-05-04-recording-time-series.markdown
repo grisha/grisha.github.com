@@ -194,7 +194,7 @@ the second step never arrived, which should make the final value of
 the second slot 34. If the 10 arrived some time later, averaging it in
 will not give you the correct 22.
 
-Whisper allows past updates, but is quazi accurate by definition - I'm
+Whisper allows past updates, but is quasi-accurate to begin with - I'm
 not sure I understand which is better - _inaccurate_ data with a data
 point missing, or the _whole inaccurate_ data. RRD could accomplish
 the same thing by adding some `--inaccurate` flag, though it would
