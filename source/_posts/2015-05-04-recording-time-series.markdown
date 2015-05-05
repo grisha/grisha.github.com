@@ -16,14 +16,15 @@ So a time series is simply a sequence of `(time, value)` tuples. The
 most naive method of recording a time series is to store timestamps as
 is. Since the data points might arrive at arbitrary and inexact
 intervals, to correlate the series with a particular point in time
-might be tricky. If datapoints are arriving somewhere in between one
+might be tricky. If data points are arriving somewhere in between one
 minute bounaries (as they always naturally would), to answer the
 question of what happened during a particular minute would require
 specifying a range, which is not as clean as being able to specify a
-precise value. To join two series on an imprecise timestemp is even trickier.
+precise value. To join two series on an imprecise timestamp is even
+trickier.
 
 One way to improve upon this is to divide time into equal intervals
-and assign datapoints to the intervals. We could then use the
+and assign data points to the intervals. We could then use the
 beginning of the interval instead of the actual data point time,
 thereby giving us more consistency. For example, if our interval size
 is 10 seconds (I may sometimes refer to it as the _step_), we could
@@ -39,7 +40,7 @@ Calculating the slot is trivially easy: `time % step` (`%` being
 [modulo operator](https://docs.python.org/3.4/reference/expressions.html#index-51)).
 But there is a complex subtelty lurking when it comes to assigning data points to slot.
 
-Graphite, for example, just changes the timestamp of the datapoint to
+Graphite, for example, just changes the timestamp of the data point to
 the beginning of the slot.  If multiple data points arrive in the same
 step, then the last one "wins".
 
@@ -50,8 +51,8 @@ it. Consider the following example:
 ```
 Graphite, 10 second step.
 
-Actual Time   Adjuste Time
-1430701282    1430701280     50  <-- This datapoint is lost
+Actual Time   Adjusted Time
+1430701282    1430701280     50  <-- This data point is lost
 1430701288    1430701280     10
 1430701293    1430701290     30
 1430701301    1430701300     30
@@ -75,10 +76,10 @@ ones doesn't exactly seem correct.
 
 Enter RRDTool which uses a different method. RRDTool keeps track of
 the last timestamp and calculates a weight for every incoming
-datapoint based on time since last update or beginning of the step and
+data point based on time since last update or beginning of the step and
 the step length. Here is what the same sequence of points looks like
 in RRDTool. The lines marked with a `*` are not actual data points,
-but are the last value for the preceeding step, it's used for
+but are the last value for the preceding step, it's used for
 computing the value for the remainder of the step after a new one has
 begun.
 
@@ -169,7 +170,8 @@ have been consolidated. This is a very useful property of rates in
 time series..
 
 If you're interested in learning more about this, I recommend reading
-the documentation for [rrdtool
-create](http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html), in
-particular the "It's always a Rate" section, as well as [this post](http://www.vandenbogaerdt.nl/rrdtool/process.php)
+the documentation for
+[rrdtool create](http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html), in
+particular the "It's always a Rate" section, as well as
+[this post](http://www.vandenbogaerdt.nl/rrdtool/process.php)
 by Alex van den Bogaerdt.
