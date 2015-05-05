@@ -62,7 +62,7 @@ Graphite _is correct_.
 But what if those numbers are the price of a stock. There may be
 hundreds of thousand of trades within a 10 second interval, yet we do
 not want to (or cannot, for technical reasons) record every single one
-of them. In this scenario having the last value override all previous
+of them? In this scenario having the last value override all previous
 ones doesn't exactly seem correct.
 
 Enter [RRDTool](https://oss.oetiker.ch/rrdtool/) which uses a
@@ -105,7 +105,15 @@ Time Slot     Graphite    RRDTool
 
 Before you say "so what, I don't really understand the difference",
 let's pretend that those numbers were actually the rate of sale of
-trinkets from our website (per second).
+trinkets from our website (per second). Here is a horizontal ascii-art
+rendition of our timeline, 0 is 1430701270.
+
+```
+0         10        20        30
++.........+.........+.........+.....-> time
+|           |     |    |       |
+0           50    10   30      30
+```
 
 At 1430701282 we recorded selling 50 trinkets per second. Assuming we
 started selling at the beginning of our timeline, i.e. 12 seconds
@@ -114,8 +122,9 @@ trinkets. Then 2 seconds into the second step we sold another 100
 (we're still selling at 50/s). Then for the next 6 seconds we were
 selling at 10/s, thus another 60 trinkets, and for the last 2 seconds
 of the slot we sold another 60 at 30/s. In the third step we were
-selling steadily at 30/s, thus exactly 300 were sold. But according to
-Graphite, the story is different:
+selling steadily at 30/s, thus exactly 300 were sold.
+
+Comparing RRDTool and Graphite side-by-side, the stories are quite different:
 
 ```
 Trinkets per second:
