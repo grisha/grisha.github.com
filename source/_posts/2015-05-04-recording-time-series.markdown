@@ -6,11 +6,9 @@ comments: true
 categories:
 ---
 
-Back in my ISP days, we actually used data stored in RRDs to bill our
-customers. I wouldn't try this with Graphite.
-
-In this write up I try
-to explain why is is so by comparing the method of recording time series
+Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn't try this with Graphite. In this write up I try
+to explain why it is so by comparing the method of recording time series
 used by
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
 with the one used by [RRDTool](https://oss.oetiker.ch/rrdtool/).
