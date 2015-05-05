@@ -117,13 +117,13 @@ trinkets from our website (per second). Here is a horizontal ascii-art
 rendition of our timeline, 0 is 1430701270.
 
 ```
-0         10        20        30    time >>
+0         10        20        30    time (seconds)
 +.........+.........+.........+.....
 |           |     |    |       |
 0           50    10   30      30   data points
 ```
 
-At 1430701282 we recorded selling 50 trinkets per second. Assuming we
+At 12 seconds we recorded selling 50 trinkets per second. Assuming we
 started selling at the beginning of our timeline, i.e. 12 seconds
 earlier, we can state that during the first step we sold exactly 500
 trinkets. Then 2 seconds into the second step we sold another 100
