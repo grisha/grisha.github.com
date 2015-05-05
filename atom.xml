@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-04T20:30:40-04:00</updated>
+  <updated>2015-05-04T22:03:25-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -28,14 +28,15 @@ the implications.</p>
 most naive method of recording a time series is to store timestamps as
 is. Since the data points might arrive at arbitrary and inexact
 intervals, to correlate the series with a particular point in time
-might be tricky. If datapoints are arriving somewhere in between one
+might be tricky. If data points are arriving somewhere in between one
 minute bounaries (as they always naturally would), to answer the
 question of what happened during a particular minute would require
 specifying a range, which is not as clean as being able to specify a
-precise value. To join two series on an imprecise timestemp is even trickier.</p>
+precise value. To join two series on an imprecise timestamp is even
+trickier.</p>
 
 <p>One way to improve upon this is to divide time into equal intervals
-and assign datapoints to the intervals. We could then use the
+and assign data points to the intervals. We could then use the
 beginning of the interval instead of the actual data point time,
 thereby giving us more consistency. For example, if our interval size
 is 10 seconds (I may sometimes refer to it as the <em>step</em>), we could
@@ -51,7 +52,7 @@ easier.</p>
 <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
 But there is a complex subtelty lurking when it comes to assigning data points to slot.</p>
 
-<p>Graphite, for example, just changes the timestamp of the datapoint to
+<p>Graphite, for example, just changes the timestamp of the data point to
 the beginning of the slot.  If multiple data points arrive in the same
 step, then the last one &#8220;wins&#8221;.</p>
 
@@ -68,8 +69,8 @@ it. Consider the following example:</p>
 <span class='line-number'>7</span>
 </pre></td><td class='code'><pre><code class=''><span class='line'>Graphite, 10 second step.
 </span><span class='line'>
-</span><span class='line'>Actual Time   Adjuste Time
-</span><span class='line'>1430701282    1430701280     50  &lt;-- This datapoint is lost
+</span><span class='line'>Actual Time   Adjusted Time
+</span><span class='line'>1430701282    1430701280     50  &lt;-- This data point is lost
 </span><span class='line'>1430701288    1430701280     10
 </span><span class='line'>1430701293    1430701290     30
 </span><span class='line'>1430701301    1430701300     30</span></code></pre></td></tr></table></div></figure>
@@ -93,10 +94,10 @@ ones doesn&#8217;t exactly seem correct.</p>
 
 <p>Enter RRDTool which uses a different method. RRDTool keeps track of
 the last timestamp and calculates a weight for every incoming
-datapoint based on time since last update or beginning of the step and
+data point based on time since last update or beginning of the step and
 the step length. Here is what the same sequence of points looks like
 in RRDTool. The lines marked with a <code>*</code> are not actual data points,
-but are the last value for the preceeding step, it&#8217;s used for
+but are the last value for the preceding step, it&#8217;s used for
 computing the value for the remainder of the step after a new one has
 begun.</p>
 
@@ -219,9 +220,10 @@ have been consolidated. This is a very useful property of rates in
 time series..</p>
 
 <p>If you&#8217;re interested in learning more about this, I recommend reading
-the documentation for <a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool
-create</a>, in
-particular the &#8220;It&#8217;s always a Rate&#8221; section, as well as <a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
+the documentation for
+<a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool create</a>, in
+particular the &#8220;It&#8217;s always a Rate&#8221; section, as well as
+<a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
 by Alex van den Bogaerdt.</p>
 ]]></content>
   </entry>
