@@ -128,15 +128,18 @@ question of what happened during a particular minute would require
 specifying a range, which is not as clean as being able to specify a
 precise value. To join two series on an imprecise timestemp is even trickier.</p>
 
-<p>One way to improve upon this is to divide time into intervals of a
-particular size and assign datapoints to the intervals. For example,
-if our interval size is 10 seconds (I may sometimes refer to it as the
-<em>step</em>), we could divide the entire timeline starting from the
-<a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a> and
-until the end of universe into 10 second slots. Since the first slot
-begins at 0, any 10-second-step time series will have slots starting
-at the exact same time. Now correlation across series or other time
-values becomes much easier.</p>
+<p>One way to improve upon this is to divide time into equal intervals
+and assign datapoints to the intervals. We could then use the
+beginning of the interval instead of the actual data point time,
+thereby giving us more consistency. For example, if our interval size
+is 10 seconds (I may sometimes refer to it as the <em>step</em>), we could
+divide the entire timeline starting from the
+<a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a>
+and until the end of
+universe into 10 second slots. Since the first slot begins at 0, any
+10-second-step time series will have slots starting at the exact same
+times. Now correlation across series or other time values becomes much
+easier.</p>
 
 <p>Calculating the slot is trivially easy: <code>time % step</code> (<code>%</code> being
 <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
