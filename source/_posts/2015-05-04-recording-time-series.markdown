@@ -10,7 +10,13 @@ This write up compares two different methods of recording time series,
 one used by
 [Graphite](http://graphite.readthedocs.org/en/latest/overview.html),
 the other by [RRDTool](https://oss.oetiker.ch/rrdtool/) and describes
-the implications.
+the implications. Graphite uses
+[Whisper](http://graphite.wikidot.com/whisper) to store data, which in
+the FAQ portrayed as a [better alternative](http://graphite.wikidot.com/whisper#toc1) to RRDTool, but
+this is potentially deceiving, because the flexibility afforded by the
+design of Whisper comes at the price of loss of accuracy. It took me some
+time to get to the bottom of it, and so I thought others might find this information
+useful.
 
 So a time series is simply a sequence of `(time, value)` tuples. The
 most naive method of recording a time series is to store timestamps as
@@ -101,6 +107,15 @@ RRDTool, 10 second step.
   1430701301    30   # this data point is incomplete
 ```
 
+Note, by the way, that the Whisper FAQ says that "RRD will store your
+updates in a temporary workspace area and after the minute has passed,
+aggregate them and store them in the archive", which to me sounds like
+there is some sort of a temporary storage area holding all the unsaved
+updates. In fact, to be able to compute the weighted average, RRD only
+needs to store the time of the last update and the current sum, i.e.
+exactly just two variables, regardless of the number of updates in a
+single step. This is evident from the above figure.
+
 So to compare the results of the two tools:
 
 ```
@@ -167,7 +182,7 @@ Since the Graphite numbers were off to begin with, we have no reason
 to trust the 400 trinkets number. But using the RRDTool data, the new
 number happens to still be 100% accurate even after the data points
 have been consolidated. This is a very useful property of rates in
-time series..
+time series.
 
 If you're interested in learning more about this, I recommend reading
 the documentation for
