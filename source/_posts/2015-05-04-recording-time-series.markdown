@@ -203,3 +203,26 @@ the documentation for
 particular the "It's always a Rate" section, as well as
 [this post](http://www.vandenbogaerdt.nl/rrdtool/process.php)
 by Alex van den Bogaerdt.
+
+P.S. After this post article was written, someone suggested that
+instead of storing a rate, a count delta could be stored instead. In
+other words, instead storing that we're selling 10 trinkets per second
+for the past 6 seconds, we would store the total count of trinkets
+sold, i.e. 60. At first this seems like the solution to being able to
+update historical data accurately: if later we found out that we sold
+another 75 trinkets in the second time slot, we could just add it to the
+total and all would be well.
+
+Here is the problem with this approach: note that in the previous
+sentence I had to specify that the additional trinkets were sold _in
+the second time slot_. If time series data point is a timestamp and a
+value, then there isn't even a way to relay this information in a
+single data point - we'd need two timestamps. But if every data point
+arrived with two timestamps, i.e. as a duration, then which to store -
+rate or count doesn't matter, we can infer one from the other.
+
+So perhaps another way of explaining the historical update problem is
+that it *is* possible, but the datapoint must specify a _time
+interval_. This is something that neither RRDTool or Graphite authors
+have considered (or any other tool I know of, for that matter). May be
+we're onto something here?
