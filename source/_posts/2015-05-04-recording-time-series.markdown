@@ -225,5 +225,10 @@ becomes a moot point, we can infer one from the other.
 So perhaps another way of explaining the historical update problem is
 that it *is* possible, but the datapoint must specify a _time
 interval_. This is something that neither RRDTool or Graphite authors
-have considered (or any other tool I know of, for that matter). May be
-we're onto something here?
+have considered (or any other tool I know of, for that matter).
+
+Another thought about this write up: perhaps the biggest misconception
+about time series is that it is a series of data points. But time
+series is _continuous_ rather than _descrete_, i.e. it's the line that
+connects the points that matters, not the specific points which happen
+to be just samples at semi-random time intervals.
