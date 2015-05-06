@@ -228,7 +228,7 @@ interval_. This is something that neither RRDTool or Graphite authors
 have considered (or any other tool I know of, for that matter).
 
 [1] Perhaps the biggest misconception about time series is that it is
-a series of data points. But time series is _continuous_ rather than
-_descrete_, i.e. it's the line that connects the points that matters,
-not the specific points which happen to be just samples at semi-random
-time intervals.
+a series of data points. What time series represent is _continuous_
+rather than _descrete_, i.e. it's the line that connects the points
+that matters, not the specific points themselves, they are just
+samples at semi-random intervals that help define the line.
