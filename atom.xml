@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-05T23:04:10-04:00</updated>
+  <updated>2015-05-05T23:08:19-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -253,22 +253,23 @@ particular the &#8220;It&#8217;s always a Rate&#8221; section, as well as
 <a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
 by Alex van den Bogaerdt.</p>
 
-<p>P.S. After this post article was written, someone suggested that
-instead of storing a rate, a count delta could be stored instead. In
-other words, instead storing that we&#8217;re selling 10 trinkets per second
-for the past 6 seconds, we would store the total count of trinkets
-sold, i.e. 60. At first this seems like the solution to being able to
-update historical data accurately: if later we found out that we sold
-another 75 trinkets in the second time slot, we could just add it to the
-total and all would be well.</p>
+<p>P.S. After this post was written, someone suggested that instead of
+storing a rate, we coud store a <em>count delta</em>. In other words, instead
+of recording that we&#8217;re selling 10 trinkets per second for the past 6
+seconds, we would store the total count of trinkets sold, i.e. 60. At
+first this seems like the solution to being able to update historical
+data accurately: if later we found out that we sold another 75
+trinkets in the second time slot, we could just add it to the total
+and all would be well and most importantly <em>accurate</em>.</p>
 
 <p>Here is the problem with this approach: note that in the previous
 sentence I had to specify that the additional trinkets were sold <em>in
-the second time slot</em>. If time series data point is a timestamp and a
-value, then there isn&#8217;t even a way to relay this information in a
-single data point - we&#8217;d need two timestamps. But if every data point
-arrived with two timestamps, i.e. as a duration, then which to store -
-rate or count doesn&#8217;t matter, we can infer one from the other.</p>
+the second time slot</em>, a small, but crucial detail. If time series
+data point is a timestamp and a value, then there isn&#8217;t even a way to
+relay this information in a single data point - we&#8217;d need two
+timestamps. On the other hand if every data point arrived with two
+timestamps, i.e. as a duration, then which to store, rate or count,
+becomes a moot point, we can infer one from the other.</p>
 
 <p>So perhaps another way of explaining the historical update problem is
 that it <em>is</em> possible, but the datapoint must specify a <em>time
