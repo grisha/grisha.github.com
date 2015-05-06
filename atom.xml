@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-06T00:33:45-04:00</updated>
+  <updated>2015-05-06T00:39:25-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -93,7 +93,7 @@ going to be 10 seconds, we thus declared that <em>variations within a
 smaller period are of no interest</em> to us, and from this perspective,
 Graphite <em>is correct</em>.</p>
 
-<p>But what if those numbers are the price of a stock. There may be
+<p>But what if those numbers are the price of a stock: there may be
 hundreds of thousand of trades within a 10 second interval, yet we do
 not want to (or cannot, for technical reasons) record every single one
 of them? In this scenario having the last value override all previous
