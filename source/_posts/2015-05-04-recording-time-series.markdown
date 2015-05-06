@@ -19,15 +19,16 @@ the FAQ is portrayed as a [better alternative](http://graphite.wikidot.com/whisp
 this is potentially misleading, because the flexibility afforded by the
 design of Whisper comes at the price of inaccuracy.
 
-A time series is simply a sequence of `(time, value)` tuples. The
-most naive method of recording a time series is to store timestamps as
-is. Since the data points might arrive at arbitrary and inexact
-intervals, to correlate the series with a particular point in time
-might be tricky. If data points are arriving somewhere in between one
-minute bounaries (as they always naturally would), to answer the
-question of what happened during a particular minute would require
-specifying a range, which is not as clean as being able to specify a
-precise value. To join two series on a range is even more problematic.
+A time series is most often described as a sequence of `(time, value)`
+tuples [1]. The most naive method of recording a time series is to
+store timestamps as is. Since the data points might arrive at
+arbitrary and inexact intervals, to correlate the series with a
+particular point in time might be tricky. If data points are arriving
+somewhere in between one minute bounaries (as they always naturally
+would), to answer the question of what happened during a particular
+minute would require specifying a range, which is not as clean as
+being able to specify a precise value. To join two series on a range
+is even more problematic.
 
 One way to improve upon this is to divide time into equal intervals
 and assign data points to the intervals. We could then use the
@@ -196,7 +197,6 @@ point missing, or the _whole inaccurate_ data. RRD could accomplish
 the same thing by adding some `--inaccurate` flag, though it would
 seem like more of a bug than a feature to me.
 
-
 If you're interested in learning more about this, I recommend reading
 the documentation for
 [rrdtool create](http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html), in
@@ -227,8 +227,8 @@ that it *is* possible, but the datapoint must specify a _time
 interval_. This is something that neither RRDTool or Graphite authors
 have considered (or any other tool I know of, for that matter).
 
-Another thought about this write up: perhaps the biggest misconception
-about time series is that it is a series of data points. But time
-series is _continuous_ rather than _descrete_, i.e. it's the line that
-connects the points that matters, not the specific points which happen
-to be just samples at semi-random time intervals.
+[1] Perhaps the biggest misconception about time series is that it is
+a series of data points. But time series is _continuous_ rather than
+_descrete_, i.e. it's the line that connects the points that matters,
+not the specific points which happen to be just samples at semi-random
+time intervals.
