@@ -75,7 +75,7 @@ going to be 10 seconds, we thus declared that _variations within a
 smaller period are of no interest_ to us, and from this perspective,
 Graphite _is correct_.
 
-But what if those numbers are the price of a stock. There may be
+But what if those numbers are the price of a stock: there may be
 hundreds of thousand of trades within a 10 second interval, yet we do
 not want to (or cannot, for technical reasons) record every single one
 of them? In this scenario having the last value override all previous
