@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-05-05T23:08:19-04:00</updated>
+  <updated>2015-05-06T00:17:21-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -274,8 +274,13 @@ becomes a moot point, we can infer one from the other.</p>
 <p>So perhaps another way of explaining the historical update problem is
 that it <em>is</em> possible, but the datapoint must specify a <em>time
 interval</em>. This is something that neither RRDTool or Graphite authors
-have considered (or any other tool I know of, for that matter). May be
-we&#8217;re onto something here?</p>
+have considered (or any other tool I know of, for that matter).</p>
+
+<p>Another thought about this write up: perhaps the biggest misconception
+about time series is that it is a series of data points. But time
+series is <em>continuous</em> rather than <em>descrete</em>, i.e. it&#8217;s the line that
+connects the points that matters, not the specific points which happen
+to be just samples at semi-random time intervals.</p>
 ]]></content>
   </entry>
   
