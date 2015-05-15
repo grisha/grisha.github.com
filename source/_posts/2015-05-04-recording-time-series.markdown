@@ -66,7 +66,7 @@ Actual Time   Aligned Time
 ```
 
 Let's pretend those values are some system metric like the number of
-files open. The consequnce of the 50 being dropped is that we will
+files open. The consequence of the 50 being dropped is that we will
 never know it existed, but towards the end of the 10 second interval
 it went down to 10, which is still a true fact. If we really wanted to
 know about the variations within a 10 second interval, we should have
