@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-09-25T21:11:45-04:00</updated>
+  <updated>2015-09-25T21:18:03-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,11 +18,9 @@
     <link href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/"/>
     <updated>2015-09-23T22:01:00-04:00</updated>
     <id>http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently</id>
-    <content type="html"><![CDATA[<p>While there were valid reasons why traditional relational databases
-haven&#8217;t worked as well, with the latest advanced in the more recent
-PostgreSQL (and other db&#8217;s as well) things are changing to the point
-where a relational database makes excellent TS storage. In this write
-up I attempt to show how to store TS in PostgreSQL.</p>
+    <content type="html"><![CDATA[<p>With the latest advances in PostgreSQL (and other db&#8217;s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL.</p>
 
 <p>A TS is a series of [timestamp, measurement] pairs, where measurement
 is typically a floating point number. These pairs (aka &#8220;data points&#8221;)
@@ -260,6 +258,11 @@ actual data.</p>
 
 
 <p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
+
+<p>This article omits a lot of detail such as having resolution finer
+than one day, but it does describe the general idea. For an actual
+implementation of this you might want to check out a project I&#8217;ve been
+working on: <a href="https://github.org/grisha/timeriver">timeriver</a></p>
 ]]></content>
   </entry>
   
