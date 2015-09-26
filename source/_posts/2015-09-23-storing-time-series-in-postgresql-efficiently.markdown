@@ -31,7 +31,7 @@ discussion.)
 One problem with this is the inefficiency of appending data. An insert
 requires a look up of the new id, locking and (usually) blocks until
 the data is synced to disk. Given the TS's "firehose" nature, the
-database can quite quickly get overwelmed.
+database can quite quickly get overwhelmed.
 
 This approach also does not address consolidation and eventual
 expiration of older data points.
@@ -198,4 +198,4 @@ The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).
 This article omits a lot of detail such as having resolution finer
 than one day, but it does describe the general idea. For an actual
 implementation of this you might want to check out a project I've been
-working on: [timeriver](https://github.org/grisha/timeriver)
+working on: [timeriver](https://github.com/grisha/timeriver)
