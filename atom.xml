@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2015-09-25T21:18:03-04:00</updated>
+  <updated>2015-09-25T21:21:48-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -44,7 +44,7 @@ discussion.)</p>
 <p>One problem with this is the inefficiency of appending data. An insert
 requires a look up of the new id, locking and (usually) blocks until
 the data is synced to disk. Given the TS&#8217;s &#8220;firehose&#8221; nature, the
-database can quite quickly get overwelmed.</p>
+database can quite quickly get overwhelmed.</p>
 
 <p>This approach also does not address consolidation and eventual
 expiration of older data points.</p>
@@ -262,7 +262,7 @@ actual data.</p>
 <p>This article omits a lot of detail such as having resolution finer
 than one day, but it does describe the general idea. For an actual
 implementation of this you might want to check out a project I&#8217;ve been
-working on: <a href="https://github.org/grisha/timeriver">timeriver</a></p>
+working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
 ]]></content>
   </entry>
   
