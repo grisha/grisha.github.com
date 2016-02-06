@@ -172,7 +172,7 @@ CREATE TABLE rrd (
   last_pos INT);
 
 CREATE TABLE ts (
-  rra_id INT NOT NULL,
+  rrd_id INT NOT NULL,
   n INT NOT NULL,
   dp DOUBLE PRECISION[] NOT NULL DEFAULT '{}');
 ```
@@ -189,7 +189,7 @@ INSERT INTO ts VALUES (1, 4, '{79,82,90,69,75,80,81}');
 
 To update the data for April 2, we would:
 ```sql
-UPDATE ts SET dp[4] = 92 WHERE rra_id = 1 AND n = 4;
+UPDATE ts SET dp[4] = 92 WHERE rrd_id = 1 AND n = 4;
 UPDATE rrs SET last_date = '2008-04-02', last_pos = 25 WHERE id = 1;
 ```
 
