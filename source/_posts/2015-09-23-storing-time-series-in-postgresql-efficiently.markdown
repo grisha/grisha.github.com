@@ -190,7 +190,7 @@ INSERT INTO ts VALUES (1, 4, '{79,82,90,69,75,80,81}');
 To update the data for April 2, we would:
 ```sql
 UPDATE ts SET dp[4] = 92 WHERE rrd_id = 1 AND n = 4;
-UPDATE rrs SET last_date = '2008-04-02', last_pos = 25 WHERE id = 1;
+UPDATE rrd SET last_date = '2008-04-02', last_pos = 25 WHERE id = 1;
 ```
 
 The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).
