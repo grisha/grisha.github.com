@@ -295,8 +295,8 @@ forecasts (except for naive).
 
 It's important to understand that which of the above methods is better
 very much depends on the nature of the series. The order in which I
-presented them was from simple to complex, but that complex doesn't
-necessarily mean better.
+presented them was from simple to complex, but "more complex" doesn't
+necessarily mean "better".
 
 ### Single Exponential Smoothing
 
