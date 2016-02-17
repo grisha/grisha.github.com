@@ -124,17 +124,23 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/</loc>
-        <lastmod>2016-02-16T22:33:03-05:00</lastmod>
+        <lastmod>2016-02-17T17:16:24-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/
         </loc>
-        <lastmod>2016-02-16T22:44:34-05:00</lastmod>
+        <lastmod>2016-02-17T14:59:34-05:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/
+        </loc>
+        <lastmod>2016-02-17T17:16:08-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2016-02-16T22:44:34-05:00</lastmod>
+        <lastmod>2016-02-17T17:16:24-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -142,6 +148,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2016-02-16T22:44:34-05:00</lastmod>
+        <lastmod>2016-02-17T17:16:24-05:00</lastmod>
     </url>
 </urlset>
