@@ -32,6 +32,22 @@ contradictory or &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -129,9 +145,9 @@ possibly a body) sent over the TCP connection. There is a one-to-one
 correspondence between a request and a response established by the
 commonality of the connection. An HTTP request is incomplete if the
 response is missing, and a response cannot exist without a
-request. (Yes, the term &#8220;request&#8221; is used to denote both the request
+request. (Yes, the term “request” is used to denote both the request
 and response, as well as just the request part of the request, and
-that&#8217;s confusing).</p>
+that’s confusing).</p>
 
 <p>A <em>web application</em> is a layer on top of the HTTP request handler. A web
 application operates in requests and responses as well, but those
@@ -176,7 +192,7 @@ part of a “web application”?  Good question. It is not uncommon for a
 web application to consider the Accept-Language header in its
 response. You could also accomplish this entirely in an http server by
 configuring it correctly. Sometimes whether something is a web
-application just depends on how you&#8217;re looking at it, but you do have
+application just depends on how you’re looking at it, but you do have
 to decide for yourself which it is.</p>
 
 <p>Getting to the original problem, the answer to the question of whether
@@ -300,6 +316,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -309,14 +333,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

@@ -10,7 +10,7 @@
 
   
   <meta name="description" content="Nearly eight years after my last commit
-to Mod_python I&#8217;ve decided to spend some time hacking on it again. Five years without active &hellip;">
+to Mod_python I’ve decided to spend some time hacking on it again. Five years without active development and &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -30,6 +30,22 @@ to Mod_python I&#8217;ve decided to spend some time hacking on it again. Five ye
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
 
   
   <script type="text/javascript">
@@ -107,7 +123,7 @@ to Mod_python I&#8217;ve decided to spend some time hacking on it again. Five ye
 
 
 <div class="entry-content"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
-to <a href="http://www.modpython.org/">Mod_python</a> I&#8217;ve decided to spend some time hacking on it again.</p>
+to <a href="http://www.modpython.org/">Mod_python</a> I’ve decided to spend some time hacking on it again.</p>
 
 <p>Five years without active development and thirteen since its first
 release, it still seems to me an entirely useful and viable tool. The
@@ -126,23 +142,23 @@ language is at a very important inflection point. Pyhton 3 is now
 mature, and is slowly but steadily becoming the preferred language of
 many interesting communities such as data science, for example.</p>
 
-<p>The current status of Mod_python as an Apache project is that it&#8217;s
+<p>The current status of Mod_python as an Apache project is that it’s
 in the <a href="http://attic.apache.org/">attic</a>. This means that the
-<a href="http://www.apache.org/">ASF</a> isn&#8217;t providing much in the way of
-infrastructure support any longer, nor will you see an &#8220;official&#8221; ASF
+<a href="http://www.apache.org/">ASF</a> isn’t providing much in the way of
+infrastructure support any longer, nor will you see an “official” ASF
 release any time soon. (If ever - Mod_python would have to re-enter as
 an <a href="http://incubator.apache.org/">incubator</a> project and at this point
 it is entirely premature to even consider such an option).</p>
 
 <p>For now the main goal is to re-establish the community, and as part of
 that I will have to sort out how to do issue tracking, discussion
-groups, etc. At this point the only thing I&#8217;ve decided is that the
+groups, etc. At this point the only thing I’ve decided is that the
 main repository will live on
 <a href="https://github.com/grisha/mod_python">github</a>.</p>
 
 <p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
 development goal is to bring it up to compatibility with Python 2.7
-and Apache Httpd 2.4 (I&#8217;m nearly there already), then potentially move
+and Apache Httpd 2.4 (I’m nearly there already), then potentially move
 on to Python 3 support. I have rolled back a few commits (most notably
 the new importer) because I did not understand them. There are still a
 few changes in Apache 2.4 that need to be addressed, but they seem
@@ -150,21 +166,17 @@ relatively minor at this point. Authentication has been changed
 significantly in 2.4, though mod_python never had much coverage in that
 area.</p>
 
-<p>Let&#8217;s see where this takes us? And if you like this, feel free to
+<p>Let’s see where this takes us? And if you like this, feel free to
 star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
 
 <p>
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
 
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
 
 <a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 </p>
-
-
 
 </div>
 
@@ -267,6 +279,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -276,14 +296,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

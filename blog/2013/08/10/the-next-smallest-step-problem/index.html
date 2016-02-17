@@ -9,8 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="&#8220;A journey of a thousand miles begins with a single step&#8221; Most of my journeys never begin, or cannot continue because of that one
-single &hellip;">
+  <meta name="description" content="“A journey of a thousand miles begins with a single step” Most of my journeys never begin, or cannot continue because of that one
+single step, be it &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -30,6 +30,22 @@ single &hellip;">
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
 
   
   <script type="text/javascript">
@@ -106,7 +122,7 @@ single &hellip;">
   </header>
 
 
-<div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">&#8220;A journey of a thousand miles begins with a single step&#8221;</a></em></p>
+<div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
 
 <p>Most of my journeys never begin, or cannot continue because of that one
 single step, be it first or next. Because it is hard, at times
@@ -115,19 +131,19 @@ excruciatingly so.</p>
 <p>Here I speak of software, but this applies to many other aspects of my
 life just as well.</p>
 
-<p>I recon it&#8217;s because I do not think in steps. I think of a
+<p>I recon it’s because I do not think in steps. I think of a
 destination.  I imagine the end-result. I can picture it with clarity
 and in great detail. I know where I need to be. But what is the next
-step to get there? And it doesn&#8217;t help that where I travel, there are
+step to get there? And it doesn’t help that where I travel, there are
 no signs.</p>
 
 <p>The problem of deciding what to do next is so common for me that I
-even have a name for it. I call it &#8220;The Next Smallest Step&#8221;
+even have a name for it. I call it “The Next Smallest Step”
 problem. Whenever I find myself idling, clicking over to online
-time-wasters, I pause and ask myself &#8220;What is the Next Smallest Step?
-What&#8217;s the next smallest thing I can do, right now?&#8221;</p>
+time-wasters, I pause and ask myself “What is the Next Smallest Step?
+What’s the next smallest thing I can do, right now?”</p>
 
-<p>It doesn&#8217;t matter how much further this small step moves me. A
+<p>It doesn’t matter how much further this small step moves me. A
 nanometer is better than standing still. It has to be something that
 is simple enough that I can just do. Right now.</p>
 
@@ -139,14 +155,13 @@ do now?</p>
 pencil this question on a piece of paper, and sometimes I just type it
 on the command line or in the source code. My short version is:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>WHAT NEXT?
-</span><span class='line'>bash: WHAT: <span class="nb">command </span>not found
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
+</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>(that&#8217;s right, in CAPS)</p>
+<p>(that’s right, in CAPS)</p>
 
 <p>This simple question has taken me on some of the most fascinating and
 challenging journeys ever. In restrospect, I think I would not be able
@@ -165,11 +180,11 @@ lost.</p>
 <p>I must also note that some of my next smallest steps took days of
 thinking to figure out. Nothing wrong with that.</p>
 
-<p>And so I thought I&#8217;d share this with you, just in case you might find
+<p>And so I thought I’d share this with you, just in case you might find
 it helpful. Whenever you find yourself at an impass and progress
 has stopped, ask yourself:</p>
 
-<p>&#8220;What is the Next Smallest Step?&#8221;</p>
+<p>“What is the Next Smallest Step?”</p>
 </div>
 
 
@@ -277,6 +292,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -286,14 +309,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

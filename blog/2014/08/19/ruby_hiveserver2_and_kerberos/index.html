@@ -32,6 +32,22 @@ rbhive gem we were &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -125,14 +141,14 @@ tickets and what not over the wire. For that, you need <em>SASL</em> and
 
 <p><a href="http://tools.ietf.org/html/rfc2222">SASL</a> is a generic protocol
 designed to be able to wrap just about any authentication
-handshake. It&#8217;s very simple: the client sends a START followed by some
+handshake. It’s very simple: the client sends a START followed by some
 payload, and expects an OK, BAD or COMPLETE from the server. OK means
 that there are more steps to this conversation, BAD is
-self-explanatory and COMPLETE means &#8220;I&#8217;m satisfied&#8221;. The objective is
-to go from START via a series of OK&#8217;s to each side sending the other a
+self-explanatory and COMPLETE means “I’m satisfied”. The objective is
+to go from START via a series of OK’s to each side sending the other a
 COMPLETE.</p>
 
-<p>SASL doesn&#8217;t define the payload of each message. The payload is
+<p>SASL doesn’t define the payload of each message. The payload is
 specified by <a href="http://tools.ietf.org/html/rfc2743">GSSAPI</a>
 protocol. GSSAPI is another generic protocol. Unlike SASL it is
 actually very complex and covers a variety of authentication methods,
@@ -142,36 +158,35 @@ including Kerberos.</p>
 layer is documented in
 <a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>.</p>
 
-<p>Bottom line is you need to read at least four RFC&#8217;s to be able to
+<p>Bottom line is you need to read at least four RFC’s to be able to
 understand every detail of this process:
 <a href="http://tools.ietf.org/html/rfc4120">RFC4120</a>,
 <a href="http://tools.ietf.org/html/rfc2222">RFC2222</a>,
 <a href="http://tools.ietf.org/html/rfc2743">RFC2743</a> and
 <a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>. Fun!</p>
 
-<h2>The Handshake in Ruby</h2>
+<h2 id="the-handshake-in-ruby">The Handshake in Ruby</h2>
 
-<p>First, you&#8217;ll need some form of binding to the GSSAPI libraries. I&#8217;ve
+<p>First, you’ll need some form of binding to the GSSAPI libraries. I’ve
 been using the most excellent <a href="https://github.com/zenchild/gssapi">GSSAPI gem</a>
 by <a href="http://distributed-frostbite.blogspot.ru/">Dan Wanek</a> which wraps the MIT GSSAPI library.</p>
 
 <p>If you follow the code in
 <a href="https://github.com/grisha/rbhive/blob/gssapi/lib/thrift/sasl_client_transport.rb">sasl_client_transport.rb</a>,
-you&#8217;ll see the following steps are required to establish a connection.</p>
+you’ll see the following steps are required to establish a connection.</p>
 
 <p>First, we instantiate a GSSAPI object passing it the remote host and
 the remote principal. Note that there is no TCP port number to be
-specifies anywhere, because this isn&#8217;t to establish a TCP connection,
+specifies anywhere, because this isn’t to establish a TCP connection,
 but only for Kerberos <em>host authentication</em>. (Kerberos requires that
 not only the client authenticates itself to the host, but also that
 the host authenticates itself to the client.)</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Thrift::SaslClientTransport.initialize()</span>
-</span><span class='line'><span class="vi">@gsscli</span> <span class="o">=</span> <span class="ss">GSSAPI</span><span class="p">:</span><span class="ss">:Simple</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@sasl_remote_host</span><span class="p">,</span> <span class="vi">@sasl_remote_principal</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line"><span class="c1"># Thrift::SaslClientTransport.initialize()</span>
+</span><span class="line"><span class="vi">@gsscli</span> <span class="o">=</span> <span class="ss">GSSAPI</span><span class="p">:</span><span class="ss">:Simple</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@sasl_remote_host</span><span class="p">,</span> <span class="vi">@sasl_remote_principal</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The rest of the action takes place in the
 <code>initiate_hand_shake_gssapi()</code> method.</p>
@@ -180,146 +195,139 @@ the host authenticates itself to the client.)</p>
 creates a token based on our current Kerberos credentials. (If there
 are no credentials in our cache, this call will fail).</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">token</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">token</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Next we compose a SASL message which consists of START (0x01)
 followed by payload length, followed by the actual payload, which is
-the SASL mechanism name: &#8216;GSSAPI&#8217;. Without waiting for response, we
+the SASL mechanism name: ‘GSSAPI’. Without waiting for response, we
 also send an OK (0x02) and the token returned from init_context().</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:START</span><span class="o">]</span><span class="p">,</span> <span class="vi">@sasl_mechanism</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="vi">@sasl_mechanism</span>
-</span><span class='line'>  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="n">token</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">token</span>
-</span><span class='line'>  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:START</span><span class="o">]</span><span class="p">,</span> <span class="vi">@sasl_mechanism</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="vi">@sasl_mechanism</span>
+</span><span class="line">  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="n">token</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">token</span>
+</span><span class="line">  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Next we read 5 bytes of response. The first byte is the status
 returned from the server, which hopefully is OK, followed by the
 length of the payload, and then we read the payload itself:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">case</span> <span class="n">status</span>
-</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class='line'>    <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class='line'>    <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at initial stage&quot;</span>
-</span><span class='line'>  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class='line'>    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">  <span class="k">case</span> <span class="n">status</span>
+</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class="line">    <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class="line">    <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at initial stage&quot;</span>
+</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class="line">    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The payload is a <em>challenge</em> created for us by the server. We can
 verify this challenge by calling <code>init_context()</code> a second time, this
 time passing in the challenge to verify it:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class='line'>    <span class="k">unless</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
-</span><span class='line'>      <span class="k">raise</span> <span class="s2">&quot;GSSAPI: challenge provided by server could not be verified&quot;</span>
-</span><span class='line'>    <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class="line">    <span class="k">unless</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
+</span><span class="line">      <span class="k">raise</span> <span class="s2">&quot;GSSAPI: challenge provided by server could not be verified&quot;</span>
+</span><span class="line">    <span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>If the challenge verifies, then it is our turn to send an OK (with an
 empty payload this time):</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="mi">0</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>    <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="mi">0</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">    <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>At this point in the SASL &#8216;conversation&#8217; we have verified that the
+<p>At this point in the SASL ‘conversation’ we have verified that the
 server is who they claim to be.</p>
 
 <p>Next the server sends us another challenge, this one is so that we can
 authenticate ourselves to the server and at the same time agree on the
 <em>protection level</em> for the communication channel.</p>
 
-<p>We need to decrypt (&#8220;unwrap&#8221; in the GSSAPI terminology) the challenge,
+<p>We need to decrypt (“unwrap” in the GSSAPI terminology) the challenge,
 examine the protection level and if it is acceptable, encrypt it on
 our side and send it back to the server in a SASL COMPLETE message. In
-this particular case we&#8217;re agreeable to any level of protection (which
+this particular case we’re agreeable to any level of protection (which
 is none in case of HiveServer2, i.e. the conversation is not
 encrypted). Otherwise there are additional steps that RFC4752
 describes whereby the client can select an acceptable protection
 level.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>    <span class="n">status2</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">status2</span>
-</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class='line'>      <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class='line'>      <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at second stage&quot;</span>
-</span><span class='line'>    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class='line'>      <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class='line'>      <span class="n">unwrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">unwrap_message</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
-</span><span class='line'>      <span class="n">rewrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">wrap_message</span><span class="p">(</span><span class="n">unwrapped</span><span class="p">)</span>
-</span><span class='line'>      <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span><span class="p">,</span> <span class="n">rewrapped</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>      <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">rewrapped</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">status2</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">    <span class="k">case</span> <span class="n">status2</span>
+</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class="line">      <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class="line">      <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at second stage&quot;</span>
+</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class="line">      <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class="line">      <span class="n">unwrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">unwrap_message</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
+</span><span class="line">      <span class="n">rewrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">wrap_message</span><span class="p">(</span><span class="n">unwrapped</span><span class="p">)</span>
+</span><span class="line">      <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span><span class="p">,</span> <span class="n">rewrapped</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">      <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">rewrapped</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The server should then respond with COMPLETE as well, at which point
-we&#8217;re done with the authentication process and cat start sending
+we’re done with the authentication process and cat start sending
 whatever we want over this connection:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'>      <span class="n">status3</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class='line'>      <span class="k">case</span> <span class="n">status3</span>
-</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class='line'>        <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class='line'>        <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class='line'>        <span class="vi">@sasl_complete</span> <span class="o">=</span> <span class="kp">true</span>
-</span><span class='line'>      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class='line'>        <span class="k">raise</span> <span class="s2">&quot;Failed to complete GSS challenge exchange&quot;</span>
-</span><span class='line'>      <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line">      <span class="n">status3</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
+</span><span class="line">      <span class="k">case</span> <span class="n">status3</span>
+</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
+</span><span class="line">        <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
+</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
+</span><span class="line">        <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
+</span><span class="line">        <span class="vi">@sasl_complete</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
+</span><span class="line">        <span class="k">raise</span> <span class="s2">&quot;Failed to complete GSS challenge exchange&quot;</span>
+</span><span class="line">      <span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 </div>
 
 
@@ -421,6 +429,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -430,14 +446,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

@@ -32,6 +32,22 @@ require you to &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -115,8 +131,8 @@ Open Source Universe right now.</p>
 <p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
 
 <p>I was curious about how it structures and stores data and since there
-wasn&#8217;t much documentation on the subject and I ended up just reading
-the code, I figured I&#8217;d write this up. I only looked at the new
+wasn’t much documentation on the subject and I ended up just reading
+the code, I figured I’d write this up. I only looked at the new
 (currently 0.9.0 in RC stage) version, the previous versions are
 significantly different.</p>
 
@@ -128,10 +144,10 @@ use <a href="https://github.com/goraft/raft">Raft</a> to establish consensus and
 (e.g. it has a SQL-like query language) but not in others.</p>
 
 <p>The top level container is a <em>database</em>. An InfluxDB database is very
-much like what a database is in MySQL, it&#8217;s a collection of other
+much like what a database is in MySQL, it’s a collection of other
 things.</p>
 
-<p>&#8220;Other things&#8221; are called <em>data points</em>, <em>series</em>, <em>measurements</em>,
+<p>“Other things” are called <em>data points</em>, <em>series</em>, <em>measurements</em>,
 <em>tags</em> and <em>retention policies</em>. Under the hood (i.e. you never deal
 with them directly) there are <em>shards</em> and <em>shard groups</em>.</p>
 
@@ -146,96 +162,87 @@ particular point in time, must be associated with a database and a
 retention policy. A retention policy also specifies the <em>replication
 factor</em> for the data point.</p>
 
-<p>Let&#8217;s say we are tracking disk usage across a whole bunch of
+<p>Let’s say we are tracking disk usage across a whole bunch of
 servers. Each server runs some sort of an agent which periodically
 reports the usage of each disk to InfluxDB. Such a report might look
 like this (in JSON):</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>{"database" : "foo", "retentionPolicy" : "bar",
-</span><span class='line'> "points" : [
-</span><span class='line'>   {"name" : "disk",
-</span><span class='line'>    "tags" : {"server" : "bwi23", "unit" : "1"},
-</span><span class='line'>    "timestamp" : "2015-03-16T01:02:26.234Z",
-</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">{"database" : "foo", "retentionPolicy" : "bar",
+</span><span class="line"> "points" : [
+</span><span class="line">   {"name" : "disk",
+</span><span class="line">    "tags" : {"server" : "bwi23", "unit" : "1"},
+</span><span class="line">    "timestamp" : "2015-03-16T01:02:26.234Z",
+</span><span class="line">    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>In the above example, &#8220;disk&#8221; is a measurement. Thus we can operate on
-anything &#8220;disk&#8221;, regardless of what &#8220;server&#8221; or &#8220;unit&#8221; it applies
+<p>In the above example, “disk” is a measurement. Thus we can operate on
+anything “disk”, regardless of what “server” or “unit” it applies
 to. The data point as a whole belongs to a (time) series identified by
 the combination of the measurement name and the tags.</p>
 
 <p>There is no need to create series or measurements, they are created on
 the fly.</p>
 
-<p>To list the measurements, we can use <code>SHOW MEASUREMENTS</code>:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show measurements
-</span><span class='line'>name            tags    name
-</span><span class='line'>----            ----    ----
-</span><span class='line'>measurements            disk</span></code></pre></td></tr></table></div></figure>
-
-
-<p>We can use <code>SHOW SERIES</code> to list the series:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show series
-</span><span class='line'>name    tags    id      server   unit
-</span><span class='line'>----    ----    --      -------  ----
-</span><span class='line'>disk            1       bw123    1</span></code></pre></td></tr></table></div></figure>
-
+<p>To list the measurements, we can use <code>SHOW MEASUREMENTS</code>:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">&gt; show measurements
+</span><span class="line">name            tags    name
+</span><span class="line">----            ----    ----
+</span><span class="line">measurements            disk</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+We can use <code>SHOW SERIES</code> to list the series:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">&gt; show series
+</span><span class="line">name    tags    id      server   unit
+</span><span class="line">----    ----    --      -------  ----
+</span><span class="line">disk            1       bw123    1</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
 
 <p>If we send a record that contains different tags, we automatically
 create a different series (or so it seems), for example if we send
-this (note we changed &#8220;unit&#8221; to &#8220;foo&#8221;):</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>{"database" : "foo", "retentionPolicy" : "bar",
-</span><span class='line'> "points" : [
-</span><span class='line'>   {"name" : "disk",
-</span><span class='line'>    "tags" : {"server" : "bwi23", "foo" : "bar"},
-</span><span class='line'>    "timestamp" : "2015-03-16T01:02:26.234Z",
-</span><span class='line'>    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure>
-
+this (note we changed “unit” to “foo”):
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">{"database" : "foo", "retentionPolicy" : "bar",
+</span><span class="line"> "points" : [
+</span><span class="line">   {"name" : "disk",
+</span><span class="line">    "tags" : {"server" : "bwi23", "foo" : "bar"},
+</span><span class="line">    "timestamp" : "2015-03-16T01:02:26.234Z",
+</span><span class="line">    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
 
 <p>we get</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&gt; show series
-</span><span class='line'>name    tags    id      foo     server  unit
-</span><span class='line'>----    ----    --      ---     ------  ----
-</span><span class='line'>disk            1               bwi23   1
-</span><span class='line'>disk            2       bar     bwi23</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">&gt; show series
+</span><span class="line">name    tags    id      foo     server  unit
+</span><span class="line">----    ----    --      ---     ------  ----
+</span><span class="line">disk            1               bwi23   1
+</span><span class="line">disk            2       bar     bwi23</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>This is where the distinction between measurement and series becomes a
 little confusing to me. In actuality (from looking at the code and the
 actual files InfluxDB created) there is only one series here called
-&#8220;disk&#8221;. I understand the intent, but not sure that <em>series</em> is the
-right terminology here. I think I&#8217;d prefer if measurements were simply
-called series, and to get the equivalent of <code>SHOW SERIES</code> you&#8217;d use
-something like <code>SHOW SERIES TAGS</code>. (May be I&#8217;m missing something.)</p>
+“disk”. I understand the intent, but not sure that <em>series</em> is the
+right terminology here. I think I’d prefer if measurements were simply
+called series, and to get the equivalent of <code>SHOW SERIES</code> you’d use
+something like <code>SHOW SERIES TAGS</code>. (May be I’m missing something.)</p>
 
 <p>Under the hood the data is stored in shards, which are grouped by
 shard groups, which in turn are grouped by retention policies, and
@@ -283,7 +290,7 @@ policy.</p>
 the shard group can have a size of 2, for 2 shards, replicated across
 2 nodes each. Shard one replicas could live on nodes 1 and 3, while
 shard two replicas on nodes 2 and 4. Now the data is distributed as
-well as redundant. Note that the 5th node doesn&#8217;t do anything. If we
+well as redundant. Note that the 5th node doesn’t do anything. If we
 up the replication factor to 3 then just like before, the cluster is
 too small to have any distribution, we only have enough nodes for
 redundancy.</p>
@@ -296,13 +303,14 @@ written in Go. There is also a separate Bolt db file called meta which
 stores the metadata, i.e. information about databases, retention
 policies, measurements, series, etc.</p>
 
-<p>I couldn&#8217;t quite figure out the process for typical cluster operations
+<p>I couldn’t quite figure out the process for typical cluster operations
 such as recovery from node failure or what happens (or should happen)
 when nodes are added to existing cluster, whether there is a way to
 decommission a node or re-balance the cluster similar to the Hadoop
 balancer, etc. I think as of this writing this has not been fully
-implemented yet, and there is no documentation, but hopefully it&#8217;s
+implemented yet, and there is no documentation, but hopefully it’s
 coming soon.</p>
+
 </div>
 
 
@@ -404,6 +412,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -413,14 +429,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

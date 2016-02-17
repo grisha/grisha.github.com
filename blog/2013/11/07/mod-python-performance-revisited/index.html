@@ -32,6 +32,22 @@ comes to &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -107,7 +123,7 @@ comes to &hellip;">
   </header>
 
 
-<div class="entry-content"><h3>Tl;dr</h3>
+<div class="entry-content"><h3 id="tldr">Tl;dr</h3>
 
 <p>As is evident from the table below, mod_python <a href="https://github.com/grisha/mod_python/tree/3.5.x">3.5</a>
 (in pre-release testing as of this writing) is currently the fastest tool when it
@@ -141,14 +157,14 @@ WSGI container.</p>
     <td>2.4.4, mpm_event</td>
     <td>147,746</td>
     <td> 100.0 % </td>
-    <td></td>
+    <td />
   </tr>
   <tr>
     <th>mod_python <a href="http://modpython.org/live/current/doc-html/pythonapi.html#overview-of-a-request-handler">handler</a></th>
     <td>3.5, Python 2.7.5</td>
     <td>125,139</td>
     <td> 84.7 % </td>
-    <td></td>
+    <td />
   </tr>
   <tr>
     <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uWSGI</a></th>
@@ -162,7 +178,7 @@ WSGI container.</p>
     <td>3.5, Python 2.7.5</td>
     <td>87,304</td>
     <td> 59.1 % </td>
-    <td></td>
+    <td />
   </tr>
   <tr>
     <th><a href="http://code.google.com/p/modwsgi/">mod_wsgi</a></th>
@@ -180,20 +196,19 @@ WSGI container.</p>
   </tr>
 </table>
 
-
-<h2>The point of this test</h2>
+<h2 id="the-point-of-this-test">The point of this test</h2>
 
 <p>I wanted to see how mod_python compares to other tools of similar
 purpose on high-end hardware and with relatively high concurrency. As
-I&#8217;ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
-you&#8217;d be foolish to base your platform decision on these numbers
+I’ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
+you’d be foolish to base your platform decision on these numbers
 because speed in this case matters very little. So the point of this
 is just make sure that mod_python is in the ballpark with the rest and
-that there isn&#8217;t anything seriously wrong with it. And surprisingly,
+that there isn’t anything seriously wrong with it. And surprisingly,
 mod_python is actually pretty fast, <em>fastest</em>, even, though in its own
 category (a raw mod_python handler).</p>
 
-<h2>Test rig</h2>
+<h2 id="test-rig">Test rig</h2>
 
 <p>The server is a 24-core Intel Xeon 3GHz with 64GB RAM, running Linux
 2.6.32 (CentOS 6.3).</p>
@@ -205,26 +220,25 @@ was chosen after having tried
 <a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> and
 <a href="http://redmine.lighttpd.net/projects/weighttp/wiki">weighttp</a>. The exact command was:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">httpress -n 5000000 -c 120 -t 8 -k http://127.0.0.1/</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Concurrency of 120 was chosen as the highest number I could run across
-all setups without getting strange errors. &#8220;Strange errors&#8221; could be
+all setups without getting strange errors. “Strange errors” could be
 disconnects, delays and stuck connections, all tunable by anything
 from Linux kernel configuration to specific tool configs. I very much
 wanted concurrency to be at least a few times higher but it quickly
 became apparent that getting to that level would require very
-significant system tweaking for which I just didn&#8217;t have the time. 120
+significant system tweaking for which I just didn’t have the time. 120
 concurrent requests is nothing to sneeze at though: if you sustained
-this rate for a day of python handler serving, you&#8217;d have processed
+this rate for a day of python handler serving, you’d have processed
 10,812,009,600 requests (on a single server!).</p>
 
 <p>I should also note that in my tweaking of various configurations I
-couldn&#8217;t get the requests/s numbers any significantly higher than what
+couldn’t get the requests/s numbers any significantly higher than what
 you see above. Increasing concurrency and number of workers mostly
 increased errors rather than r/s, which is also interesting because
-it&#8217;s important how gracefuly each of these tools fails, but failure
+it’s important how gracefuly each of these tools fails, but failure
 mode is a whole different subject.</p>
 
 <p>The tests were done via the loopback (127.0.0.1) because having tried
@@ -237,15 +251,15 @@ connections. Without keepalives this would be more of the Linux kernel
 test because the bulk of the work establishing and taking down a
 connection happens in the kernel.</p>
 
-<p>Before running the 5 million requests I ran 100,000 as a &#8220;warm up&#8221;.</p>
+<p>Before running the 5 million requests I ran 100,000 as a “warm up”.</p>
 
 <p>This post does not include the actual code for the WSGI app and mod_python handlers because it was same as
 in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">last post on mod_python performance testing</a>.</p>
 
-<h2>Why httpress</h2>
+<h2 id="why-httpress">Why httpress</h2>
 
-<p><a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a> simply can&#8217;t run more than about 150K requests per second, so it
-couldn&#8217;t adequately test nxweb and nginx static file serving.</p>
+<p><a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a> simply can’t run more than about 150K requests per second, so it
+couldn’t adequately test nxweb and nginx static file serving.</p>
 
 <p><a href="http://www.hpl.hp.com/research/linux/httperf/">httperf</a> looked
 promising at first, but as is <a href="http://gwan.com/en_apachebench_httperf.html">noted here</a> its requests per
@@ -256,58 +270,55 @@ load.</p>
 good, but somehow got stuck on idle but not yet closed connections
 which affected the request/s negatively.</p>
 
-<p><a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a> claimed that it &#8220;promptly timeouts stucked connections,
+<p><a href="https://bitbucket.org/yarosla/httpress/wiki/Home">httpress</a> claimed that it “promptly timeouts stucked connections,
 forces all hanging connections to close after the main run, does not
-allow hanging or interrupted connections to affect the measurement&#8221;,
+allow hanging or interrupted connections to affect the measurement”,
 which is just what I needed. And it worked really great too.</p>
 
-<h2>The choice of contenders</h2>
+<h2 id="the-choice-of-contenders">The choice of contenders</h2>
 
 <p>mod_python and mod_wsgi are the obvious choices, uWSGI/Nginx combo is
 known as a low-resource and fast alternative. I came across nxweb
-while looking at httpress (it&#8217;s written by the same person
+while looking at httpress (it’s written by the same person
 (<a href="https://bitbucket.org/yarosla">Yaroslav Stavnichiy</a>), it looks to be the
 fastest (open source) web server currently out there, faster than (closed source)
 G-WAN, even.</p>
 
-<h2>Specific tool notes</h2>
+<h2 id="specific-tool-notes">Specific tool notes</h2>
 
 <p>The code used for testing and the configs were essentially same as what
 I used in my <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">previous post on mod_python performance testing</a>.
 The key differences are listed below.</p>
 
-<h3>Apache</h3>
+<h3 id="apache">Apache</h3>
 
 <p>The key config on Apache was:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ThreadsPerChild 25    # default
-</span><span class='line'>StartServers 16
-</span><span class='line'>MinSpareThreads 400</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">ThreadsPerChild 25    # default
+</span><span class="line">StartServers 16
+</span><span class="line">MinSpareThreads 400</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>MinSpareThreads ensures that Apache starts all possible processes and
 threads on startup (25 * 16 = 400) so that there is no ramp up
-period and it&#8217;s tsunami-ready right away.</p>
+period and it’s tsunami-ready right away.</p>
 
-<h3>uWSGI</h3>
+<h3 id="uwsgi">uWSGI</h3>
 
-<p>The comparison with uWSGI isn&#8217;t entriely appropriate because it was
+<p>The comparison with uWSGI isn’t entriely appropriate because it was
 running listening on a unix domain socket behind Nginx. The -p 16
-&#8211;threads 1 (16 worker processes with a single thread each) was chosen
+–threads 1 (16 worker processes with a single thread each) was chosen
 as the best performing option after some experimentation. Upping -p to
-32 reduced r/s to 86233, 64 to 47296. Upping &#8211;threads to 2 (with 16
+32 reduced r/s to 86233, 64 to 47296. Upping –threads to 2 (with 16
 workers) reduced r/s to 55925 (by half, which is weird - mod_python has no
-problems with 25 threads). &#8211;single-interpreter didn&#8217;t seem to have
+problems with 25 threads). –single-interpreter didn’t seem to have
 any significant impact.</p>
 
-<p>The actual uWSGI command was:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code></pre></td></tr></table></div></figure>
-
+<p>The actual uWSGI command was:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
 
 <p>A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
@@ -315,68 +326,67 @@ after all kinds of puzzled head-scratching, I decided to verify that
 every hit ran my Python code - I did this by writing a dot to a file
 and making sure that the file size matches the number of hits in the
 end. It turned out that about one third of the requests from Nginx to
-uWSGI were erroring out, but httpress didn&#8217;t see them as errors. So if
-you&#8217;re going to attempt to replicate this, watch out for this
-condition. EDIT: Thanks to uWSGI&#8217;s author Roberto De Loris&#8217; help, it
+uWSGI were erroring out, but httpress didn’t see them as errors. So if
+you’re going to attempt to replicate this, watch out for this
+condition. EDIT: Thanks to uWSGI’s author Roberto De Loris’ help, it
 turned out that this was a result of misconfiguration on my part - the
 -l parameter should be set higher than 120. (This explains how I
 arrived at 120 as the concurrency chosen for the test too). The
-request/s number and uWSGI&#8217;s position in my table is still correct.</p>
+request/s number and uWSGI’s position in my table is still correct.</p>
 
-<h3>Nginx</h3>
+<h3 id="nginx">Nginx</h3>
 
 <p>The relevant parts of the nginx config were (Note: this is not the
 complete config for brevity):</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>worker_processes 24;
-</span><span class='line'>...
-</span><span class='line'>events {
-</span><span class='line'>  worker_connections 1024;
-</span><span class='line'>}
-</span><span class='line'>...
-</span><span class='line'>http {
-</span><span class='line'>  server_tokens off;
-</span><span class='line'>  keepalive_timeout 65;
-</span><span class='line'>  sendfile on;
-</span><span class='line'>  tcp_nopush on;
-</span><span class='line'>  tcp_nodelay on;
-</span><span class='line'>
-</span><span class='line'>  access_log /dev/null main;
-</span><span class='line'>...
-</span><span class='line'>  upstream uwsgi {
-</span><span class='line'>     ip_hash;
-</span><span class='line'>     server unix:logs/uwsgi.sock;
-</span><span class='line'>  }
-</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">worker_processes 24;
+</span><span class="line">...
+</span><span class="line">events {
+</span><span class="line">  worker_connections 1024;
+</span><span class="line">}
+</span><span class="line">...
+</span><span class="line">http {
+</span><span class="line">  server_tokens off;
+</span><span class="line">  keepalive_timeout 65;
+</span><span class="line">  sendfile on;
+</span><span class="line">  tcp_nopush on;
+</span><span class="line">  tcp_nodelay on;
+</span><span class="line">
+</span><span class="line">  access_log /dev/null main;
+</span><span class="line">...
+</span><span class="line">  upstream uwsgi {
+</span><span class="line">     ip_hash;
+</span><span class="line">     server unix:logs/uwsgi.sock;
+</span><span class="line">  }
+</span><span class="line">...</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<h3>Conclusion</h3>
+<h3 id="conclusion">Conclusion</h3>
 
 <p>Mod_python is plenty fast. Considering that unlike with other
 contenders large parts of the code are written in Python and thus are
-readable and debuggable by not just C programmers, it&#8217;s quite a feat.</p>
+readable and debuggable by not just C programmers, it’s quite a feat.</p>
 
-<p>I was surprised by Apache&#8217;s slow static file serving compared to Nginx
+<p>I was surprised by Apache’s slow static file serving compared to Nginx
 and Nxweb (the latter, although still young and in development seems like a
 very cool web server).</p>
 
@@ -385,17 +395,17 @@ up is as cool as it is touted everywhere. Unquestionably Nginx is a
 super solid server and Apache has some catching up to do when it comes
 to acting as a static file server or a reverse proxy. But when it
 comes to serving Python-generated content, my money would be on Apache
-rather than uWSGI. The &#8220;low&#8221; 120 concurrency level for this test was
+rather than uWSGI. The “low” 120 concurrency level for this test was
 largely chosen because of uWSGI (Apache started going haywire on me at
-about 400+ concurrent connections). EDIT: Thanks to Roberto&#8217;s comment,
+about 400+ concurrent connections). EDIT: Thanks to Roberto’s comment,
 this turned out to be an error on my part (see comments). uWSGI can
 handle higher concurrencies if -l is set higher.</p>
 
-<p>It&#8217;s also interesting that on my laptop a mod_python handler
-outperformed the Apache static file, but it wasn&#8217;t the case on the big
+<p>It’s also interesting that on my laptop a mod_python handler
+outperformed the Apache static file, but it wasn’t the case on the big
 server.</p>
 
-<p>I didn&#8217;t do Python 3 testing, it would be interesting to see how much
+<p>I didn’t do Python 3 testing, it would be interesting to see how much
 difference it makes as well.</p>
 
 <p>I realize this post may be missing key config data - I had to leave
@@ -406,16 +416,13 @@ any obvious gaps, please comment, I will try to address them.</p>
 me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
 
 <p>
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
 
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
 
 <a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 </p>
-
 </div>
 
 
@@ -517,6 +524,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -526,14 +541,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

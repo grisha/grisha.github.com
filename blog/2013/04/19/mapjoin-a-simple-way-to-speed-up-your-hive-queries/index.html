@@ -32,6 +32,22 @@ entirely within a &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -120,10 +136,9 @@ should be placed immediately following the <code>SELECT</code>. It directs Hive
 to load <code>aliasname</code> (which is a table or alias of the query) into
 memory.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
 do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
@@ -140,7 +155,7 @@ different keys).</p>
 query.</p>
 
 <p>I also found that when the Hive documentation states that such queries
-are &#8221;<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>&#8221;
+are “<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>”
  they mean that the query will fail in unexpected
 ways, sometimes with a Java traceback.</p>
 </div>
@@ -244,6 +259,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -253,14 +276,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

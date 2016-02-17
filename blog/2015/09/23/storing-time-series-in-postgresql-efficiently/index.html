@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="With the latest advances in PostgreSQL (and other db&#8217;s), a relational
+  <meta name="description" content="With the latest advances in PostgreSQL (and other db’s), a relational
 database begins to look like a very viable TS storage platform. In
-this &hellip;">
+this write &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -31,6 +31,22 @@ this &hellip;">
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
 
   
   <script type="text/javascript">
@@ -107,132 +123,126 @@ this &hellip;">
   </header>
 
 
-<div class="entry-content"><p>With the latest advances in PostgreSQL (and other db&#8217;s), a relational
+<div class="entry-content"><p>With the latest advances in PostgreSQL (and other db’s), a relational
 database begins to look like a very viable TS storage platform. In
 this write up I attempt to show how to store TS in PostgreSQL.</p>
 
 <p>A TS is a series of [timestamp, measurement] pairs, where measurement
-is typically a floating point number. These pairs (aka &#8220;data points&#8221;)
+is typically a floating point number. These pairs (aka “data points”)
 usually arrive at a high and steady rate. As time goes on, detailed
 data usually becomes less interesting and is often consolidated into
 larger time intervals until ultimately it is expired.</p>
 
-<h2>The obvious approach</h2>
+<h2 id="the-obvious-approach">The obvious approach</h2>
 
-<p>The &#8220;naive&#8221; approach is a three-column table, like so:</p>
+<p>The “naive” approach is a three-column table, like so:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>(Let&#8217;s gloss over some details such as an index on the time column and
-choice of data type for time and value as it&#8217;s not relevant to this
+<p>(Let’s gloss over some details such as an index on the time column and
+choice of data type for time and value as it’s not relevant to this
 discussion.)</p>
 
 <p>One problem with this is the inefficiency of appending data. An insert
 requires a look up of the new id, locking and (usually) blocks until
-the data is synced to disk. Given the TS&#8217;s &#8220;firehose&#8221; nature, the
+the data is synced to disk. Given the TS’s “firehose” nature, the
 database can quite quickly get overwhelmed.</p>
 
 <p>This approach also does not address consolidation and eventual
 expiration of older data points.</p>
 
-<h2>Round-robin database</h2>
+<h2 id="round-robin-database">Round-robin database</h2>
 
 <p>A better alternative is something called a <em>round-robin database</em>.  An
 RRD is a circular structure with a separately stored pointer denoting
 the last element and its timestamp.</p>
 
 <p>A everyday life example of an RRD is a week. Imagine a structure of 7
-slots, one for each day of the week. If you know today&#8217;s date and day
+slots, one for each day of the week. If you know today’s date and day
 of the week, you can easily infer the date for each slot. For example
 if today is Tuesday, April 1, 2008, then the Monday slot refers to
 March 31st, Sunday to March 30th and (most notably) Wednesday to March
 26.</p>
 
-<p>Here&#8217;s what a 7-day RRD of average temperature might look as of
+<p>Here’s what a 7-day RRD of average temperature might look as of
 Tuesday, April 1:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class='line'><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class='line'><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class='line'>                    <span class="o">^</span>
-</span><span class='line'>                    <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                    <span class="o">^</span>
+</span><span class="line">                    <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class='line'><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class='line'><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class='line'>                         <span class="o">^</span>
-</span><span class='line'>                         <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                         <span class="o">^</span>
+</span><span class="line">                         <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Note how little has changed, and that the update required no
 allocation of space: all we did to record 92F on Wednesday is
 overwrite one value. Even more remarkably, the previous value
-automatically &#8220;expired&#8221; when we overwrote it, thus solving the
+automatically “expired” when we overwrote it, thus solving the
 eventual expiration problem without any additional operations.</p>
 
-<p>RRD&#8217;s are also very space-efficient. In the above example we specified
+<p>RRD’s are also very space-efficient. In the above example we specified
 the date of every slot for clarity. In an actual implementation only
 the date of the last slot needs to be stored, thus the RRD can be kept
 as a sequence of 7 numbers plus the position of the last entry and
-it&#8217;s timestamp. In Python syntax it&#8217;d look like this:</p>
+it’s timestamp. In Python syntax it’d look like this:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<h2>Round-robin in PostgreSQL</h2>
+<h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
 
 <p>Here is a naive approach to having a round-robin table. Carrying on
 with our 7 day RRD example, it might look like this:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
-</span><span class='line'><span class="o">---------+--------</span>
-</span><span class='line'>     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
-</span><span class='line'>     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
-</span><span class='line'>     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
-</span><span class='line'>     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
-</span><span class='line'>     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
-</span><span class='line'>     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
-</span><span class='line'>     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
+</span><span class="line"><span class="o">---------+--------</span>
+</span><span class="line">     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
+</span><span class="line">     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
+</span><span class="line">     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
+</span><span class="line">     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
+</span><span class="line">     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
+</span><span class="line">     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
+</span><span class="line">     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-
-<p>Somewhere separately we&#8217;d also need to record that the last entry is
-week_day 3 (Tuesday) and it&#8217;s 2008-04-01. Come April 2, we could
+<p>Somewhere separately we’d also need to record that the last entry is
+week_day 3 (Tuesday) and it’s 2008-04-01. Come April 2, we could
 record the temperature using:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>This might be okay for a 7-slot RRD, but a more typical TS might have
 a slot per minute going back 90 days, which would require 129600
@@ -242,41 +252,32 @@ is not very efficient.</p>
 
 <p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
 
-<h2>Using PostgreSQL arrays</h2>
+<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
 
 <p>An array would allow us to store the whole series in a single
 row. Sticking with the 7-day RRD example, our table would be created
-as follows:</p>
+as follows:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+(Nevemind that there is no id column for now)</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-</span><span class='line'>                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class='line'>                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>(Nevemind that there is no id column for now)</p>
-
-<p>We could populate the whole RRD in a single statement:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&#8230;or record 92F for Wednesday as so:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>(In PostgreSQL arrays are 1-based, not 0-based like in most
+<p>We could populate the whole RRD in a single statement:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+…or record 92F for Wednesday as so:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+(In PostgreSQL arrays are 1-based, not 0-based like in most
 programming languages)</p>
 
-<h2>But it could be even more efficient</h2>
+<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
 
 <p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
 make sense to keep chunks in which our RRD is written to disk in line
@@ -288,69 +289,64 @@ is way beyond the scope of this article).</p>
 of a caching layer, we could have a server which waits for one row
 worth of data points to accumulate, then flushes then all at once.</p>
 
-<p>For simplicity, let&#8217;s take the above example and expand the RRD to 4
+<p>For simplicity, let’s take the above example and expand the RRD to 4
 weeks, while keeping 1 week per row. In our table definition we need
 provide a way for keeping the order of every row of the TS with a
-column named n, and while we&#8217;re at it, we might as well introduce a
+column named n, and while we’re at it, we might as well introduce a
 notion of an id, so as to be able to store multiple TS in the same
 table.</p>
 
-<p>Let&#8217;s start with two tables, one called rrd where we would store the
+<p>Let’s start with two tables, one called rrd where we would store the
 last position and date, and another called ts which would store the
 actual data.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
-</span><span class='line'>  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
-</span><span class='line'>  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class='line'>  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
-</span><span class='line'>  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class='line'>  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class='line'>  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
+<p>We could then populate the TS with fictitious data like so:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
 
-<p>We could then populate the TS with fictitious data like so:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>To update the data for April 2, we would:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span><span class='line'><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<p>To update the data for April 2, we would:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
 
 <p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
 
 <p>This article omits a lot of detail such as having resolution finer
 than one day, but it does describe the general idea. For an actual
-implementation of this you might want to check out a project I&#8217;ve been
+implementation of this you might want to check out a project I’ve been
 working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
 </div>
 
@@ -393,6 +389,8 @@ working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
       
         <a class="basic-alignment left" href="/blog/2015/05/04/recording-time-series/" title="Previous Post: Time Series Accuracy - Graphite vs RRDTool">&laquo; Time Series Accuracy - Graphite vs RRDTool</a>
       
+      
+        <a class="basic-alignment right" href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/" title="Next Post: Holt-Winters Forecasting for Dummies (or Developers) - Part I">Holt-Winters Forecasting for Dummies (or Developers) - Part I &raquo;</a>
       
     </p>
   </footer>
@@ -451,6 +449,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -460,14 +466,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

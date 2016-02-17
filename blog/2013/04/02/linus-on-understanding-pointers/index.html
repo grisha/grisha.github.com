@@ -30,6 +30,22 @@
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -109,80 +125,86 @@
 
 <p>One of the answers was on the subject of understanding of pointers:</p>
 
-<blockquote><p><small>At the opposite end of the spectrum, I actually wish more people
+<blockquote>
+  <p><small>At the opposite end of the spectrum, I actually wish more people
 understood the really core low-level kind of coding. Not big, complex
 stuff like the lockless name lookup, but simply good use of
-pointers-to-pointers etc. For example, I&#8217;ve seen too many people who
-delete a singly-linked list entry by keeping track of the &#8220;prev&#8221;
+pointers-to-pointers etc. For example, I’ve seen too many people who
+delete a singly-linked list entry by keeping track of the “prev”
 entry, and then to delete the entry, doing something like</small></p>
+</blockquote>
 
-<p><small>if (prev)<br/>
-  prev->next = entry->next;<br/>
-else<br/>
-  list_head = entry->next;<br/>
+<blockquote>
+  <p><small>if (prev)<br />
+  prev-&gt;next = entry-&gt;next;<br />
+else<br />
+  list_head = entry-&gt;next;<br />
 </small></p>
+</blockquote>
 
-<p><small>and whenever I see code like that, I just go &#8220;This person doesn&#8217;t
-understand pointers&#8221;. And it&#8217;s sadly quite common.</small></p>
+<blockquote>
+  <p><small>and whenever I see code like that, I just go “This person doesn’t
+understand pointers”. And it’s sadly quite common.</small></p>
+</blockquote>
 
-<p><small>People who understand pointers just use a &#8220;pointer to the entry
-pointer&#8221;, and initialize that with the address of the list_head. And
+<blockquote>
+  <p><small>People who understand pointers just use a “pointer to the entry
+pointer”, and initialize that with the address of the list_head. And
 then as they traverse the list, they can remove the entry without
-using any conditionals, by just doing a &#8220;*pp = entry->next&#8221;</small></p></blockquote>
+using any conditionals, by just doing a “*pp = entry-&gt;next”</small></p>
+</blockquote>
 
 <p>There were a few comments, but none explained what he really
 meant. So here it is.</p>
 
 <p>Imagine you have a linked list defined as:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">list_entry</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">list_entry</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span> <span class="n">list_entry</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">list_entry</span> <span class="p">{</span>
+</span><span class="line">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span><span class="line">    <span class="k">struct</span> <span class="n">list_entry</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span> <span class="n">list_entry</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>You need to iterate over it from the begining to end and remove a
 specific element whose value equals the value of <code>to_remove</code>. The more
 obvious way to do this would be:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span> <span class="cm">/* assuming head exists and is the first entry of the list */</span>
-</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>     <span class="cm">/* this is the one to remove */</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">prev</span><span class="p">)</span>
-</span><span class='line'>           <span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span> <span class="cm">/* remove the entry */</span>
-</span><span class='line'>        <span class="k">else</span>
-</span><span class='line'>            <span class="n">head</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>      <span class="cm">/* special case - first entry */</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/* move on to the next entry */</span>
-</span><span class='line'>    <span class="n">prev</span> <span class="o">=</span> <span class="n">entry</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span> <span class="cm">/* assuming head exists and is the first entry of the list */</span>
+</span><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>     <span class="cm">/* this is the one to remove */</span>
+</span><span class="line">        <span class="k">if</span> <span class="p">(</span><span class="n">prev</span><span class="p">)</span>
+</span><span class="line">           <span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span> <span class="cm">/* remove the entry */</span>
+</span><span class="line">        <span class="k">else</span>
+</span><span class="line">            <span class="n">head</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>      <span class="cm">/* special case - first entry */</span>
+</span><span class="line">
+</span><span class="line">    <span class="cm">/* move on to the next entry */</span>
+</span><span class="line">    <span class="n">prev</span> <span class="o">=</span> <span class="n">entry</span><span class="p">;</span>
+</span><span class="line">    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>What we are doing above is iterating over the list until <code>entry</code> is
-NULL, which means we&#8217;ve reached the end of the list (line 4). When we
+NULL, which means we’ve reached the end of the list (line 4). When we
 come across an entry we want removed (line 5), we assign the value of
 current <code>next</code> pointer to the previous one, thus eliminating the
 current element (line 7).</p>
@@ -195,28 +217,27 @@ first entry in the list you have to modify <code>head</code> itself (line 9).</p
 making the previous element a <em>pointer to a pointer</em> rather than just a
 pointer. The code then looks like this:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">**</span><span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span> <span class="cm">/* pointer to a pointer */</span>
-</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>
-</span><span class='line'>        <span class="o">*</span><span class="n">pp</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="n">list_entry</span> <span class="o">**</span><span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span> <span class="cm">/* pointer to a pointer */</span>
+</span><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>
+</span><span class="line">        <span class="o">*</span><span class="n">pp</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class="line">    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The above code is very similar to the previous variant, but notice how
 we no longer need to watch for the special case of the first element
@@ -230,6 +251,7 @@ and <code>-&gt;</code>) and one assignment, and neither of those three things is
 atomic. This is a common misconception, but alas pretty much <em>nothing</em>
 in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
 operators)!</p>
+
 </div>
 
 
@@ -331,6 +353,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -340,14 +370,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>

@@ -32,6 +32,22 @@ was done &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -112,23 +128,22 @@ codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
 was done using a 100 million row table that was generated using random
 two strings and an integer.</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>| Format    | Codec          | Data Size     | Hive count(1) time | Impala count(1) time
-</span><span class='line'>|-----------|----------------|---------------|--------------------|----------------------
-</span><span class='line'>| JSON      | null           | 686,769,821   | not tested         | N/A                  
-</span><span class='line'>| JSON      | LZO            | 285,558,314   | 79s                | N/A                  
-</span><span class='line'>| JSON      | Deflate (gzip) | 175,878,038   | not tested         | N/A                  
-</span><span class='line'>| Avro      | null           | 301,710,126   | 40s                | .4s                  
-</span><span class='line'>| Avro      | Snappy         | 260,450,980   | 38s                | .9s                  
-</span><span class='line'>| Avro      | Deflate (gzip) | 156,550,144   | 64s                | 2.8s                 </span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">| Format    | Codec          | Data Size     | Hive count(1) time | Impala count(1) time
+</span><span class="line">|-----------|----------------|---------------|--------------------|----------------------
+</span><span class="line">| JSON      | null           | 686,769,821   | not tested         | N/A                  
+</span><span class="line">| JSON      | LZO            | 285,558,314   | 79s                | N/A                  
+</span><span class="line">| JSON      | Deflate (gzip) | 175,878,038   | not tested         | N/A                  
+</span><span class="line">| Avro      | null           | 301,710,126   | 40s                | .4s                  
+</span><span class="line">| Avro      | Snappy         | 260,450,980   | 38s                | .9s                  
+</span><span class="line">| Avro      | Deflate (gzip) | 156,550,144   | 64s                | 2.8s                 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>So the winner appears to be Avro/Snappy or uncompressed Avro.</p>
 </div>
@@ -232,6 +247,14 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
@@ -241,14 +264,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a>
       </li>
     
   </ul>
