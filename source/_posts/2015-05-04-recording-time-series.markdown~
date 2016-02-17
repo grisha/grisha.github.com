@@ -1,0 +1,53 @@
+---
+layout: post
+title: "Recording Time Series"
+date: 2015-05-04 17:40
+comments: true
+categories:
+---
+
+Different tools record Time Series in different ways, this write up
+focuses on different methods and the implications.
+
+A time series is simply a sequence of `(time, value)` tuples. The most
+naive method of recording a time series is to store timestamps as
+is. (In this write up I do not wish to focus on the specifics of the
+data storage - it can be a disk file, a database, a key-value store,
+etc.)
+
+Since the data points might arrive at arbitrary intervals, to
+correlate the series with a particular point in time might be tricky.
+One way to improve upon this is to divide time into intervals of a
+particular size and assign datapoints to the intervals.
+
+For example, if our interval size is 10 seconds, we could divide the
+entire timeline starting from the beginning of the epoch (UNIX time 0)
+into 10 second slots. Since the first slot begins at 0, any 10-second
+sized slot time series will have slots starting at the exact same
+time. Now correlation across series or other time values becomes much
+easier. But how do we assign datapoints to a slot? Different tools use
+different methods.
+
+Graphite, for example, just changes the timestamp of the datapoint to
+the last nearest slot. Thus if our slot start times looke like 0, 10,
+20, 30 ... and a data point arrives at 17 seconds, Graphite would just
+change the 17 to 10. If multiple data points arrive, then the last one
+"wins".
+
+```
+
+
+
+
+
+```
+
+
+
+This approach is simple, but has its issues as you will see later. One
+advantage of it is that it's trivial to update any data point in the
+past.
+
+RRDTool uses a slightly different approach which is more accurate but
+might be a little difficult to explain.
+

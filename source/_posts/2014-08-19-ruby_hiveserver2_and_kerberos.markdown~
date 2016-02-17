@@ -1,0 +1,19 @@
+---
+layout: post
+title: "Ruby"
+date: 2014-08-19 08:03
+comments: true
+categories:
+---
+
+Recently I found myself needing to connect to HiveServer2 with
+kerberos authentication enabled from a Ruby app. As it turned out
+[rbhive gem](https://github.com/forward3d/rbhive) we were using did not have
+support for kerberos authentication. So I had to
+[roll my own](https://github.com/forward3d/rbhive/pull/23).
+
+This post is to document the experience of figuring out the details of
+a SASL/GSSAPI connection before it is lost forever in my neurons and synapses.
+
+First, the terminology. The authentication system that Hadoop uses is
+_kerberos_.

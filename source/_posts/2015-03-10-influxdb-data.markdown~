@@ -1,0 +1,111 @@
+---
+layout: post
+title: "How InfluxDB Stores Data"
+date: 2015-03-10 15:52
+comments: true
+categories:
+---
+
+A nice, reliable, horizontally scalable database designed specifically
+to tackle the problem of Time Series data, and that doesn't require
+you to set up a Hadoop cluster is very much missing from the Open
+Source Universe right now.
+
+InfluxDB might be able to fill this gap, it certainly aims to, but I
+think it's way to early to call.
+
+I was curious about how it structures and stores its data and since
+there wasn't much documentation on the subject, I figured I'd document
+my findings.
+
+I only looked at the new (currently 0.9.0 in RC stage) version, the
+previous versions are significantly different.
+
+First of all, InfluxDB is distributed. You can run one node, or a
+bunch, it seems like a more typical number may be 3 or 5. The nodes
+use Raft to establish concensus and maintain data consistency.
+
+The data model that InfluxDB is a little unusual - it feels a little
+like a relational database in some aspects but not in others.
+
+The top level container is a _database_. A InfluxDB database is very
+much like what a database is in MySQL, it's a collection of contains
+other things.
+
+Other things.
+
+"Other things" are called data _points_, _series_, _measurements_,
+_tags_ and _retention policies_. Under the hood (i.e. you never deal
+with them directly) there are _shards_ and _shard groups_.
+
+The very first thing you need to do in InfluxDB is create a database
+and at least one retention policy for this database. Once you have
+these two things, you can start writing data.
+
+A eetention policy is the time period after which the data expires. It
+can be set to be infinite. A data point, which is a measurement
+consisting of any number of values and tags associated with a
+particular point in time, must be associated with a database and a
+retention policy. A retention policy also specifies the _replication
+factor_ for the data point.
+
+Let's say we are tracking disk usage across a whole bunch of
+servers. Each server runs some sort of an agent which periodically
+reports the usage of each disk to InfluxDB. Such a report might look
+like this (in JSON):
+
+{"database" : "foo", "retentionPolicy" : "bar",
+ "points" :
+   {"name" : "disk",
+    "tags" : {"server" : "bwi23", "unit" : "1"},
+    "timestamp" : "2015-03-16T01:02:26.234Z",
+    "fields" : {"total" : 100, "used" : 40, "free" : 60}}}
+
+In the above example, "disk" is a measurement. Thus we can operate on
+anything "disk", regardless of what "server" or "unit" it applies
+to. The data point as a whole belongs to a (time) series identified by
+the combination of the measurement name and the tags.
+
+There is no need to create series or measurements, they are created on
+the fly.
+
+Under the hood the data is stored in shards, which are groupped by
+shard groups, which in turn are grouped by retention policies, and
+finally databases.
+
+A database contains a bunch of (or just one) retention
+policies. Somewhat surprisingly a retention policy is actually a
+bucket of sorts. It makes sense if you think about the problem of
+having to expire data points - you can remove them all by simply
+dropping the entire bucket.
+
+So if we declare a retention policy of 1 day, then we can logically
+divide the timeline into a sequence of days from beginning of the
+epoch. Any incoming data point falls into its corresponding day. When
+clean up time comes around, we can delete all days except for the most
+current time.
+
+Each retention policy "bucket" is further divided into shard
+groups. The purpose of a shard group is to balance data across the
+nodes of the cluster. If we have a cluster of 3 nodes, we want the
+data points to be evenly distributed across these nodes. InfluxDB will
+create 3 shards, one on each of the nodes. The 3 shards comprise the
+shard group. This is assuming the replication factor is 1.
+
+But if the replication factor was 2, then there needs to be 2
+identical copies of every shard. The shard copies must be on separate
+nodes. With 3 modes and replication factor of 2, it is impossible to
+do any distribution across the nodes - the shard group will have a
+size of 1, and contain 1 shard, replicated across 2 nodes. In this set
+up, the third node will have no data for this particular retention
+policy.
+
+If we had a cluster of 5 nodes and the replication factor of 2, then
+the shard group can have a size of 2, for 2 shards, replicated across
+2 nodes each. Shard one replicas could live on nodes 1 and 3, while
+shard two replicas on nodes 2 and 4. Now the data is distributed as
+well as redundant. Note that the 5th node doesn't do anything. If we
+up the replication factor to 3 then just like before, the cluster is
+too small to have any distribution, we only have enough nodes for
+redundancy.
+

@@ -1,0 +1,20 @@
+---
+layout: post
+title: "test image"
+date: 2013-05-08 22:52
+comments: true
+categories: 
+---
+
+
+Hello there
+
+{% img left /images/how_it_works.png 350 350 'howitworks' 'images' %}
+
+Some more text here
+
+{% img th /images/how_it_works2.png 350 350 'howitworks' 'images' %}
+
+Some even more text here
+
+
