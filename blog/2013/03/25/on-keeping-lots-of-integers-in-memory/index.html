@@ -31,6 +31,22 @@ integers in memory. The goal was to store a graph of all our &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -110,31 +126,31 @@ integers in memory. The goal was to store a graph of all our &hellip;">
 integers in memory. The goal was to store a graph of all our
 purchasers and items purchased, so that we could quickly identify
 like-minded purchasers based on common purchases and make real-time
-recommendations of the form &#8220;people like you also bought&#8221;. This
-approach is commonly known as <a href="http://en.wikipedia.org/wiki/Collaborative_filtering">collaborative filtering</a>,
+recommendations of the form “people like you also bought”. This
+approach is commonly known as <a href="http://en.wikipedia.org/wiki/Collaborative_filtering">collaborative filtering</a>, 
 and exactly how we did it would be a subject of some future post
 (perhaps).</p>
 
 <p>At the time, I was looking at tens of millions of purchases by tens of
 millions people of hundreds of thousands of items. The only
-information I needed to store were id&#8217;s of people and items, which
+information I needed to store were id’s of people and items, which
 were just integers. While this seemed like a lot of data, I
 believed it was entirely feasible to store them all in memory.</p>
 
-<p>I didn&#8217;t have time to write my own implementation for storing this
+<p>I didn’t have time to write my own implementation for storing this
 graph, so I looked at a bunch of tools out there, asked around, and
 the only one that seemed to fit the bill exactly in the end was
 <a href="http://redis.io/">Redis</a>. Yes, there are a few projects out there
 that tout graph storage as their specialty, but none of them could
 scale anywhere close to the level I needed. And in the end the term
-&#8220;graph database&#8221; turned out to be a red herring of sorts. Any language
+“graph database” turned out to be a red herring of sorts. Any language
 such as Python, Ruby or Java provides the basic data structures
 quite sufficient for storing a graph as an adjacency list
 out-of-the-box. You can store a graph in any key-value store, or even
-in your favorite RDBMS. (To this day I&#8217;m not convinced there is any
+in your favorite RDBMS. (To this day I’m not convinced there is any
 good use case for the so-called graph databases out there.)</p>
 
-<p>There were a few things that set Redis apart:</p>
+<p>There were a few things that set Redis apart: </p>
 
 <p>First, it keeps everything in RAM, which meant that updating this
 dataset would be very fast, fast enough to keep it up-to-date in real
@@ -144,8 +160,8 @@ time.</p>
 and the operations it supports fit what we needed to do
 precisely. (Again, sorry for sparing you the details, but roughly, you
 need to store a Set of item ids for every person as well as a Set of
-person ids for every item, and &#8220;people like you&#8221; then becomes the
-union of all the Sets of items that are directly linked to &#8220;you&#8221;.)</p>
+person ids for every item, and “people like you” then becomes the
+union of all the Sets of items that are directly linked to “you”.)</p>
 
 <p>Thirdly, Redis supports replication, which meant that if the most
 CPU-intensive task of computing the actual recommendations (which
@@ -153,7 +169,7 @@ requires union-ing of a large number of large Sorted Sets) becomes a
 bottle neck, we could address this by running it on slaves, and
 we could easily scale the system by simply adding more slaves.</p>
 
-<p>Last (but hardly least) is Redis&#8217; ability to persist and quickly load
+<p>Last (but hardly least) is Redis’ ability to persist and quickly load
 the in-memory database. You begin to appreciate the immense value of
 this once you start populating Redis by pulling historical data from
 your RDBMS and realize that it could take many hours or even days.</p>
@@ -161,7 +177,7 @@ your RDBMS and realize that it could take many hours or even days.</p>
 <p>Everything was going great with my plan but soon I ran into a problem.
 Not even a quarter of the way through the initial load process, I
 noticed Redis reporting 20+ GB being used, which meant that the
-particular machine I was testing this on wouldn&#8217;t have enough
+particular machine I was testing this on wouldn’t have enough
 RAM. That was a bummer. Especially because it began to look like the
 whole architecture would require more memory than would be financially
 sensible for this project (yes, you could get a machine with 1TB of
@@ -178,43 +194,43 @@ favorite small number). In fact, the range of integers I was dealing
 with was well under 1 billion and 32 bits would more than suffice.</p>
 
 <p>Add to this that on a 64-bit system every <em>pointer</em> is also (you guessed
-it) - 64 bits. So if you&#8217;re storing a (singly) linked list of
+it) - 64 bits. So if you’re storing a (singly) linked list of
 integers, you end up with 8 bytes for the integer and 8 bytes for the
-&#8220;next&#8221; pointer, or 16 bytes per integer. And if your data structure
+“next” pointer, or 16 bytes per integer. And if your data structure
 is even more complex, such as a Redis Sorted Set, which is actually
 implemented as two structures updated simultaneously (a Skip List and a
 Hash), well, then you begin to see that our integers may end up taking
 up as much if not less memory than the pointers pointing to them.</p>
 
 <p>One simple way to reduce the memory bloat was to compile Redis in
-32-bit mode.  Redis makes it super easy with &#8220;make 32bit&#8221;.  Because of
+32-bit mode.  Redis makes it super easy with “make 32bit”.  Because of
 the smaller pointer size the 32-bit mode uses much less memory, but of
 course the caveat is that the total address space is limited to 32
 bits or about 4GB.  While this did reduce the footprint by a great
-deal, it wasn&#8217;t sufficient for my data set, which still looked to be
+deal, it wasn’t sufficient for my data set, which still looked to be
 more than 4GB in size.</p>
 
-<p>Then I came across this page on <a href="http://redis.io/topics/memory-optimization" title="">memory optimization</a>.  Little
+<p>Then I came across this page on <a href="http://redis.io/topics/memory-optimization&quot;">memory optimization</a>.  Little
 did I know Redis already provided a very compact way of storing
 integers. For small lists, sets or hashes, Redis uses a special
 structure it calls <em>ziplist</em> that can store variable-length
 integers and strings. The advantage is that it is very compact, but
 the flipside is that such lists can only be processed
-sequentially. (This is because you can&#8217;t access an n-th element in
+sequentially. (This is because you can’t access an n-th element in
 such a list because sizes of elements vary, so you must scan from
 beginning). But it tunrs out that sequential processing is actually
 more efficient for small lists rather than following a more complex
 algorithm (hashing or whatever) because it requires no
 indirection and can be accomplished with simple pointer math.</p>
 
-<p>Redis&#8217; zset-max-ziplist-entries config setting sets a threshold - any
+<p>Redis’ zset-max-ziplist-entries config setting sets a threshold - any
 Sorted Set that has fewer elements than the setting is stored as a
 ziplist and as soon as it reaches the number greater than the setting
 it is converted to the full-fledged Sorted Set data
 structure.</p>
 
 <p>What was interesting is that in my tests bumping up the value from the
-default of 128 to as high as 10000 didn&#8217;t seem to have any noticeable
+default of 128 to as high as 10000 didn’t seem to have any noticeable
 performance impact while reduced the memory usage by an order of
 magnitude. My best guess is that even at 10K elements this list is
 small enough to be processed entirely in the CPU cache.</p>
@@ -227,112 +243,110 @@ source: <a href="https://github.com/antirez/redis/blob/unstable/src/ziplist.c">s
 <p>The technique is very simple - the first 4 bits are used to identify
 the size of the integer. The relevant comment text:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11000000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int16_t</span> <span class="p">(</span><span class="mi">2</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11010000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int32_t</span> <span class="p">(</span><span class="mi">4</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11100000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int64_t</span> <span class="p">(</span><span class="mi">8</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11110000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">24</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">3</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11111110</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">8</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">1111</span><span class="n">xxxx</span><span class="o">|</span> <span class="o">-</span> <span class="p">(</span><span class="n">with</span> <span class="n">xxxx</span> <span class="n">between</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1101</span><span class="p">)</span> <span class="n">immediate</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">integer</span><span class="p">.</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Unsigned</span> <span class="n">integer</span> <span class="n">from</span> <span class="mi">0</span> <span class="n">to</span> <span class="mf">12.</span> <span class="n">The</span> <span class="n">encoded</span> <span class="n">value</span> <span class="n">is</span> <span class="n">actually</span> <span class="n">from</span>
-</span><span class='line'><span class="o">*</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">13</span> <span class="n">because</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1111</span> <span class="n">can</span> <span class="n">not</span> <span class="n">be</span> <span class="n">used</span><span class="p">,</span> <span class="n">so</span> <span class="mi">1</span> <span class="n">should</span> <span class="n">be</span>
-</span><span class='line'><span class="o">*</span> <span class="n">subtracted</span> <span class="n">from</span> <span class="n">the</span> <span class="n">encoded</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">value</span> <span class="n">to</span> <span class="n">obtain</span> <span class="n">the</span> <span class="n">right</span> <span class="n">value</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">11000000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int16_t</span> <span class="p">(</span><span class="mi">2</span> <span class="n">bytes</span><span class="p">).</span>
+</span><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">11010000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int32_t</span> <span class="p">(</span><span class="mi">4</span> <span class="n">bytes</span><span class="p">).</span>
+</span><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">11100000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int64_t</span> <span class="p">(</span><span class="mi">8</span> <span class="n">bytes</span><span class="p">).</span>
+</span><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">11110000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">24</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">3</span> <span class="n">bytes</span><span class="p">).</span>
+</span><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">11111110</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">8</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">).</span>
+</span><span class="line"><span class="o">*</span> <span class="o">|</span><span class="mi">1111</span><span class="n">xxxx</span><span class="o">|</span> <span class="o">-</span> <span class="p">(</span><span class="n">with</span> <span class="n">xxxx</span> <span class="n">between</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1101</span><span class="p">)</span> <span class="n">immediate</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">integer</span><span class="p">.</span>
+</span><span class="line"><span class="o">*</span> <span class="n">Unsigned</span> <span class="n">integer</span> <span class="n">from</span> <span class="mi">0</span> <span class="n">to</span> <span class="mf">12.</span> <span class="n">The</span> <span class="n">encoded</span> <span class="n">value</span> <span class="n">is</span> <span class="n">actually</span> <span class="n">from</span>
+</span><span class="line"><span class="o">*</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">13</span> <span class="n">because</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1111</span> <span class="n">can</span> <span class="n">not</span> <span class="n">be</span> <span class="n">used</span><span class="p">,</span> <span class="n">so</span> <span class="mi">1</span> <span class="n">should</span> <span class="n">be</span>
+</span><span class="line"><span class="o">*</span> <span class="n">subtracted</span> <span class="n">from</span> <span class="n">the</span> <span class="n">encoded</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">value</span> <span class="n">to</span> <span class="n">obtain</span> <span class="n">the</span> <span class="n">right</span> <span class="n">value</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Actually, back when I looked at it, there was no 24-bit integer
 encoding, which led me to submitting a <a href="https://github.com/antirez/redis/issues/469">patch</a>, which
-was gladly accepted (and corrected for <a href="http://en.wikipedia.org/wiki/Two%27s_complement">two&#8217;s complement</a> support) by <a href="http://invece.org/">antirez</a>.</p>
+was gladly accepted (and corrected for <a href="http://en.wikipedia.org/wiki/Two%27s_complement">two’s complement</a> support) by <a href="http://invece.org/">antirez</a>.</p>
 
-<p>Since that time I&#8217;ve been noticing different takes on variable-length
+<p>Since that time I’ve been noticing different takes on variable-length
 integer storage in other projects.</p>
 
 <p>For example <a href="http://www.bitcoin.org">Bitcoin</a> uses <a href="https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer">variable-length integers</a> to minimize the total size of the block
 chain. The bitcoin algo is as follows:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'> <span class="o">*</span> <span class="n">Examine</span> <span class="n">at</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="n">less</span> <span class="n">than</span> <span class="mi">253</span><span class="p">,</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">use</span> <span class="n">the</span> <span class="n">byte</span> <span class="n">literally</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">253</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">two</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">16</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">254</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">four</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">32</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">255</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">eight</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>   <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">9</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"> <span class="o">*</span> <span class="n">Examine</span> <span class="n">at</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span>
+</span><span class="line"> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="n">less</span> <span class="n">than</span> <span class="mi">253</span><span class="p">,</span>
+</span><span class="line"> <span class="o">*</span>    <span class="n">use</span> <span class="n">the</span> <span class="n">byte</span> <span class="n">literally</span>
+</span><span class="line"> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">253</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">two</span> <span class="n">bytes</span>
+</span><span class="line"> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">16</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+</span><span class="line"> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">254</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">four</span> <span class="n">bytes</span>
+</span><span class="line"> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">32</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span>
+</span><span class="line"> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">255</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">eight</span> <span class="n">bytes</span>
+</span><span class="line"> <span class="o">*</span>   <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">9</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p><a href="http://sqlite.org/">SQLite3</a> uses its own variable-length integer format,
 possibly cleverer than the two above:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">**</span> <span class="n">Cell</span> <span class="n">content</span> <span class="n">makes</span> <span class="n">use</span> <span class="n">of</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">integers</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span>
-</span><span class='line'><span class="o">**</span> <span class="n">length</span> <span class="n">integer</span> <span class="n">is</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="n">where</span> <span class="n">the</span> <span class="n">lower</span> <span class="mi">7</span> <span class="n">bits</span> <span class="n">of</span> <span class="n">each</span>
-</span><span class='line'><span class="o">**</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span><span class="p">.</span>  <span class="n">The</span> <span class="n">integer</span> <span class="n">consists</span> <span class="n">of</span> <span class="n">all</span> <span class="n">bytes</span> <span class="n">that</span> <span class="n">have</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">set</span> <span class="n">and</span>
-</span><span class='line'><span class="o">**</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">with</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">clear</span><span class="p">.</span>  <span class="n">The</span> <span class="n">most</span> <span class="n">significant</span> <span class="n">byte</span> <span class="n">of</span> <span class="n">the</span> <span class="n">integer</span>
-</span><span class='line'><span class="o">**</span> <span class="n">appears</span> <span class="n">first</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span><span class="o">-</span><span class="n">length</span> <span class="n">integer</span> <span class="n">may</span> <span class="n">not</span> <span class="n">be</span> <span class="n">more</span> <span class="n">than</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="kt">long</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span> <span class="n">As</span> <span class="n">a</span> <span class="n">special</span> <span class="k">case</span><span class="p">,</span> <span class="n">all</span> <span class="mi">8</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">the</span> <span class="mi">9</span><span class="n">th</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span> <span class="n">as</span> <span class="n">data</span><span class="p">.</span>  <span class="n">This</span>
-</span><span class='line'><span class="o">**</span> <span class="n">allows</span> <span class="n">a</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">integer</span> <span class="n">to</span> <span class="n">be</span> <span class="n">encoded</span> <span class="n">in</span> <span class="mi">9</span> <span class="n">bytes</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x00</span>                      <span class="n">becomes</span>  <span class="mh">0x00000000</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x7f</span>                      <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000080</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x82</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000100</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x80</span> <span class="mh">0x7f</span>                 <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x8a</span> <span class="mh">0x91</span> <span class="mh">0xd1</span> <span class="mh">0xac</span> <span class="mh">0x78</span>  <span class="n">becomes</span>  <span class="mh">0x12345678</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x01</span>  <span class="n">becomes</span>  <span class="mh">0x10204081</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span> <span class="n">Variable</span> <span class="n">length</span> <span class="n">integers</span> <span class="n">are</span> <span class="n">used</span> <span class="k">for</span> <span class="n">rowids</span> <span class="n">and</span> <span class="n">to</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span>
-</span><span class='line'><span class="o">**</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">key</span> <span class="n">and</span> <span class="n">data</span> <span class="n">in</span> <span class="n">a</span> <span class="n">btree</span> <span class="n">cell</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="o">**</span> <span class="n">Cell</span> <span class="n">content</span> <span class="n">makes</span> <span class="n">use</span> <span class="n">of</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">integers</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span>
+</span><span class="line"><span class="o">**</span> <span class="n">length</span> <span class="n">integer</span> <span class="n">is</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="n">where</span> <span class="n">the</span> <span class="n">lower</span> <span class="mi">7</span> <span class="n">bits</span> <span class="n">of</span> <span class="n">each</span>
+</span><span class="line"><span class="o">**</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span><span class="p">.</span>  <span class="n">The</span> <span class="n">integer</span> <span class="n">consists</span> <span class="n">of</span> <span class="n">all</span> <span class="n">bytes</span> <span class="n">that</span> <span class="n">have</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">set</span> <span class="n">and</span>
+</span><span class="line"><span class="o">**</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">with</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">clear</span><span class="p">.</span>  <span class="n">The</span> <span class="n">most</span> <span class="n">significant</span> <span class="n">byte</span> <span class="n">of</span> <span class="n">the</span> <span class="n">integer</span>
+</span><span class="line"><span class="o">**</span> <span class="n">appears</span> <span class="n">first</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span><span class="o">-</span><span class="n">length</span> <span class="n">integer</span> <span class="n">may</span> <span class="n">not</span> <span class="n">be</span> <span class="n">more</span> <span class="n">than</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="kt">long</span><span class="p">.</span>
+</span><span class="line"><span class="o">**</span> <span class="n">As</span> <span class="n">a</span> <span class="n">special</span> <span class="k">case</span><span class="p">,</span> <span class="n">all</span> <span class="mi">8</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">the</span> <span class="mi">9</span><span class="n">th</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span> <span class="n">as</span> <span class="n">data</span><span class="p">.</span>  <span class="n">This</span>
+</span><span class="line"><span class="o">**</span> <span class="n">allows</span> <span class="n">a</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">integer</span> <span class="n">to</span> <span class="n">be</span> <span class="n">encoded</span> <span class="n">in</span> <span class="mi">9</span> <span class="n">bytes</span><span class="p">.</span>
+</span><span class="line"><span class="o">**</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x00</span>                      <span class="n">becomes</span>  <span class="mh">0x00000000</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x7f</span>                      <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000080</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x82</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000100</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x80</span> <span class="mh">0x7f</span>                 <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x8a</span> <span class="mh">0x91</span> <span class="mh">0xd1</span> <span class="mh">0xac</span> <span class="mh">0x78</span>  <span class="n">becomes</span>  <span class="mh">0x12345678</span>
+</span><span class="line"><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x01</span>  <span class="n">becomes</span>  <span class="mh">0x10204081</span>
+</span><span class="line"><span class="o">**</span>
+</span><span class="line"><span class="o">**</span> <span class="n">Variable</span> <span class="n">length</span> <span class="n">integers</span> <span class="n">are</span> <span class="n">used</span> <span class="k">for</span> <span class="n">rowids</span> <span class="n">and</span> <span class="n">to</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span>
+</span><span class="line"><span class="o">**</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">key</span> <span class="n">and</span> <span class="n">data</span> <span class="n">in</span> <span class="n">a</span> <span class="n">btree</span> <span class="n">cell</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>There are also other more sophisticated techniques of storing lists of integers such as
 <a href="http://en.wikipedia.org/wiki/Elias_gamma">Elias encoding</a> and <a href="http://en.wikipedia.org/wiki/Golomb_coding">Golomb coding</a>.</p>
+
 </div>
 
 
@@ -398,21 +412,41 @@ possibly cleverer than the two above:</p>
 <aside class="sidebar">
   
     
+
 <section>
-  <div style="width: 50%; margin: 0 auto;">
-  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
-    data-show-count="">Follow @humblehack</a>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
   </div>
+</div>
 </section>
 
 <section>
   <h1>About Me</h1>
-  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
   <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
 </section>
 <section>
@@ -420,23 +454,23 @@ possibly cleverer than the two above:</p>
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
       </li>
     
   </ul>

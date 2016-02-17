@@ -1,0 +1,624 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Graceful restart in Golang - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="Update (Apr 2015): Florian von Bock has
+turned what is described in this article into a nice Go package called
+endless. If you have a Golang HTTP &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2014/06/03/graceful-restart-in-golang">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Graceful Restart in Golang</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T12:49:00-04:00" pubdate data-updated="true">Jun 3<span>rd</span>, 2014</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
+on occasion to upgrade the binary or change some configuration. And if
+you (like me) have been taking graceful restart for granted because
+the webserver took care of it, you may find this recipe very handy
+because with Golang you need to roll your own.</p>
+
+<p>There are actually two problems that need to be solved here. First is
+the UNIX side of the graceful restart, i.e. the mechanism by which a
+process can restart itself without closing the listening socket. The
+second problem is ensuring that all in-progress requests are properly
+completed or timed-out.</p>
+
+<h2 id="restarting-without-closing-the-socket">Restarting without closing the socket</h2>
+
+<ul>
+  <li>Fork a new process which inherits the listening socket.</li>
+  <li>The child performs initialization and starts accepting connections on
+the socket.</li>
+  <li>Immediately after, child sends a signal to the parent causing the
+parent to stop accepting connecitons and terminate.</li>
+</ul>
+
+<h3 id="forking-a-new-process">Forking a new process</h3>
+
+<p>There is more than one way to fork a process using the Golang lib, but
+for this particular case
+<a href="http://golang.org/pkg/os/exec/#Command">exec.Command</a> is the way to
+go. This is because the <a href="http://golang.org/pkg/os/exec/#Cmd">Cmd struct</a> this function returns has
+this <code>ExtraFiles</code> member, which specifies open files (in addition to
+stdin/err/out) to be inherited by new process.</p>
+
+<p>Here is what this looks like:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">file</span> <span class="o">:=</span> <span class="nx">netListener</span><span class="p">.</span><span class="nx">File</span><span class="p">()</span> <span class="c1">// this returns a Dup()</span>
+</span><span class="line"><span class="nx">path</span> <span class="o">:=</span> <span class="s">&quot;/path/to/executable&quot;</span>
+</span><span class="line"><span class="nx">args</span> <span class="o">:=</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span>
+</span><span class="line">    <span class="s">&quot;-graceful&quot;</span><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">cmd</span> <span class="o">:=</span> <span class="nx">exec</span><span class="p">.</span><span class="nx">Command</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">args</span><span class="o">...</span><span class="p">)</span>
+</span><span class="line"><span class="nx">cmd</span><span class="p">.</span><span class="nx">Stdout</span> <span class="p">=</span> <span class="nx">os</span><span class="p">.</span><span class="nx">Stdout</span>
+</span><span class="line"><span class="nx">cmd</span><span class="p">.</span><span class="nx">Stderr</span> <span class="p">=</span> <span class="nx">os</span><span class="p">.</span><span class="nx">Stderr</span>
+</span><span class="line"><span class="nx">cmd</span><span class="p">.</span><span class="nx">ExtraFiles</span> <span class="p">=</span> <span class="p">[]</span><span class="o">*</span><span class="nx">os</span><span class="p">.</span><span class="nx">File</span><span class="p">{</span><span class="nx">file</span><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">err</span> <span class="o">:=</span> <span class="nx">cmd</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+</span><span class="line"><span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">log</span><span class="p">.</span><span class="nx">Fatalf</span><span class="p">(</span><span class="s">&quot;gracefulRestart: Failed to launch, error: %v&quot;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>In the above code <code>netListener</code> is a pointer to
+<a href="http://golang.org/pkg/net/#Listener">net.Listener</a> listening for HTTP
+requests. The <code>path</code> variable should contain the path to the new
+executable if you’re upgrading (which may be the same as the currently
+running one).</p>
+
+<p>An important point in the above code is that <code>netListener.File()</code>
+returns a
+<a href="http://pubs.opengroup.org/onlinepubs/009695399/functions/dup.html">dup(2)</a>
+of the file descriptor. The duplicated file descriptor will not have
+the <a href="http://pubs.opengroup.org/onlinepubs/009695399/functions/fcntl.html"><code>FD_CLOEXEC</code> flag</a> set,
+which would cause the file to be closed in the child (not what we want).</p>
+
+<p>You may come across examples that pass the inherited file descriptor
+number to the child via a command line argument, but the way
+<code>ExtraFiles</code> is implemented makes it unnecessary. The documentation
+states that “If non-nil, entry i becomes file descriptor 3+i.” This
+means that in the above code snippet, the inherited file descriptor in
+the child will always be 3, thus no need to explicitely pass it.</p>
+
+<p>Finally, <code>args</code> array contains a <code>-graceful</code> option: your program will
+need some way of informing the child that this is a part of a graceful
+restart and the child should re-use the socket rather than try opening
+a new one. Another way to do this might be via an environment
+variable.</p>
+
+<h3 id="child-initialization">Child initialization</h3>
+
+<p>Here is part of the program startup sequence</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">server</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span><span class="nx">Addr</span><span class="p">:</span> <span class="s">&quot;0.0.0.0:8888&quot;</span><span class="p">}</span>
+</span><span class="line">
+</span><span class="line">    <span class="kd">var</span> <span class="nx">gracefulChild</span> <span class="kt">bool</span>
+</span><span class="line">    <span class="kd">var</span> <span class="nx">l</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Listever</span>
+</span><span class="line">    <span class="kd">var</span> <span class="nx">err</span> <span class="kt">error</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">flag</span><span class="p">.</span><span class="nx">BoolVar</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">gracefulChild</span><span class="p">,</span> <span class="s">&quot;graceful&quot;</span><span class="p">,</span> <span class="kc">false</span><span class="p">,</span> <span class="s">&quot;listen on fd open 3 (internal use only)&quot;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">if</span> <span class="nx">gracefulChild</span> <span class="p">{</span>
+</span><span class="line">        <span class="nx">log</span><span class="p">.</span><span class="nx">Print</span><span class="p">(</span><span class="s">&quot;main: Listening to existing file descriptor 3.&quot;</span><span class="p">)</span>
+</span><span class="line">        <span class="nx">f</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nx">NewFile</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+</span><span class="line">        <span class="nx">l</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">net</span><span class="p">.</span><span class="nx">FileListener</span><span class="p">(</span><span class="nx">f</span><span class="p">)</span>
+</span><span class="line">    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class="line">        <span class="nx">log</span><span class="p">.</span><span class="nx">Print</span><span class="p">(</span><span class="s">&quot;main: Listening on a new file descriptor.&quot;</span><span class="p">)</span>
+</span><span class="line">        <span class="nx">l</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Listen</span><span class="p">(</span><span class="s">&quot;tcp&quot;</span><span class="p">,</span> <span class="nx">server</span><span class="p">.</span><span class="nx">Addr</span><span class="p">)</span>
+</span><span class="line">    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="signal-parent-to-stop">Signal parent to stop</h3>
+
+<p>At this point we’re ready to accept requests, but just before we do
+that, we need to tell our parent to stop accepting requests and exit,
+which could be something like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="k">if</span> <span class="nx">gracefulChild</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">parent</span> <span class="o">:=</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">Getppid</span><span class="p">()</span>
+</span><span class="line">    <span class="nx">log</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;main: Killing parent pid: %v&quot;</span><span class="p">,</span> <span class="nx">parent</span><span class="p">)</span>
+</span><span class="line">    <span class="nx">syscall</span><span class="p">.</span><span class="nx">Kill</span><span class="p">(</span><span class="nx">parent</span><span class="p">,</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">SIGTERM</span><span class="p">)</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">server</span><span class="p">.</span><span class="nx">Serve</span><span class="p">(</span><span class="nx">l</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="in-progress-requests-completiontimeout">In-progress requests completion/timeout</h2>
+
+<p>For this we will need to keep track of open connections with a
+<a href="http://golang.org/pkg/sync/#WaitGroup">sync.WaitGroup</a>. We will need
+to increment the wait group on every accepted connection and decrement
+it on every connection close.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">var</span> <span class="nx">httpWg</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">WaitGroup</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>At first glance, the Golang standard http package does not provide any
+hooks to take action on Accept() or Close(), but this is where the
+interface magic comes to the rescue. (Big thanks and credit to <a href="http://nella.org/jra/">Jeff R. Allen</a>
+for <a href="http://blog.nella.org/zero-downtime-upgrades-of-tcp-servers-in-go/">this post</a>).</p>
+
+<p>Here is an example of a listener which increments a wait group on
+every Accept(). First, we “subclass” <code>net.Listener</code> (you’ll see why we
+need <code>stop</code> and <code>stopped</code> below):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">gracefulListener</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">net</span><span class="p">.</span><span class="nx">Listener</span>
+</span><span class="line">    <span class="nx">stop</span>    <span class="kd">chan</span> <span class="kt">error</span>
+</span><span class="line">    <span class="nx">stopped</span> <span class="kt">bool</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Next we “override” the Accept method. (Nevermind <code>gracefulConn</code> for
+now, it will be introduced later).</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">gl</span> <span class="o">*</span><span class="nx">gracefulListener</span><span class="p">)</span> <span class="nx">Accept</span><span class="p">()</span> <span class="p">(</span><span class="nx">c</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Conn</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">c</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">gl</span><span class="p">.</span><span class="nx">Listener</span><span class="p">.</span><span class="nx">Accept</span><span class="p">()</span>
+</span><span class="line">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class="line">        <span class="k">return</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">c</span> <span class="p">=</span> <span class="nx">gracefulConn</span><span class="p">{</span><span class="nx">Conn</span><span class="p">:</span> <span class="nx">c</span><span class="p">}</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">httpWg</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class="line">    <span class="k">return</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We also need a “constructor”:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">newGracefulListener</span><span class="p">(</span><span class="nx">l</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Listener</span><span class="p">)</span> <span class="p">(</span><span class="nx">gl</span> <span class="o">*</span><span class="nx">gracefulListener</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">gl</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">gracefulListener</span><span class="p">{</span><span class="nx">Listener</span><span class="p">:</span> <span class="nx">l</span><span class="p">,</span> <span class="nx">stop</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)}</span>
+</span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">        <span class="nx">_</span> <span class="p">=</span> <span class="o">&lt;-</span><span class="nx">gl</span><span class="p">.</span><span class="nx">stop</span>
+</span><span class="line">        <span class="nx">gl</span><span class="p">.</span><span class="nx">stopped</span> <span class="p">=</span> <span class="kc">true</span>
+</span><span class="line">        <span class="nx">gl</span><span class="p">.</span><span class="nx">stop</span> <span class="o">&lt;-</span> <span class="nx">gl</span><span class="p">.</span><span class="nx">Listener</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+</span><span class="line">    <span class="p">}()</span>
+</span><span class="line">    <span class="k">return</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The reason the function above starts a goroutine is because this
+cannot be done in our <code>Accept()</code> above since it will block on
+<code>gl.Listener.Accept()</code>. The goroutine will unblock it by closing file
+descriptor.</p>
+
+<p>Our <code>Close()</code> method simply sends a <code>nil</code> to the stop channel for the
+above goroutine to do the rest of the work.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">gl</span> <span class="o">*</span><span class="nx">gracefulListener</span><span class="p">)</span> <span class="nx">Close</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">if</span> <span class="nx">gl</span><span class="p">.</span><span class="nx">stopped</span> <span class="p">{</span>
+</span><span class="line">        <span class="k">return</span> <span class="nx">syscall</span><span class="p">.</span><span class="nx">EINVAL</span>
+</span><span class="line">    <span class="p">}</span>
+</span><span class="line">    <span class="nx">gl</span><span class="p">.</span><span class="nx">stop</span> <span class="o">&lt;-</span> <span class="kc">nil</span>
+</span><span class="line">    <span class="k">return</span> <span class="o">&lt;-</span><span class="nx">gl</span><span class="p">.</span><span class="nx">stop</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Finally, this little convenience method extracts the file descriptor
+from the <code>net.TCPListener</code>.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">gl</span> <span class="o">*</span><span class="nx">gracefulListener</span><span class="p">)</span> <span class="nx">File</span><span class="p">()</span> <span class="o">*</span><span class="nx">os</span><span class="p">.</span><span class="nx">File</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">tl</span> <span class="o">:=</span> <span class="nx">gl</span><span class="p">.</span><span class="nx">Listener</span><span class="p">.(</span><span class="o">*</span><span class="nx">net</span><span class="p">.</span><span class="nx">TCPListener</span><span class="p">)</span>
+</span><span class="line">    <span class="nx">fl</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">tl</span><span class="p">.</span><span class="nx">File</span><span class="p">()</span>
+</span><span class="line">    <span class="k">return</span> <span class="nx">fl</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And, of course we also need a variant of a
+<a href="http://golang.org/pkg/net/#Conn"><code>net.Conn</code></a> which decrements the
+wait group on <code>Close()</code>:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">gracefulConn</span> <span class="kd">struct</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">net</span><span class="p">.</span><span class="nx">Conn</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">w</span> <span class="nx">gracefulConn</span><span class="p">)</span> <span class="nx">Close</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">httpWg</span><span class="p">.</span><span class="nx">Done</span><span class="p">()</span>
+</span><span class="line">    <span class="k">return</span> <span class="nx">w</span><span class="p">.</span><span class="nx">Conn</span><span class="p">.</span><span class="nx">Close</span><span class="p">()</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>To start using the above graceful version of the Listener, all we need
+is to change the <code>server.Serve(l)</code> line to:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">netListener</span> <span class="p">=</span> <span class="nx">newGracefulListener</span><span class="p">(</span><span class="nx">l</span><span class="p">)</span>
+</span><span class="line"><span class="nx">server</span><span class="p">.</span><span class="nx">Serve</span><span class="p">(</span><span class="nx">netListener</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And there is one more thing. You should avoid hanging connections that
+the client has no intention of closing (or not this week). It is
+better to create your server as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">server</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span>
+</span><span class="line">        <span class="nx">Addr</span><span class="p">:</span>           <span class="s">&quot;0.0.0.0:8888&quot;</span><span class="p">,</span>
+</span><span class="line">        <span class="nx">ReadTimeout</span><span class="p">:</span>    <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span>
+</span><span class="line">        <span class="nx">WriteTimeout</span><span class="p">:</span>   <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span>
+</span><span class="line">        <span class="nx">MaxHeaderBytes</span><span class="p">:</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T12:49:00-04:00" pubdate data-updated="true">Jun 3<span>rd</span>, 2014</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/" data-via="humblehack" data-counturl="http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/11/07/mod-python-performance-revisited/" title="Previous Post: mod_python performance part 2: high(er) concurrency">&laquo; mod_python performance part 2: high(er) concurrency</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/" title="Next Post: Ruby, HiveServer2 and Kerberos">Ruby, HiveServer2 and Kerberos &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
+  </div>
+</div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2016 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/';
+        var disqus_url = 'http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

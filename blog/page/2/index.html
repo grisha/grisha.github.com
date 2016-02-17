@@ -9,9 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Here&#8217;s a KISS solution to all your password reuse
-problems. It requires remembering only *one* strong password, lets you
-have a virtually &hellip;">
+  <meta name="description" content="I’m not very fond of it. Here is why. CGI Origins WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
+there in the name. CGI solved &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -31,6 +30,22 @@ have a virtually &hellip;">
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
 
   
   <script type="text/javascript">
@@ -85,6 +100,1582 @@ have a virtually &hellip;">
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My Thoughts on WSGI</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/26/my-thoughts-on-wsgi/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I’m not very fond of it. Here is why.</p>
+
+<h2 id="cgi-origins">CGI Origins</h2>
+
+<p>WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
+there in the name.</p>
+
+<p>CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn’t a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.</p>
+
+<p>There is now an RFC (<a href="http://www.ietf.org/rfc/rfc3875">RFC3875</a>)
+describing CGI, but I hazard that
+<a href="http://ken.coar.org/">Ken Coar</a> wrote the RFC not because he thought CGI was great, but rather
+out of discontent with the present state of affairs - everyone was
+using CGI, yet there never was a formal document describing it.</p>
+
+<p>So if I were to attempt to unite all Python web applications under the
+same standard, CGI wouldn’t be the first thing I would consider. There are
+other efforts at solving the same problem in more elegant ways which
+could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
+
+<h2 id="headers">Headers</h2>
+
+<p>CGI dictated that HTTP headers be passed to the CGI script by way of
+<a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
+same environment that contain your <code>$PATH</code> and <code>$TERM</code>.  (Note this
+also explains the origin of the term <em>environment</em> in WSGI - in HTTP
+there is no <em>request environment</em>, there is simply a <em>request</em>). So as
+to not clash with any other environment variables, CGI would prepend
+<code>HTTP_</code> to every header name. It also swapped dashes with underscores
+because dashes are not allowed in shell variable names. And because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized. Thus <code>"content-type"</code> would become <code>"HTTP_CONTENT_TYPE"</code>.</p>
+
+<p>And how much sense applying the same transformation make in the realm
+in which WSGI operates? The headers are typically read by the
+webserver and stored in some kind of a structure, which ought to be
+directly accessible so the application can get headers in the
+original, unmodified format. For example in Apache this would be the
+<code>req.headers_in</code> table.  What is the benefit of combing through that
+structure converting every key to some capitalized HTTP_ string at
+every request? Why are WSGI developers forced to use
+<code>env['HTTP_CONTENT_LENGTH']</code> rather than <code>env['Content-length']</code>?</p>
+
+<p>Another thing about the environment is that the WSGI standard states
+that it must be a real Python dictionary, thereby dictating that a
+memory allocation happen to satisfy this requirement, <em>at every
+request</em>.</p>
+
+<h2 id="startresponse">start_response()</h2>
+
+<p>In order to be able to write anything to the client a WSGI application
+must envoke the start_response() function passed to it which would
+return a write() method.</p>
+
+<p>Ten points for cuteness here, but the practicality of this solution
+eludes me. This is certainly a clever way to make the fact that the start
+of a response is an irreversible action in HTTP because the headers are
+sent first, but seriosly - do programmers who code at this level not
+know it? Why can’t the header sending part happen implicitly at the
+first write(), and why can’t an application write without sending any
+headers?</p>
+
+<p>There is also another problem here - function calls are relatively
+expensive in Python. The requirement that the app must beg for the
+write object every time introduces a completely unnecessary function
+call.</p>
+
+<p>The request object with a write() method should simply be passed
+in. This is how it has always worked in mod_python (cited in PEP3333 a
+number of times!).</p>
+
+<h2 id="error-handling">Error handling</h2>
+
+<p>First, I must confess that after re-reading the section of the PEP3333
+describing the <code>exc_info</code> argument several times I still can’t say I
+grok what it’s saying. Looking at some implementations out there I am
+releived to know I am not the only one.</p>
+
+<p>But the gist of it that an exception can be supplied along with some
+headers. It seems to me there is confusion between HTTP errors and
+Python errors here, the two are not related. What is the expected
+outcome of passing a Python exception to an HTTP server? The server
+would probably convert it to a 500 Internal Server Error (well it only
+has so many possibilities to chose from), and what’s the point of that?</p>
+
+<p>Wouldn’t the outcome be same if the application simply raised an
+exception?</p>
+
+<p>If the spec wanted to provide means for the application Python errors
+to somehow map to HTTP errors, why not define a special exception
+class which could be used to send HTTP errors? What was wrong with
+mod_python’s:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">raise apache.SERVER_RETURN, apache.HTTP_INTERNAL_SERVER_ERROR</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I think it’s simple and self-explanatory.</p>
+
+<h2 id="other-things">Other things</h2>
+
+<p>What is <code>wsgi.run_once</code>, why does it matter and why should the web
+server provide it? What would be a good use case for such a thing?</p>
+
+<p>There is a long section describing “middleware”. Middleware is a
+wrapper, an example of the <a href="http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm">pipeline design pattern</a>
+and there doesn’t seem to be anything special with this concept that
+the WSGI spec should even mention it. (I also object to the term
+“middleware” - my intuition suggests it’s a layer between “hardware”
+and “software”, not a wrapper.)</p>
+
+<h2 id="scriptname-and-pathinfo">SCRIPT_NAME and PATH_INFO</h2>
+
+<p>Perhaps the most annoying part of CGI were these two mis-understood
+variables, and sadly WSGI uses them too.</p>
+
+<p>Remember that in CGI we always had a script. A typical CGI script
+resided somewhere on the filesystem to which the request URI maps. As
+part of serving the request the server traversed the URI mapping each
+element to an element of the filesystem path to locate the
+script. Once the script was found, the portion of the URI used thus far
+was assigned to the SCRIPT_NAME variable, while the remainder of the
+URI got assigned to PATH_INFO.</p>
+
+<p>But where is <em>the script</em> in WSGI? Is my Python module the script?
+What relatioship does there exist between the request URI and the
+(non-existent) script?</p>
+
+<h2 id="bottom-line">Bottom line</h2>
+
+<p>I am not convinced that there should be a universal standard for
+Python web applications to begin with. I think that what we refer to
+as “web applications” is still not very well understood by us
+programmers.</p>
+
+<p>But if we are to have one, I think that WSGI approach is not the right
+one. It brings the world of Python web development to the lowest
+common denominator - CGI and introduces some problems of its own on
+top of it.</p>
+
+<h2 id="other-notes">Other notes</h2>
+
+<h3 id="what-is-the-gateway-in-cgi">What is the Gateway in CGI</h3>
+
+<p>I did some digging into the etymology of “Common Gateway Interface”,
+because I wanted to know what the original author (Rob McCool) meant
+by it when he came up with it. From reading <a href="http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html">this</a>
+it’s apparent that he saw it as the Web daemon’s gateway to an outside
+program:</p>
+
+<p>“For example, let’s say that you wanted to “hook up” your Unix
+database to the World Wide Web, to allow people from all over the
+world to query it. Basically, you need to create a CGI program that
+the Web daemon will execute to transmit information to the database
+engine, and receive the results back again and display them to the
+client. This is an example of a gateway, and this is where CGI,
+currently version 1.1, got its origins.”</p>
+
+<p>I always perceived it the other way around, I thought the “gateway”
+was a gateway to the web server. I think that when Phillip J. Eby
+first proposed the name WSGI he was under the same misperception as I.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/25/mod-python-the-long-story/">Mod_python: The Long Story</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-25T20:05:00-04:00" pubdate data-updated="true">Oct 25<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/25/mod-python-the-long-story/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>This story started back in 1996. I was in my early twenties, working
+as a programmer at a small company specializing in on-line reporting of
+certain pharmaceutical data.</p>
+
+<p>There was a web-based application (which was extremely cool
+considering how long ago this was), but unfortunately it was written
+in Visual Basic by a contractor and I was determined to do something
+about it. As was very fashionable at the time, I was very pro Open
+Source, had Linux running on my home 386 and had recently heard
+<a href="http://boston-linux-unix-general-discussion-list.996279.n3.nabble.com/fwd-LOCAL-Washington-DC-Linux-User-Group-meeting-and-Python-talk-td3733.html">Guido’s talk</a>
+at the DC Linux user group presenting his new language he called
+Python. Python seemed like a perfect alternative to the VB
+monstrosity.</p>
+
+<p>I spent a few weeks quietly in my cubicle learning Python and
+rewriting the whole app in it. (Back in those days this is how
+programmers worked, there was no “agile” and “daily stand ups”,
+everyone understood that things take time. I miss those days very
+much). Python was fantastic, and soon the app was completely
+re-written.</p>
+
+<p>Then I realized that explaining what I’ve been working on to my bosses
+might be a bit of a challenge. You see, for a while there nobody knew
+that the web app they’ve been using had been re-written in Python, but
+sooner or later I would have to reveal the truth and, more
+importantly, justify my decision. I needed a good reason, and stuff
+about object-oriented programming, clean code, open source, etc would
+have fallen on deaf ears.</p>
+
+<p>Just around that time the Internet Programming with Python book came
+out, and in it there was a chapter on how to embed the Python
+interpreter in the Netscape Enterprise web server. The idea seemed
+very intriguing to me and it might have contained exactly the
+justification I was looking for - it would make the app
+faster. (“Faster” is nearly as good as “cheaper” when it comes to
+selling to the management). I can’t say that I knew much C back then,
+but with enough tinkering around I was able to make something work,
+and lo and behold it was quite noticeably faster.</p>
+
+<p>And so a few days later I held a presentation in the big conference
+room regarding this new tool we’ve started using called Python which
+can crunch yall’s numbers an order of magnitude faster than the
+Microsoft product we’ve been using. And oh, by the way, I quickly
+hacked something together last night - let’s do a live demo, look how
+fast this is!  They were delighted.</p>
+
+<p>Little did they know, the app had been running in Python for months,
+and the reason for the speed up had little to do with the language
+itself. It was all because I was able to embed the interpreter within
+the web server. Then I thought that to make it all complete I would
+make my little tool open source and put it on my website free for
+everyone to use. I called it
+<a href="http://www.ispol.com/home/grisha/nsapy/">NSAPy</a> as a combination of
+the Netscape Server API and Python.</p>
+
+<p>But I didn’t stop there, and soon I was able to replicate this on an
+Apache web server, which was taking the Internet by storm back
+then. The name mod_python came naturally since there already was a
+mod_perl.</p>
+
+<p>Things were going very well back then. These were the late nineties,
+the dawn of e-commerce on the World Wide Web. I started working for a
+tiny ISP which soon transformed into a humongous Web Hosting company,
+we ran millions of sites, built new data centers with thousands of
+servers pushing gigabits of traffic and (in short) were taking over
+the world (or so it seemed). With the rise of our company’s stock
+price, me and my colleagues were on our way to becoming
+millionaires. Mod_python was doing very well too. It had a busy
+website, a large and very active mailing list and an ever growing
+number of devoted users. I went to various Open Source conferences to
+present about it (and couldn’t really believe that without exception
+everyone knew what mod_python was).</p>
+
+<p>Then came 2001. We just bought a house and our second son was not even
+a year old when one beautiful sunny summer day I was summoned to a
+mandatory meeting. In that meeting about two thirds of our office was
+let go. Even though we all felt it was coming, it was still a shock. I
+remember coming home that morning and having to explain my wife that
+I’d just been fired. This after constant all-nighters, neglect for
+family life under the excuse of having the most important job doing
+the most important thing and changing the world and rants about how
+we’d be all set financially in just a year or two. In my personally
+opinion the 2007 financial crash was nothing compared to the dot-com
+bust. Everyone was getting laid off everywhere, the Internet became a
+dirty word, software development was being outsourced to India.</p>
+
+<p>For the next couple of years I made a living doing contracting work
+here and there. Needless to say, mod_python wasn’t exactly at the top
+of my priority list. But it was getting ever more popular, the mailing
+list busier, though it didn’t make any money (for me at least). I
+tried my best to keep everything running in whatever spare time I had,
+answering emails and releasing new versions periodically. Finding time
+for it was increasingly difficult, especially given that most of the
+work I was doing had nothing to do with mod_python or Python.</p>
+
+<p>One day I had this thought that donating mod_python to the Apache
+Software Foundation would ensure its survival, even if I can no longer
+contribute. And so it was done. Initially things went very well - the
+donation did affiliate mod_python with the solid reputation of Apache
+and that was great. Mod_python gained a multitude more users and most
+importantly contributors.</p>
+
+<p>At the same time my life was becoming ever more stressful. Free time
+for mod_python hacking was getting more and more scarce until there
+was none. I also think I was experiencing burnout. Answering questions
+on the mailing list became an annoyance. I had to read through
+enormous threads with proposals for various features or how things
+ought to work and respond to them, and it was just never ending. It
+wasn’t fun anymore.</p>
+
+<p>I also felt that people didn’t understand what mod_python was and that
+I’m not able to explain it very well. (For what it’s worth, I still
+feel this way). In my mind it was primarily an interface to the Apache
+internals, but since making every structure and API accessible from
+within Python was impractical, only selected pieces were
+exposed. Secondly, mod_python provided means to perform certain things
+that were best done in Apache, e.g. global locking, caching. Lastly,
+it provided certain common tasks but implemented in Apache-specific
+ways (using Apache pools, APR, etc.) for maximal performance; things
+like cookies and sessions fell into that category. Publisher and PSP
+didn’t strictly belong in mod_python, but were there for the sake of
+battery-includedness - you could build a rudimentary app without any
+additional tool.</p>
+
+<p>The rest of the world saw it as a web-development framework. It wasn’t
+a particularly good one, especially when it came to development,
+because it required root privileges to run. It also didn’t do a very
+good job at reloading changed modules very well which complicated
+development. A very considerable effort was put in by one of the
+contributors to address the particular issue of module loading and
+caching, and I never thought it to be important because to me
+restarting Apache seemed like the answer, I didn’t think that people
+without root access would ever use mod_python.</p>
+
+<p>As I was growing more disinterested in mod_python it got to a point
+where I just let it be. I would skim through emails from people I
+trusted and responded affirmatively to whatever they proposed without
+giving it much thought. I didn’t see any point in keeping and
+defending my vision for mod_python. I think that by about 2006 or so I
+was so disconnected I no longer had a good grasp of what the latest
+features of mod_python were being worked on. Not sure if it was my
+lack of interest or that other contributors felt burned out as well,
+but new commits slowed down to a trickle and stopped eventually, and
+my quarterly reports to the ASF Board became a cut-and-paste email of
+“no new activity”.</p>
+
+<p>This is where the negative aspect of the ASF patronage begun to
+surface. Sadly, the ASF rules are that projects and their community
+must be active, and soon the project got moved to the attic. And even
+though I kept telling myself that I couldn’t care less, I must admit
+it hurt. The attic is a like a one-way trash can - once there, a
+project cannot go back, other than through the incubation process.</p>
+
+<p>Fast forward to 2013. Why get back to hacking on it? First of all I
+got tired of “mod_python is dead” plastered all over the web.  Every
+time I see some kid who wasn’t old enough to speak back when I first
+released it tweet that it is this or that, I can’t help but take it a
+little personally. It’s an open source project people, it’s only dead
+if you do not contribute to it.</p>
+
+<p>For the skeptics in the crowd I most certainly disagree that
+mod_python as a concept is dead, I’d even argue that its time hasn’t
+come yet. The vision has not changed. Mod_python is still an interface
+to Apache which lets you take advantage of its versatile architecture
+to do some very powerful things. It’s not quite a web development
+framework, and it’s not even a tool for running your favorite web
+development framework in production (though it can certainly do that
+quite nicely).</p>
+
+<p>These days there is more demand than ever for high volume servers that
+do not have a user interface and thus do not need a WSGI framework to
+power them - I think this is one of the areas where mod_python could
+be most useful. There are also all kinds of possibilities for using
+Apache and mod_python for distributed computing and big data stuff
+taking advantage of the fact that Apache is an excellent job
+supervisor - anyone up for writing a map/reduce framework in
+mod_python?</p>
+
+<p>I must also note that hacking on it in the past weeks has been fun
+once again. I wanted to get up to speed with the latest on Python 3
+and Apache internals, especially the event/epoll stuff and this has
+been a great way to do just that. I also very much enjoy that I can
+once again do whatever I want without any scrutiny.</p>
+
+<p>If there is one thing I’ve learned it’s that few open source projects
+can exist without their founders’ continuous involvement. The Little
+Prince once said - “You become responsible forever for what you have
+tamed”. It seems like mod_python is my rose and if I don’t water it,
+no one will.</p>
+
+<p>P.S. Did I mention mod_python now supports Python 3? Please help
+me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/10/mod-python-performance/">Mod_python Performance and Why It Matters Not.</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-10T13:04:00-04:00" pubdate data-updated="true">Oct 10<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/10/mod-python-performance/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><em>TL;DR: mod_python is faster than you think.</em></p>
+
+<p>Tonight I thought I’d spend some time looking into how the new
+<a href="http://www.modpython.org/">mod_python</a>
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+<em>why it really does not matter</em>.</p>
+
+<p>I am particularly interested in the following:</p>
+
+<ul>
+  <li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
+  <li>a mod_python wsgi app, because WSGI is so popular these days.</li>
+  <li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
+  <li>uWSGI, because it claims to be super fast.</li>
+  <li>Apache serving a static file (as a point of reference).</li>
+</ul>
+
+<h1 id="the-test">The Test</h1>
+
+<p>I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM
+allocated to it. Granted this configuration can’t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.</p>
+
+<p>Real-life performance is very much affected by issues related to
+concurrency and load. I don’t have the resources or tools to
+comprehensively test such scenarios, and so I’m just using concurrency
+of 1 and seeing how fast each of the afore-listed set ups can process
+small requests.</p>
+
+<p>I’m using mod_python 3.4.1 (pre-release), revision
+<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
+compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
+3.4, for uWSGI I use 1.9.17.1.</p>
+
+<p>The Apache configuration is pretty minimal (It could probably trimmed
+even more, but this is good enough):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
+</span><span class="line">LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
+</span><span class="line">LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
+</span><span class="line">LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
+</span><span class="line">LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
+</span><span class="line">LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
+</span><span class="line">LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
+</span><span class="line">
+</span><span class="line">ServerRoot /home/grisha/mp_test
+</span><span class="line">PidFile logs/httpd.pid
+</span><span class="line">ServerName 127.0.0.1
+</span><span class="line">Listen 8888
+</span><span class="line">MaxRequestsPerChild 1000000
+</span><span class="line">
+</span><span class="line">&lt;Location /&gt;
+</span><span class="line">      SetHandler mod_python
+</span><span class="line">      PythonHandler mp
+</span><span class="line">      PythonPath "sys.path+['/home/grisha/mp_test/htdocs']"
+</span><span class="line">&lt;/Location&gt;</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
+mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
+section, so this makes it a little bit faster.</p>
+
+<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
+above looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">mod_python</span> <span class="kn">import</span> <span class="n">apache</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Hello World!&#39;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">apache</span><span class="o">.</span><span class="n">OK</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>As the benchmark tool, I’m using the good old
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>ab -n 10  http://localhost:8888/
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For each test in this article I run 500 requests first as a “warm up”,
+then another 500K for the actual measurement.</p>
+
+<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">&lt;Location /&gt;
+</span><span class="line">    PythonHandler mod_python.wsgi
+</span><span class="line">    PythonPath <span class="s2">&quot;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&quot;</span>
+</span><span class="line">    PythonOption mod_python.wsgi.application mp_wsgi
+</span><span class="line">&lt;/Location&gt;
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And the <code>mp_wsgi.py</code> file looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+</span><span class="line">    <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;200 OK&#39;</span>
+</span><span class="line">    <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Hello World!&#39;</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">response_headers</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;Content-type&#39;</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">),</span>
+</span><span class="line">                        <span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)))]</span>
+</span><span class="line">    <span class="n">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">response_headers</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">LoadModule</span> <span class="n">wsgi_module</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">mod_wsgi</span><span class="o">.</span><span class="n">so</span>
+</span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For uWSGI (I am not an expert), I first used the following command:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
+</span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
+</span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>Which yielded a pretty dismal result, so I tried using a unix socket
+<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
+the front end as described
+<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
+make uWSGI come out on top (even if proxied uWSGI is an orange among
+the apples).</p>
+
+<h3 id="the-results-requests-per-second-fastest-at-the-top">The results, requests per second, fastest at the top:</h3>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">|</span> <span class="n">uWSGI</span><span class="o">/</span><span class="n">nginx</span>         <span class="o">|</span> <span class="mi">2391</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">handler</span>  <span class="o">|</span> <span class="mi">2332</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">static</span> <span class="nb">file</span>         <span class="o">|</span> <span class="mi">2312</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_wsgi</span>            <span class="o">|</span> <span class="mi">2143</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">wsgi</span>     <span class="o">|</span> <span class="mi">1937</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">uWSGI</span> <span class="o">--</span><span class="n">http</span>        <span class="o">|</span> <span class="mi">1779</span> <span class="o">|</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>What’s interesting and unexpected at first is that uWSGI and the
+mod_python handler perform better than sending a static file, which I
+expected to be the fastest. On a second thought though it does make
+sense, once you consider that no (on average pretty expensive)
+filesystem operations are performed to serve the request.</p>
+
+<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
+expected, because the mod_python version is mostly Python, vs
+mod_wsgi’s C version.</p>
+
+<p>I think that with a little work mod_python wsgi handler could perform
+on par with uWSGI, though I’m not sure the effort would be worth
+it. Because as we all know,
+<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
+
+<h1 id="why-it-doesnt-really-matter">Why It Doesn’t Really Matter</h1>
+
+<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
+because after all, what matters more than speed?</p>
+
+<p>But let’s imagine a more real world scenario, because it’s not likely
+that all your application does is send <code>"Hello World!".</code></p>
+
+<p>To illustrate the point a little better I created a very simple Django
+app, which too sends <code>"Hello World!"</code>, only it does it using a template:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="s">&#39;World&#39;</span><span class="p">})</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Using the mod_python wsgi handler (the slowest), we can process 455
+req/s, using uWSGI (the fastest) 474. This means that by moving this
+“application” from mod_pyhton to uWSGI we would improve performance by
+a measley 5%.</p>
+
+<p>Now let’s add some database action to our so-called “application”. For
+every request I’m going to pull my user record from the Django
+auth_users table:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">User</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">grisha</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s">&#39;grisha&#39;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">grisha</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]})</span> <span class="c"># world was 5 characters</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
+req/s in uWSGI, and the difference between the two has shrunk to just
+over 3%.</p>
+
+<p>Mind you, our “application” still has less than 10 lines of code. In a
+real-world situation the difference in performance is more likely to
+amount to less than a tenth of a percent.</p>
+
+<p>Bottom line: it’s foolish to pick your web server based on speed
+alone. Factors such as your comfort level with using it, features,
+documentation, security, etc., are far more important than how fast it
+can crank out “Hello world!”.</p>
+
+<p>Last, but not least, mod_python 3.4.1 (used in this article) is
+ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI App on Apache Should Not Be This Hard</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-25T20:08:00-04:00" pubdate data-updated="true">Sep 25<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>If I have a Django app in <code>/home/grisha/mysite</code>, then all I should
+need to do to run it under Apache is:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>mod_python create /home/grisha/mysite_httpd <span class="se">\</span>
+</span><span class="line">    --listen<span class="o">=</span>8888 <span class="se">\</span>
+</span><span class="line">    --pythonpath<span class="o">=</span>/home/grisha/mysite <span class="se">\</span>
+</span><span class="line">    --pythonhandler<span class="o">=</span>mod_python.wsgi <span class="se">\</span>
+</span><span class="line">    --pythonoption<span class="o">=</span><span class="s2">&quot;mod_python.wsgi.application mysite.wsgi::application&quot;</span>
+</span><span class="line">
+</span><span class="line"><span class="nv">$ </span>mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>That’s all. There should be no need to become root, tweak various
+configurations, place files in the right place, check permissions,
+none of that.</p>
+
+<p>Well… With <a href="http://www.modpython.org/">mod_python</a> 3.4.0 (alpha)
+that’s exactly how it is…</p>
+
+<p>Please help me <a href="https://github.com/grisha/mod_python/issues/4">test it</a>.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/10/the-next-smallest-step-problem/">The Next Smallest Step Problem</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/08/10/the-next-smallest-step-problem/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
+
+<p>Most of my journeys never begin, or cannot continue because of that one
+single step, be it first or next. Because it is hard, at times
+excruciatingly so.</p>
+
+<p>Here I speak of software, but this applies to many other aspects of my
+life just as well.</p>
+
+<p>I recon it’s because I do not think in steps. I think of a
+destination.  I imagine the end-result. I can picture it with clarity
+and in great detail. I know where I need to be. But what is the next
+step to get there? And it doesn’t help that where I travel, there are
+no signs.</p>
+
+<p>The problem of deciding what to do next is so common for me that I
+even have a name for it. I call it “The Next Smallest Step”
+problem. Whenever I find myself idling, clicking over to online
+time-wasters, I pause and ask myself “What is the Next Smallest Step?
+What’s the next smallest thing I can do, right now?”</p>
+
+<p>It doesn’t matter how much further this small step moves me. A
+nanometer is better than standing still. It has to be something that
+is simple enough that I can just do. Right now.</p>
+
+<p>I always plan to do big things that take days, weeks or months. But of
+all that, can I pick that one small simple and quick thing that I can
+do now?</p>
+
+<p>Sometimes focusing on the next smallest step is so difficult that I
+pencil this question on a piece of paper, and sometimes I just type it
+on the command line or in the source code. My short version is:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
+</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(that’s right, in CAPS)</p>
+
+<p>This simple question has taken me on some of the most fascinating and
+challenging journeys ever. In restrospect, I think I would not be able
+to travel any of them without repeatedly asking it of myself, over and
+over again.</p>
+
+<p>It has resulted in most productive and gratifying days of work. Some
+of my greatest projects began with this question. In many instances it
+established what I had to do for months ahead (years, even?). All
+beginning with this one small question.</p>
+
+<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
+gone by without any results to show for and many a great opportunity
+lost.</p>
+
+<p>I must also note that some of my next smallest steps took days of
+thinking to figure out. Nothing wrong with that.</p>
+
+<p>And so I thought I’d share this with you, just in case you might find
+it helpful. Whenever you find yourself at an impass and progress
+has stopped, ask yourself:</p>
+
+<p>“What is the Next Smallest Step?”</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/02/hacking-on-mod-python-again/">Hacking on Mod_python (Again)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-02T16:19:00-04:00" pubdate data-updated="true">Aug 2<span>nd</span>, 2013</time>
+        
+         | <a href="/blog/2013/08/02/hacking-on-mod-python-again/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
+to <a href="http://www.modpython.org/">Mod_python</a> I’ve decided to spend some time hacking on it again.</p>
+
+<p>Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.</p>
+
+<p>We live in this new
+<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
+Apache Httpd no longer has the market dominance it once enjoyed, while
+the latest Python web frameworks run without requiring or recommending
+Mod_python. My hunch, however, is that given a thorough dusting it
+could be quite useful (perhaps more than ever) and applied in very
+interesting ways to solve the new problems. I also think the Python
+language is at a very important inflection point. Pyhton 3 is now
+mature, and is slowly but steadily becoming the preferred language of
+many interesting communities such as data science, for example.</p>
+
+<p>The current status of Mod_python as an Apache project is that it’s
+in the <a href="http://attic.apache.org/">attic</a>. This means that the
+<a href="http://www.apache.org/">ASF</a> isn’t providing much in the way of
+infrastructure support any longer, nor will you see an “official” ASF
+release any time soon. (If ever - Mod_python would have to re-enter as
+an <a href="http://incubator.apache.org/">incubator</a> project and at this point
+it is entirely premature to even consider such an option).</p>
+
+<p>For now the main goal is to re-establish the community, and as part of
+that I will have to sort out how to do issue tracking, discussion
+groups, etc. At this point the only thing I’ve decided is that the
+main repository will live on
+<a href="https://github.com/grisha/mod_python">github</a>.</p>
+
+<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
+development goal is to bring it up to compatibility with Python 2.7
+and Apache Httpd 2.4 (I’m nearly there already), then potentially move
+on to Python 3 support. I have rolled back a few commits (most notably
+the new importer) because I did not understand them. There are still a
+few changes in Apache 2.4 that need to be addressed, but they seem
+relatively minor at this point. Authentication has been changed
+significantly in 2.4, though mod_python never had much coverage in that
+area.</p>
+
+<p>Let’s see where this takes us? And if you like this, feel free to
+star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/06/21/on-converting-json-to-avro/">Json2avro</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-21T14:17:00-04:00" pubdate data-updated="true">Jun 21<span>st</span>, 2013</time>
+        
+         | <a href="/blog/2013/06/21/on-converting-json-to-avro/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As you embark on converting vast quantities of JSON to Avro, you soon
+discover that things are not as simple as they seem. Here is how it might happen.</p>
+
+<p>A quick Google
+search eventually leads you to the
+<a href="http://www.us.apache.org/dist/avro/avro-1.7.4/java/avro-tools-1.7.4.jar">avro-tools</a>
+jar, and you find yourself attempting to convert some JSON, such as:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="javascript"><span class="line"><span class="p">{</span><span class="s2">&quot;first&quot;</span><span class="o">:</span><span class="s2">&quot;John&quot;</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="o">:</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="o">:</span><span class="s2">&quot;Doe&quot;</span><span class="p">}</span>
+</span><span class="line"><span class="p">{</span><span class="s2">&quot;first&quot;</span><span class="o">:</span><span class="s2">&quot;Jane&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="o">:</span><span class="s2">&quot;Doe&quot;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Having read Avro documentation and being the clever being that you are, you start out with:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
+</span><span class="line"> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class="line"><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class="line">Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
+</span><span class="line">        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
+</span><span class="line">        at org.apache.avro.io.parsing.Parser.advance<span class="o">(</span>Parser.java:88<span class="o">)</span>
+</span><span class="line">        ...
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>A brief moment of disappointment is followed by the bliss of
+enlightment: Duh, the “middle” element needs a default! And so you try
+again, this time having tacked on a default to the definition of “middle”, so it looks like <code>{"name":"middle","type":"string","default":""}</code>:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span class="se">\</span>
+</span><span class="line"> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class="line"><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span> &gt; output.avro
+</span><span class="line">Exception in thread <span class="s2">&quot;main&quot;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
+</span><span class="line">        at org.apache.avro.io.JsonDecoder.doAction<span class="o">(</span>JsonDecoder.java:477<span class="o">)</span>
+</span><span class="line">        ...
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Why doesn’t this work? Well… You don’t understand Avro, as it turns
+out. You see, JSON is <em>not</em> Avro, and therefore the wonderful <em>Schema
+Resolution</em> thing you’ve been reading about does not apply.</p>
+
+<p>But do not despair. I wrote a tool just for you:</p>
+
+<p><a href="http://github.com/grisha/json2avro">json2avro</a>. It does exactly what you want:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">json2avro input.json output.avro -s <span class="se">\</span>
+</span><span class="line"> <span class="s1">&#39;{&quot;type&quot;:&quot;record&quot;,&quot;name&quot;:&quot;whatever&quot;,</span>
+</span><span class="line"><span class="s1">   &quot;fields&quot;:[{&quot;name&quot;:&quot;first&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},</span>
+</span><span class="line"><span class="s1">             {&quot;name&quot;:&quot;last&quot;,&quot;type&quot;:&quot;string&quot;}]}&#39;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>No errors, and we have an <code>output.avro</code> file, let’s see what’s in it by using the aforementioned avro-tools:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">java -jar ~/src/avro/java/avro-tools-1.7.4.jar tojson output.avro
+</span><span class="line"><span class="o">{</span><span class="s2">&quot;first&quot;</span>:<span class="s2">&quot;John&quot;</span>,<span class="s2">&quot;middle&quot;</span>:<span class="s2">&quot;X&quot;</span>,<span class="s2">&quot;last&quot;</span>:<span class="s2">&quot;Doe&quot;</span><span class="o">}</span>
+</span><span class="line"><span class="o">{</span><span class="s2">&quot;first&quot;</span>:<span class="s2">&quot;Jane&quot;</span>,<span class="s2">&quot;middle&quot;</span>:<span class="s2">&quot;&quot;</span>,<span class="s2">&quot;last&quot;</span>:<span class="s2">&quot;Doe&quot;</span><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let me also mention that json2avro is written in C and is <em>fast</em>, it
+supports Snappy, Deflate and LZMA compression codecs, lets you pick a
+custom block size and is smart enough to (optionally) skip over lines
+it cannot parse.</p>
+
+<p>Enjoy!</p>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/06/11/avro-performance/">Avro Performance</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-11T00:17:00-04:00" pubdate data-updated="true">Jun 11<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/06/11/avro-performance/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Here are some un-scientific results on how Avro performs with various
+codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
+was done using a 100 million row table that was generated using random
+two strings and an integer.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">| Format    | Codec          | Data Size     | Hive count(1) time | Impala count(1) time
+</span><span class="line">|-----------|----------------|---------------|--------------------|----------------------
+</span><span class="line">| JSON      | null           | 686,769,821   | not tested         | N/A                  
+</span><span class="line">| JSON      | LZO            | 285,558,314   | 79s                | N/A                  
+</span><span class="line">| JSON      | Deflate (gzip) | 175,878,038   | not tested         | N/A                  
+</span><span class="line">| Avro      | null           | 301,710,126   | 40s                | .4s                  
+</span><span class="line">| Avro      | Snappy         | 260,450,980   | 38s                | .9s                  
+</span><span class="line">| Avro      | Deflate (gzip) | 156,550,144   | 64s                | 2.8s                 </span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>So the winner appears to be Avro/Snappy or uncompressed Avro.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/06/06/avro/">Apache Avro</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-06T22:53:00-04:00" pubdate data-updated="true">Jun 6<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/06/06/avro/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2 id="short-version">Short version</h2>
+
+<ul>
+  <li>Avro is better than Json for storing table data</li>
+  <li>Avro supports schema resolution so that the schema can evolve over time</li>
+  <li>Hive supports Avro and schema resolution nicely</li>
+  <li>Impala (1.0) can read Avro tables, but does <em>not</em> support schema resolution</li>
+  <li>Mixing compression codecs in the same table works in both Hive and Impala</li>
+</ul>
+
+<h2 id="the-tldr-version">The TL;DR version</h2>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>If you’re logging data into Hadoop to be analyzed, chances are you’re
+using JSON. JSON is great because it’s easy to generate in most any
+language, it’s human-readable, it’s universally supported and
+infinitely flexible.</p>
+
+<p>It is also space inefficient, prone to errors, the standard has a few
+ambiguities, all of which eventually catches up to you. It only takes
+one bad record to spoil a potentially massive amount of data, and
+finding the bad record and figuring out the root cause of the problem
+is usually difficult and often even impossible.</p>
+
+<p>So you might be considering a slightly more rigid and space efficient
+format, and in the Hadoop world it is <a href="http://en.wikipedia.org/wiki/Apache_Avro">Apache Avro</a>. 
+<a href="http://avro.apache.org/docs/current/">Avro</a> is especially
+compelling because it is supported by 
+<a href="http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/">Impala</a>, 
+while JSON isn’t (not yet, at least).</p>
+
+<p>Named after a <a href="http://en.wikipedia.org/wiki/Avro">British aircraft maker</a>, Avro is a schema-enforced
+format for serializing arbitrary data. It is in the same category as
+<a href="http://en.wikipedia.org/wiki/Thrift_%28protocol%29">Thrift</a>, only it seems like Thrift has found its niche in
+RPC, whereas Avro appears more compelling as the on-disk
+format (even though both Avro and Thrift were designed for both storage
+and RPC). Thrift seems more insistent on you using its code 
+generator, whereas Avro does it the old-school way, but providing
+you libraries you can use in your code. (It does code generation as
+well, if that’s your thing. I prefer to hand-write all my code).</p>
+
+<p>I actually don’t want to focus on the details of what Avro is as there
+is plenty information on that elsewhere. I want to share my findings
+regarding Avro’s suitability as an alternative to JSON used with Hive
+and JSON SerDe.</p>
+
+<h3 id="schema-and-its-resolution">Schema (and its Resolution)</h3>
+
+<p>Every Avro file contains a header with the schema describing (in
+JSON!) the contents of the file’s records. This is very nice, because
+the file contains all the knowledge necessary to be able to read it.</p>
+
+<p>Avro was designed with the understanding that the schema may change
+over time (e.g. columns added or changed), and that software designed
+for a newer schema may need to read older schema files. To support
+this it provides something called Schema Resolution.</p>
+
+<p>Imagine you’ve been storing people’s names in a file. Then later on
+you decided to add “age” as another attribute. Now you’re got two
+schemas, one with “age” and one without. In JSON world you’d have to
+adjust your program to be able to read old files with some kind of an
+if/then statement to make sure that when “age” is not there the
+program knows what to do. In Avro, the new schema can specify a
+default for the age (e.g. 0), and whatever Avro lib you’d be using
+should be able to convert a record of the old schema to the new schema
+automatically, without any code modifications necessary. This is
+called <em>schema resolution</em>.</p>
+
+<h3 id="avro-support-in-hive">Avro support in Hive</h3>
+
+<p>First we need an Avro file. Our schema is just one string column named
+“test”. Here’s a quick Ruby program to generate a file of 10 random
+records (you’ll need to <code>gem install avro</code>): </p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line"><span class="nb">require</span> <span class="s1">&#39;rubygems&#39;</span>
+</span><span class="line"><span class="nb">require</span> <span class="s1">&#39;avro&#39;</span>
+</span><span class="line">
+</span><span class="line"><span class="n">schema</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:Schema</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;, &#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39; &quot;type&quot;:&quot;record&quot;, &#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39; &quot;fields&quot;: [&#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39;   {&quot;name&quot;:&quot;full_name&quot;,  &quot;type&quot;:&quot;string&quot;}]}&#39;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="n">writer</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:IO</span><span class="o">::</span><span class="no">DatumWriter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+</span><span class="line"><span class="n">file</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test.avro&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span>
+</span><span class="line"><span class="n">dw</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:DataFile</span><span class="o">::</span><span class="no">Writer</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
+</span><span class="line"><span class="mi">3</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
+</span><span class="line">  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="p">{</span><span class="s1">&#39;full_name&#39;</span><span class="o">=&gt;</span><span class="s2">&quot;X</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2"> Y</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+</span><span class="line"><span class="k">end</span>
+</span><span class="line"><span class="n">dw</span><span class="o">.</span><span class="n">flush</span>
+</span><span class="line"><span class="n">dw</span><span class="o">.</span><span class="n">close</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Then we need to create a Hive table and load our file into it:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_avro</span>
+</span><span class="line"> <span class="k">ROW</span> <span class="n">FORMAT</span> <span class="n">SERDE</span> <span class="s1">&#39;org.apache.hadoop.hive.serde2.avro.AvroSerDe&#39;</span>
+</span><span class="line"> <span class="n">STORED</span> <span class="k">AS</span> <span class="n">INPUTFORMAT</span> <span class="s1">&#39;org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat&#39;</span>
+</span><span class="line"> <span class="n">OUTPUTFORMAT</span> <span class="s1">&#39;org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat&#39;</span>
+</span><span class="line"> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
+</span><span class="line">    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;fields&quot;: [</span>
+</span><span class="line"><span class="s1">                               {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;}]}&#39;</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">LOAD</span> <span class="k">DATA</span> <span class="k">LOCAL</span> <span class="n">INPATH</span> <span class="s1">&#39;test.avro&#39;</span> <span class="n">OVERWRITE</span> <span class="k">INTO</span> <span class="k">TABLE</span> <span class="n">test_avro</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Note that the table definition needs its own schema definition, even
+though our file already contains a schema. This is not a mistake. This
+is the schema Hive will expect. And if the file that it’s reading is of
+a different schema, it will attempt to convert it using Avro schema
+resolution. Also noteworthy is that this table defines <em>no
+columns</em>. The entire definition is in the <code>avro.schema.literal</code>
+property.</p>
+
+<p>Let’s make sure this is working:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">X1800</span> <span class="n">Y9002</span>
+</span><span class="line"><span class="n">X3859</span> <span class="n">Y8971</span>
+</span><span class="line"><span class="n">X6935</span> <span class="n">Y5523</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now we also happen to have Impala running, let’s see if it’s able to read this file:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
+</span><span class="line"><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span><span class="line"><span class="o">|</span> <span class="n">full_name</span>   <span class="o">|</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X1800</span> <span class="n">Y9002</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>So far so good! Now let’s create a second avro file, with one
+additional column <code>age</code>, using the following Ruby:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="ruby"><span class="line"><span class="n">schema</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:Schema</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;, &#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39; &quot;type&quot;:&quot;record&quot;, &#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39; &quot;fields&quot;: [&#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39;   {&quot;name&quot;:&quot;full_name&quot;,  &quot;type&quot;:&quot;string&quot;},&#39;</span> <span class="o">+</span>
+</span><span class="line">                            <span class="s1">&#39;   {&quot;name&quot;:&quot;age&quot;,        &quot;type&quot;:&quot;int&quot;}]}&#39;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="n">writer</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:IO</span><span class="o">::</span><span class="no">DatumWriter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+</span><span class="line"><span class="n">file</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test2.avro&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span>
+</span><span class="line"><span class="n">dw</span> <span class="o">=</span> <span class="ss">Avro</span><span class="p">:</span><span class="ss">:DataFile</span><span class="o">::</span><span class="no">Writer</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
+</span><span class="line"><span class="mi">3</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
+</span><span class="line">  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="p">{</span><span class="s1">&#39;full_name&#39;</span><span class="o">=&gt;</span><span class="s2">&quot;X</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2"> Y</span><span class="si">#{</span><span class="nb">rand</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s1">&#39;age&#39;</span><span class="o">=&gt;</span><span class="nb">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">)}</span>
+</span><span class="line"><span class="k">end</span>
+</span><span class="line"><span class="n">dw</span><span class="o">.</span><span class="n">flush</span>
+</span><span class="line"><span class="n">dw</span><span class="o">.</span><span class="n">close</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let’s load this into Hive and see if it still works. (No OVERWRITE
+keyword this time, we’re appending a second file to our table).</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">LOAD</span> <span class="k">DATA</span> <span class="k">LOCAL</span> <span class="n">INPATH</span> <span class="s1">&#39;test2.avro&#39;</span> <span class="k">INTO</span> <span class="k">TABLE</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">X1800</span> <span class="n">Y9002</span>
+</span><span class="line"><span class="n">X3859</span> <span class="n">Y8971</span>
+</span><span class="line"><span class="n">X6935</span> <span class="n">Y5523</span>
+</span><span class="line"><span class="n">X4720</span> <span class="n">Y1361</span>
+</span><span class="line"><span class="n">X4605</span> <span class="n">Y3067</span>
+</span><span class="line"><span class="n">X7007</span> <span class="n">Y7852</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This is working exactly as expected. Hive has shown the 3 original
+records as before, and the 3 new ones got converted to Hive’s version
+of the schema, where the “age” column does not exist.</p>
+
+<p>Let’s see what Impala thinks of this:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
+</span><span class="line"><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span><span class="line"><span class="o">|</span> <span class="n">full_name</span>   <span class="o">|</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X1800</span> <span class="n">Y9002</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
+</span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>Alas - we’re only getting the 3 original rows. Bummer! What’s
+worrisome is that <em>no indication</em> was given to us that 3 other rows got
+swallowed because Impala didn’t do schema resolution. (I’ve posted
+regarding this on the Impala users list, awaiting response).</p>
+
+<p>Now let’s alter the table schema so that age is part of it. (This is
+not your typical ALTER TABLE, we’re just changing <code>avro.schema.literal</code>).
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
+</span><span class="line">    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;fields&quot;: [</span>
+</span><span class="line"><span class="s1">                              {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">                              {&quot;name&quot;:&quot;age&quot;,  &quot;type&quot;:&quot;int&quot;}]}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">Failed</span> <span class="k">with</span> <span class="n">exception</span> <span class="n">java</span><span class="p">.</span><span class="n">io</span><span class="p">.</span><span class="n">IOException</span><span class="p">:</span><span class="n">org</span><span class="p">.</span><span class="n">apache</span><span class="p">.</span><span class="n">avro</span><span class="p">.</span><span class="n">AvroTypeException</span><span class="p">:</span> <span class="k">Found</span> <span class="n">test_record</span><span class="p">,</span> <span class="n">expecting</span> <span class="n">test_record</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>This error should not be surprising. Hive is trying to provide a value
+for <code>age</code> for those records where it did not exist, but we neglected
+to specify a default. (The error message <em>is</em> a little cryptic,
+though). So let’s try again, this time with a default:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
+</span><span class="line">    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
+</span><span class="line"><span class="s1">                            &quot;fields&quot;: [</span>
+</span><span class="line"><span class="s1">                              {&quot;name&quot;:&quot;full_name&quot;, &quot;type&quot;:&quot;string&quot;},</span>
+</span><span class="line"><span class="s1">                              {&quot;name&quot;:&quot;age&quot;,  &quot;type&quot;:&quot;int&quot;, &quot;default&quot;:999}]}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</span><span class="line"><span class="n">OK</span>
+</span><span class="line"><span class="n">X1800</span> <span class="n">Y9002</span>     <span class="mi">999</span>
+</span><span class="line"><span class="n">X3859</span> <span class="n">Y8971</span>     <span class="mi">999</span>
+</span><span class="line"><span class="n">X6935</span> <span class="n">Y5523</span>     <span class="mi">999</span>
+</span><span class="line"><span class="n">X4720</span> <span class="n">Y1361</span>     <span class="mi">10</span>
+</span><span class="line"><span class="n">X4605</span> <span class="n">Y3067</span>     <span class="mi">34</span>
+</span><span class="line"><span class="n">X7007</span> <span class="n">Y7852</span>     <span class="mi">17</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Woo-hoo!</p>
+
+<h3 id="other-notes">Other notes</h3>
+
+<ul>
+  <li>There is a nice Avro-C library, but it currently does not support defaults (version 1.7.4).</li>
+  <li>Some <a href="http://code.google.com/p/thrift-protobuf-compare/wiki/Benchmarking">benchmarks</a></li>
+  <li>Avro’s integer encoding is same as Lucene with <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag encoding</a>
+ on top of it. (It’s just like SQLite, only little-endian). Curiously,
+ it is used for <em>all</em> integers, including array indexes internal to
+ Avro, which can never be negative and thus ZigZag is of no use. This
+ is probably to keep all integer operation consistent.</li>
+  <li>A curious post on how Lucene/Avro variable-integer format is <a href="http://blog.mikemccandless.com/2010/07/moving-readvint-to-c.html">CPU-unfriendly</a></li>
+</ul>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2013/05/31/simple-solution-to-password-reuse/">Simple Solution to Password Reuse</a></h1>
     
     
@@ -118,14 +1709,9 @@ does NOT store anything anywhere or transfer anything over the
 network (100% browser-side Javascript).
 </p>
 
-
-
-
 <script type="text/javascript" src="/javascripts/sha.js"></script>
 
-
 <script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
-
 
 <script type="text/javascript">
 function calc_pw(n) {
@@ -179,14 +1765,10 @@ function clear_all() {
 }
 </script>
 
-
-<p><form action="#" method="get">
+<form action="#" method="get">
 <fieldset style="margin: 3px 0px; border: 1px solid #000000; padding: 10px;">
-<legend>Stupid Simple Password Generator</legend></p>
-
+<legend>Stupid Simple Password Generator</legend>
 <h3>Step 1:</h3>
-
-
 <p>
 Think of a phrase you will always remember. Keep typing until the text
 on the right says &#8220;strong&#8221;. Punctuation, spaces, unusual words and
@@ -194,1352 +1776,63 @@ mixed case while not required, are generally a good idea. The most
 important thing is that the script considers it <span style="color: green; font-weight: bold;">strong</span>.
 </p>
 
-
-
-
 <p> Make sure this passphrase is impossible to guess by people who
 know you, e.g. don&#8217;t pick quotes from your favorite song or
 movie. Don&#8217;t <em>ever</em> write it down or save it on your computer in any way or form!
-<table border=0>
+&lt;table border=0&gt;
 <tr><th>Passphrase: </th><td><input type="password" size="60" name="pw_phrase" id="pw_phrase" style="margin-right: 1em; margin-left: 1em;" onkeyup="pw_strength()" />
-<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
+<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
 <tr><th>Verify: </th><td><input type="password" size="60" name="pw_phrase2" id="pw_phrase2" style="margin-right: 1em; margin-left: 1em;" onkeyup="check_pw2_same()" />
-<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
-</table>
-</p>
-
+<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
 
 
 
 <h3>Step 2:</h3>
-
-
 <p> Think of a short keyword describing a password, e.g. &#8220;amazon&#8221;,
 &#8220;gmail&#8221;, etc. This word has to be easy to remember and there is no need for
 it to be unique or hard to guess.</p>
 
-
-
-
-<table border=0>
+&lt;table border=0&gt;
 <tr><th>Keyword</th><th>Password</th></tr>
-<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly /></td></tr>
-</table>
+<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly="" /></td></tr>
 
-
-<br>
-
-
+<br />
 <p>That&#8217;s it! You can regenerate any of the passwords above at any time by coming back to this page, all you need to know is the passphrase (and the keywords).</p>
 
 
-<p></fieldset>
-</form>
+
+
 <span style="font-size: 12px">Fine print: This is a proof-of-concept, use at your own risk!</span>
-<body onload="clear_all()"></body></p>
+<body onload="clear_all()" />
+
 
 <h2>How does it work?</h2>
 
-
-<p>First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
+First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
 excellent <a href="https://github.com/Caligatio/jsSHA">jsSHA</a> Javascript SHA lib and
 <a href="https://github.com/lowe">Dan Wheeler&#8217;s</a> amazing <a href="https://github.com/lowe/zxcvbn">zxcvbn</a>
-password strength checking lib.</p>
+password strength checking lib.
 
-<p>All we are doing here is computing a SHA-512 of the passphrase +
+All we are doing here is computing a SHA-512 of the passphrase +
 keyword, then selecting a substring of the result. (We also append a 0
 and/or a ! to satisfy most password checker requirements for numbers
-and punctuation).</p>
+and punctuation).
 
-<p>If you don&#8217;t trust that generated passwords are strong, just paste
+If you don&#8217;t trust that generated passwords are strong, just paste
 them into the passphrase field, I assure you, no password here will
-ever be weak. (Or, rather, it is <em>extremely</em> unlikely).</p>
+ever be weak. (Or, rather, it is <em>extremely</em> unlikely).
 
-<p>Some improvements could be made, but the point here is that there is
+Some improvements could be made, but the point here is that there is
 no reason to keep encrypted files with your passwords along with
 software to open them around, all that&#8217;s needed is <em>one</em> strong
-password and a well established and easily available algorithm.</p>
-</div>
-  
-  
+password and a well established and easily available algorithm.
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/31/compiling-impala-from-github/">Compiling Impala From Github</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-31T10:48:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/31/compiling-impala-from-github/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Apparently Impala has two versions of source code, one internal to
-Cloudera, the other available on Github. I&#8217;m presuming that code gets
-released to Github once undergone some level of internal scrutiny, but
-I&#8217;ve not seen any documentation on how one could tie publically
-available code to the official Impala (binary) release, currently 1.0.</p>
-
-<p>Anyway, I tried compiling the github code last night, and here are the
-steps that worked for me.</p>
-
-<p>My setup:</p>
-
-<ul>
-<li><p>Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).</p></li>
-<li><p>CDH 4.3 installed using Cloudera RPM&#8217;s. No configuration was done, I
-just ran yum install as described in the installation guide.</p></li>
-<li><p>Impala checked out from Github, HEAD is 60cb0b75 (Mon May 13 09:36:37 2013).</p></li>
-<li><p>Boost 1.42, compiled and installed manually (see below).</p></li>
-</ul>
-
-
-<p>The steps I followed:</p>
-
-<ul>
-<li>Check out Impala:</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>git clone git://github.com/cloudera/impala.git
-</span><span class='line'>&lt;...&gt;
-</span><span class='line'>
-</span><span class='line'>git branch -v
-</span><span class='line'>* master 60cb0b7 Fixed formatting in README
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
-</span><span class='line'>    make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn <span class="se">\</span>
-</span><span class='line'>    libevent-devel cyrus-sasl-devel wget git unzip
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>Install LLVM. Follow the precise steps in the Impala README, it works.</p></li>
-<li><p>Make sure you have the Oracle JDK 6, not OpenJDK. I found <a href="http://www.if-not-true-then-false.com/2010/install-sun-oracle-java-jdk-jre-6-on-fedora-centos-red-hat-rhel/">this link</a> helpful.</p></li>
-<li><p>Remove the CentOS version of Boost (1.41) if you have it. Impala
-needs uuid, which is only supported in 1.42 and later:</p></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
-</span><span class='line'>sudo yum erase <span class="sb">`</span>rpm -qa | grep boost<span class="sb">`</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>Download and untar Boost 1.42 from <a href="http://www.boost.org/users/history/version_1_42_0.html">http://www.boost.org/users/history/version_1_42_0.html</a></p></li>
-<li><p>Compile and install Boost. Note that Boost <em>must</em> be compiled with multi-threaded support and the layout matters too. I ended up up using the following:</p></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">cd </span>boost_1_42_0/
-</span><span class='line'>./bootstrap.sh
-</span><span class='line'><span class="c"># not sure how necessary the --libdir=/usr/lib64 is, there was a post mentioning it, i followed this advice blindly</span>
-</span><span class='line'>./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged
-</span><span class='line'>sudo ./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged install
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>Install Maven, just like the README says, only the URL didn&#8217;t work, I used
-<a href="http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz">http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz</a> instead</p></li>
-<li><p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/">SQLite DB Stored in a Redis Hash</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-29T17:08:00-04:00" pubdate data-updated="true">May 29<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>In a <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">recent post</a>
-I explained how a relational database could be backed by a key-value
-store by virtue of B-Trees. This sounded great in theory, but I wanted
-to see that it actually works. And so last night I wrote a
-<a href="https://github.com/grisha/thredis/commit/2beaee3a13f0dbe0c161470da04ef8af21d78fc9">commit</a> to
-<a href="http://thredis.org/">Thredis</a>, which does exactly that.</p>
-
-<p>If you&#8217;re not familiar with Thredis - it&#8217;s something I hacked together
-last Christmas. Thredis started out as threaded Redis, but eventually
-evolved into SQLite + Redis. Thredis uses a separate file to save
-SQLite data. But with this patch it&#8217;s no longer necessary - a SQLite
-DB is entirely stored in a Redis Hash object.</p>
-
-<p>A very neat side-effect of this little hack is that it lets a SQLite
-database be automatically replicated using Redis replication.</p>
-
-<p>I was able to code this fairly easily because SQLite provides a very nice way of
-implementing a custom <a href="http://www.sqlite.org/vfs.html">Virtual File System</a> (VFS).</p>
-
-<p>Granted this is only proof-of-concept and not anything you should dare
-use anywhere near production, it&#8217;s enough to get a little taste, so
-let&#8217;s start an empty Thredis instance and create a SQL table:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ redis-cli
-</span><span class='line'>redis 127.0.0.1:6379&gt; sql "create table test (a int, b text)"
-</span><span class='line'>(integer) 0
-</span><span class='line'>redis 127.0.0.1:6379&gt; sql "insert into test values (1, 'hello')"
-</span><span class='line'>(integer) 1
-</span><span class='line'>redis 127.0.0.1:6379&gt; sql "select * from test"
-</span><span class='line'>1) 1) 1) "a"
-</span><span class='line'>      2) "int"
-</span><span class='line'>   2) 1) "b"
-</span><span class='line'>      2) "text"
-</span><span class='line'>2) 1) (integer) 1
-</span><span class='line'>   2) "hello"
-</span><span class='line'>redis 127.0.0.1:6379&gt; 
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Now let&#8217;s start a slave on a different port and fire up another
-redis-client to connect to it. (This means <code>slaveof</code> is set to
-localhost:6379 and <code>slave-read-only</code> is set to false, I won&#8217;t bore you
-with a paste of the config here).</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ redis-cli -p 6380
-</span><span class='line'>redis 127.0.0.1:6380&gt; sql "select * from test"
-</span><span class='line'>1) 1) 1) "a"
-</span><span class='line'>      2) "int"
-</span><span class='line'>   2) 1) "b"
-</span><span class='line'>      2) "text"
-</span><span class='line'>2) 1) (integer) 1
-</span><span class='line'>   2) "hello"
-</span><span class='line'>redis 127.0.0.1:6380&gt; </span></code></pre></td></tr></table></div></figure>
-
-
-<p>Here you go - the DB&#8217;s replicated!</p>
-
-<p>You can also see what SQLite data looks like in Redis (not terribly exciting):</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>redis 127.0.0.1:6379&gt; hlen _sql:redis_db
-</span><span class='line'>(integer) 2
-</span><span class='line'>redis 127.0.0.1:6379&gt; hget _sql:redis_db 0
-</span><span class='line'>"SQLite format 3\x00 \x00\x01\x01\x00@  \x00\x00\x00\x02\x00\x00\x00\x02\x00\x00 ...</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Another potential benefit to this approach is that with not too much
-more tinkering the database could be backed by
-<a href="http://redis.io/topics/cluster-spec">Redis Cluster</a>, which would give you a
-fully-functional horizontally-scalable clustered in-memory SQL
-database.  Of course, only the <em>store</em> would be distributed, not the
-query <em>processing</em>. So this would be no match to Impala and the like
-which can process queries in a distributed fasion, but still, it&#8217;s
-pretty cool for some 300 lines of code, n&#8217;est-ce pas?</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/23/checking-out-cloudera-impala/">Checking Out Cloudera Impala</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-23T12:43:00-04:00" pubdate data-updated="true">May 23<span>rd</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/23/checking-out-cloudera-impala/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I&#8217;ve decided to check out
-<a href="http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/">Impala</a>
-last week and here&#8217;s some notes on how that went.</p>
-
-<h2>First thoughts</h2>
-
-<p>I was very impressed with how easy it was to install, even considering
-our unusual set up (see below). In my simple ad-hoc tests Impala
-performed orders of magnitude faster than Hive. So far it seems solid
-down to the little details, like the shell prompt with a fully
-functional libreadline and column headers nicely formatted.</p>
-
-<h2>Installing</h2>
-
-<p>The first problem I encountered was that we use Cloudera
-<a href="http://www.cloudera.com/content/cloudera-content/cloudera-docs/CDHTarballs/3.25.2013/CDH4-Downloadable-Tarballs/CDH4-Downloadable-Tarballs.html">tarballs</a>
-in our set up, but Impala is only available as a package (RPM in our
-case). I tried compiling it from
-<a href="https://github.com/cloudera/impala">source</a>, but it&#8217;s not a trivial
-compile - it requires <a href="http://llvm.org/">LLVM</a> (which is way cool,
-BTW) and has a bunch of dependencies, it didn&#8217;t work out-of-the-box
-for me so I&#8217;ve decided to take an alternative route (I will definitely get it compiled some weekend soon).</p>
-
-<p>Retreiving contents of an RPM is trivial (because it&#8217;s really a cpio
-archive), and then I&#8217;d just have to &#8220;make it work&#8221;.</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-server-1.0-1.p0.819.el6.x86_64.rpm
-</span><span class='line'>$ mkdir impala
-</span><span class='line'>$ cd impala
-</span><span class='line'>$ rpm2cpio ../impala-server-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv</span></code></pre></td></tr></table></div></figure>
-
-
-<p>I noticed that <code>usr/bin/impalad</code> is a shell script, and it appears to
-rely on a few environment vars for configuration, so I created a shell
-script that sets them which looks approximately like this:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/usr/java/default
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_LOG_DIR</span><span class="o">=</span> <span class="c"># your log dir</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_PORT</span><span class="o">=</span>24000
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_HOST</span><span class="o">=</span> <span class="c"># probably namenode host or whatever</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_BACKEND_PORT</span><span class="o">=</span>22000
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_HOME</span><span class="o">=</span> <span class="c"># full path to usr/lib/impala from the RPM, e.g. /home/grisha/impala/usr/lib/impala</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_CONF_DIR</span><span class="o">=</span> <span class="c"># config dir, e.g. /home/grisha/impala/etc/impala&quot;</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_BIN</span><span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/sbin-retail
-</span><span class='line'><span class="nb">export </span><span class="nv">LIBHDFS_OPTS</span><span class="o">=</span>-Djava.library.path<span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/lib
-</span><span class='line'><span class="nb">export </span><span class="nv">MYSQL_CONNECTOR_JAR</span><span class="o">=</span> <span class="c"># full path a mysql-connect jar</span>
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">HIVE_HOME</span><span class="o">=</span> <span class="c"># your hive home - note: every impala nodes needs it, just config, not the whole Hive install</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">HIVE_CONF_DIR</span><span class="o">=</span> <span class="c"># this seems redundant, my guess HIVE_HOME is enough, but whatever</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">HADOOP_CONF_DIR</span><span class="o">=</span> <span class="c"># path the hadoop config, the dir that has hdfs-site.xml, etc.</span>
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="o">=</span><span class="s2">&quot; -log_dir=${IMPALA_LOG_DIR} -state_store_port=${IMPALA_STATE_STORE_PORT}&quot;</span>
-</span><span class='line'><span class="nb">export </span><span class="nv">IMPALA_SERVER_ARGS</span><span class="o">=</span><span class="s2">&quot; \                                                                                                                                                                                  -log_dir=${IMPALA_LOG_DIR} \                                                                                                                                                                              -state_store_port=${IMPALA_STATE_STORE_PORT} \                                                                                                                                                            -use_statestore \                                                                                                                                                                                         -state_store_host=${IMPALA_STATE_STORE_HOST} \                                                                                                                                                            -be_port=${IMPALA_BACKEND_PORT}&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>With the above environment vars set, starting Impala should amount to
-the following (you probably want to run those in separate windows, also note that
-the state store needs to be started first):</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">$ </span>./usr/bin/statestored <span class="k">${</span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="k">}</span> <span class="c"># do this on IMPALA_STATE_STORE_HOST only</span>
-</span><span class='line'><span class="nv">$ </span>./usr/bin/impalad <span class="k">${</span><span class="nv">IMPALA_SERVER_ARGS</span><span class="k">}</span> <span class="c"># do this on every node</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The only problem that I encountered was that Impala needed
-short-circuit access enabled, so I had to add the following to the hdfs-site.xml:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;property&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;name&gt;</span>dfs.client.read.shortcircuit<span class="nt">&lt;/name&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'> <span class="nt">&lt;property&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;name&gt;</span>dfs.domain.socket.path<span class="nt">&lt;/name&gt;</span>
-</span><span class='line'><span class="c">&lt;!-- adjust this to your set up: --&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;value&gt;</span>/var/run/dfs_domain_socket_PORT.sock<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'> <span class="nt">&lt;property&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;name&gt;</span>dfs.client.file-block-storage-locations.timeout<span class="nt">&lt;/name&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;value&gt;</span>3000<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'> <span class="nt">&lt;property&gt;</span>
-</span><span class='line'><span class="c">&lt;!-- adjust this too: --&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;name&gt;</span>dfs.block.local-path-access.user<span class="nt">&lt;/name&gt;</span>
-</span><span class='line'>   <span class="nt">&lt;value&gt;</span><span class="c">&lt;!-- user name --&gt;</span><span class="nt">&lt;/value&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/property&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Once the above works, we need <code>impala-shell</code> to test it. Again, I pulled it out of the RPM:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-shell-1.0-1.p0.819.el6.x86_64.rpm
-</span><span class='line'>$ mkdir shell ; cd shell
-</span><span class='line'>$ rpm2cpio ../impala-shell-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>I was then able to start the shell and connect. You can connect to any Impala node (read the docs):</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>$ ./usr/bin/impala-shell
-</span><span class='line'>[localhost:21000] &gt; connect some_node;
-</span><span class='line'>Connected to some_node:21000
-</span><span class='line'>Server version: impalad version 1.0 RELEASE (build d1bf0d1dac339af3692ffa17a5e3fdae0aed751f)
-</span><span class='line'>[some_node:21000] &gt; select count(*) from your_favorite_table;
-</span><span class='line'>Query: select count(*) from your_favorite_table
-</span><span class='line'>Query finished, fetching results ...
-</span><span class='line'>+-----------+
-</span><span class='line'>| count(*)  |
-</span><span class='line'>+-----------+
-</span><span class='line'>| 302052158 |
-</span><span class='line'>+-----------+
-</span><span class='line'>Returned 1 row(s) in 2.35s
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Ta-da! The above query takes a good few minutes in Hive, BTW.</p>
-
-<h2>Other Notes</h2>
-
-<ul>
-<li>Impala does not support custom SerDe&#8217;s so it won&#8217;t work if you&#8217;re relying on JSON. It does support Avro.</li>
-<li>There is no support for UDF&#8217;s, so our <a href="https://github.com/livingsocial/HiveSwarm">HiveSwarm</a> is of no use.</li>
-<li>INSERT OVERWRITE works, which is good.</li>
-<li>LZO support works too.</li>
-<li><em>Security Warning</em>: Everything Impala does will appear in HDFS as
-the user under which Impala is running. Be careful with this if
-you&#8217;re relying on HDFS permissions to prevent an accidental &#8220;INSERT
-OVERWRITE&#8221;, as you might inadvertently give your users superuser
-privs on HDFS via Hue, for example. (Oh did I mention Hue completely
-supports Impala too?). From what I can tell there is no way to set a
-username, this is a bit of a show-stopper for us, actually.</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">Relational Database on Top of Key-value Store Explained (or Why B-trees Are Cool)</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-11T11:36:00-04:00" pubdate data-updated="true">May 11<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>This post attempts to explain how a relational database can be
-implemented atop a key/value store, a subject that I&#8217;ve long found
-rather mysterious.</p>
-
-<p>Every once in a while I would come across a mention that a relational
-database can be implemented using a key/value store (aka dictionary,
-hash table or hash map - for brevity I&#8217;ll be using <em>map</em> from here on).</p>
-
-<p>Whenever I thought about it, it just didn&#8217;t make sense. A relational
-database needs to store rows <em>in order</em>, and that&#8217;s one feature that
-maps do not provide. Imagine we have a table keyed by employee id
-stored in a map and we need to traverse it by id in ascending order. A
-hypothetical keys() method would return us a list of ids ordered
-randomly. It&#8217;s impossible to iterate over a hash map <em>in
-order</em>. So how would a relational database work then?</p>
-
-<p>It took a while for me to realize the root of my misunderstanding. I
-naively was trying to picture how tables, rows and values can be
-represented as key/value pairs, and that was the wrong path to take. I
-was focusing on the wrong layer of abstraction.</p>
-
-<p>As it turns out the
-key [NPI] to this problem is the clever data structure commonly used
-to store data in a relational DB known as
-<em><a href="http://en.wikipedia.org/wiki/B-tree">B-Tree</a></em> (or a variation
-thereof, <em><a href="http://en.wikipedia.org/wiki/B+tree">B+Tree</a></em>).
-Okay, B-trees are nothing new and I&#8217;m sure we&#8217;ve all heard of them. In fact B-trees were
-desgined in the 1970&#8217;s as a generalization of the
-<a href="http://en.wikipedia.org/wiki/Binary_search_tree">Binary Search Tree</a> that was
-more suited for block storage.</p>
-
-<p>But there is something about B-trees that I did not know, and which
-now that I do know, seems absolutely essential as well as simply brilliant. In his 1979 paper &#8220;The
-Ubiquitous B-Tree&#8221; <a href="http://www.cs.purdue.edu/people/comer">Douglas Comer</a> writes:</p>
-
-<blockquote> The availability of demand paging hardware suggests an
-interesting implementation of B-trees.  Through careful allocation,
-each node of the B-tree can be mapped into one page of the virtual
-address space.  Then the user treats the B-tree as if it were in
-memory.  Accesses to nodes (pages) which are not in memory cause the
-system to &#8220;page-in&#8221; the node from secondary storage. </blockquote>
-
-
-<p>The above paragraph implies that the B-Tree and all its data can be
-stored in <em>pages</em>. In fact, if you look at the file
-<a href="http://www.sqlite.org/src/artifact/eecc84f02375b2bb7a44abbcbbe3747dde73edb2">format of a SQLite 3 database</a>
-(who says source code comments are bad?) you&#8217;ll see it states quite plainly  that the <em>file
-is divided into pages</em>. (You will also see a fantastic description of exactly
-how a B+tree works, but that&#8217;s way outside the scope of this post.)</p>
-
-<p>The important point is that the entire file consists of pages and
-nothing else. Inside those pages live the B-tree structure, as well as
-the data. Each table is a B-tree and to access it we need to know the
-starting page number, which in turn is stored in the sqlite_master
-table whose root page is always the first page of the file. The root
-page of a table is the head of the B-tree strucutre, and it may refer
-to other pages, which in turn may be additional nodes of the tree or
-pure data.</p>
-
-<p>All pages are of the same size and are numbered
-sequentially, thus we can easily retreive any page by its number
-because its offset into the file is the page number multiplied by the
-page size. (By default a SQLite3 page is 1K and will hold 4 keys,
-i.e. the order of the tree is 4).</p>
-
-<p>And bingo, there is our key/value pair: the page number is the key,
-and the page itself is the value! All you need to do is stick those
-pages into your favorite key/value store keyed by page number and
-you&#8217;ve got a relational database atop a key/value store. It&#8217;s that
-simple.</p>
-
-<p>P.S. An astute reader may point out that there is such a thing as a
-<em>sorted map</em>. But a sorted map is very different from a &#8220;pure&#8221; hash
-map. The miracle of hashing is that not only does it let you find
-elements in O(1) time, but more importantly that it is very suitable
-for distributed processing, where the map may be spread across
-multiple servers. And if you start thinking about how a <em>sorted</em> map
-might be implemented in a distributed fashion, you will ultimately
-loop back to B-trees, because that&#8217;s typically how it&#8217;s actually done.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/">MapJoin: A Simple Way to Speed Up Your Hive Queries</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Mapjoin is a little-known feature of Hive. It allows a table to be
-loaded into memory so that a (very fast) join could be performed
-entirely within a mapper without having to use a Map/Reduce step. If
-your queries frequently rely on small table joins (e.g. cities or
-countries, etc.)  you might see a very substantial speed-up from using
-mapjoins.</p>
-
-<p>There are two ways to enable it. First is by using a hint, which looks
-like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
-should be placed immediately following the <code>SELECT</code>. It directs Hive
-to load <code>aliasname</code> (which is a table or alias of the query) into
-memory.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
-do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
-your config, and Hive will automatically use mapjoins for any tables
-smaller than <code>hive.mapjoin.smalltable.filesize</code> (default is 25MB).</p>
-
-<p>Mapjoins have a limitation in that the same table or alias cannot be
-used to join on different columns in the same query. (This makes sense
-because presumably Hive uses a HashMap keyed on the column(s) used in
-the join, and such a HashMap would be of no use for a join on
-different keys).</p>
-
-<p>The workaround is very simple - do not use the same aliases in your
-query.</p>
-
-<p>I also found that when the Hive documentation states that such queries
-are &#8221;<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>&#8221;
- they mean that the query will fail in unexpected
-ways, sometimes with a Java traceback.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/02/linus-on-understanding-pointers/">Linus on Understanding Pointers</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-02T10:52:00-04:00" pubdate data-updated="true">Apr 2<span>nd</span>, 2013</time>
-        
-         | <a href="/blog/2013/04/02/linus-on-understanding-pointers/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>A while back <a href="http://en.wikipedia.org/wiki/Linus_Torvalds">Linus Torvalds</a> <a href="http://meta.slashdot.org/story/12/10/11/0030249/linus-torvalds-answers-your-questions">answered questions on Slashdot</a>.</p>
-
-<p>One of the answers was on the subject of understanding of pointers:</p>
-
-<blockquote><p><small>At the opposite end of the spectrum, I actually wish more people
-understood the really core low-level kind of coding. Not big, complex
-stuff like the lockless name lookup, but simply good use of
-pointers-to-pointers etc. For example, I&#8217;ve seen too many people who
-delete a singly-linked list entry by keeping track of the &#8220;prev&#8221;
-entry, and then to delete the entry, doing something like</small></p>
-
-<p><small>if (prev)<br/>
-  prev->next = entry->next;<br/>
-else<br/>
-  list_head = entry->next;<br/>
-</small></p>
-
-<p><small>and whenever I see code like that, I just go &#8220;This person doesn&#8217;t
-understand pointers&#8221;. And it&#8217;s sadly quite common.</small></p>
-
-<p><small>People who understand pointers just use a &#8220;pointer to the entry
-pointer&#8221;, and initialize that with the address of the list_head. And
-then as they traverse the list, they can remove the entry without
-using any conditionals, by just doing a &#8220;*pp = entry->next&#8221;</small></p></blockquote>
-
-<p>There were a few comments, but none explained what he really
-meant. So here it is.</p>
-
-<p>Imagine you have a linked list defined as:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">list_entry</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">list_entry</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span> <span class="n">list_entry</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>You need to iterate over it from the begining to end and remove a
-specific element whose value equals the value of <code>to_remove</code>. The more
-obvious way to do this would be:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span> <span class="cm">/* assuming head exists and is the first entry of the list */</span>
-</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>     <span class="cm">/* this is the one to remove */</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">prev</span><span class="p">)</span>
-</span><span class='line'>           <span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span> <span class="cm">/* remove the entry */</span>
-</span><span class='line'>        <span class="k">else</span>
-</span><span class='line'>            <span class="n">head</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>      <span class="cm">/* special case - first entry */</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/* move on to the next entry */</span>
-</span><span class='line'>    <span class="n">prev</span> <span class="o">=</span> <span class="n">entry</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>What we are doing above is iterating over the list until <code>entry</code> is
-NULL, which means we&#8217;ve reached the end of the list (line 4). When we
-come across an entry we want removed (line 5), we assign the value of
-current <code>next</code> pointer to the previous one, thus eliminating the
-current element (line 7).</p>
-
-<p>There is a special case above - at the beginning of the iteration
-there is no previous entry (<code>prev</code> is NULL), and so to remove the
-first entry in the list you have to modify <code>head</code> itself (line 9).</p>
-
-<p>What Linus was saying is that the above code could be simplified by
-making the previous element a <em>pointer to a pointer</em> rather than just a
-pointer. The code then looks like this:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">list_entry</span> <span class="o">**</span><span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span> <span class="cm">/* pointer to a pointer */</span>
-</span><span class='line'><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>
-</span><span class='line'>        <span class="o">*</span><span class="n">pp</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The above code is very similar to the previous variant, but notice how
-we no longer need to watch for the special case of the first element
-of the list, since <code>pp</code> is not NULL at the beginning. Simple and
-clever.</p>
-
-<p>Also, someone in that thread commented that the reason this is better
-is because <code>*pp = entry-&gt;next</code> is <em>atomic</em>.  It is most certainly NOT
-atomic. The above expression contains two dereference operators (<code>*</code>
-and <code>-&gt;</code>) and one assignment, and neither of those three things is
-atomic. This is a common misconception, but alas pretty much <em>nothing</em>
-in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
-operators)!</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/01/storm-notes/">Storm Notes</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
-        
-         | <a href="/blog/2013/04/01/storm-notes/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Some random thoughts on having tinkered with
-<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
-
-<p>It took me some time to understand what Storm is, and I am still not
-clear I have found a perfect use for it. (This is not
-a criticism of Storm, the point is that the concepts it introduces are
-new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz&#8217;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
-
-<p>In simple terms, Storm is a tool that lets you run code in parallel
-across a cluster of servers. It differs from Map/Reduce in that the
-actual algorithm is entirely up to you, and in essence all that Storm
-provides is the framework that supervises all the moving pieces of your
-application (known as a <em>topology</em>) and provides a uniform way of
-creating, testing locally, sumbitting to a cluster, logging,
-monitoring, as well as primitives for sending data between components
-such as grouping data by using hashing, etc.</p>
-
-<p>Storm is mainly meant for stream processing. A stream could be
-anything, some of the most obvious examples may be your web logs,
-tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it&#8217;s
-challenging to process it on one server, Storm provides a way to scale
-it across a cluster of servers and can handle ridiculous amounts of
-incoming data. The result is a real-time view of summary data that is
-always up to date.</p>
-
-<p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as &#8220;native&#8221;. Storm also provides a
-primitive for using pipes to a process which means that you can write
-a component in anything - from a Bash script to C, all it needs to do
-is read stdin and write stdout.</p>
-
-<p>For those who would prefer to try it out using a higher-level
-language, there is an excellent project called
-<a href="https://github.com/colinsurprenant/redstorm">Redstorm</a> which lets you
-write your topology in JRuby. While a Redstorm topology may not be as
-fast as something written in pure Java, the reduced development
-time is well worth any trade offs, and you always have the option of
-perfecting it later by porting your code to something JVM-native when
-your understanding of how it ought to work is solidified in your mind.</p>
-
-<p>If you&#8217;re going to go the Redstorm route, a couple of gotchas that I
-came across were:</p>
-
-<ul>
-<li><p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don&#8217;t know what the solution is if you absolutely must parse
-Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p></li>
-<li><p>If you&#8217;re going to use ActiveRecord (which does work fine), watch
-out for how to properly use it in a multi-threaded environment. You
-might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
-You will also need make sure your ActiveRecord connections are not
-shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p></li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/27/on-prioritization/">On Prioritization - Important vs Urgent</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-27T10:13:00-04:00" pubdate data-updated="true">Mar 27<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/03/27/on-prioritization/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Every item on a TODO list can be classified as <em>urgent</em>, <em>important</em>
-or <em>neither</em>. We should act on important items first, urgent second and
-ignore the rest.</p>
-
-<p>Sometimes an item lands on our TODO list described as extremely urgent
-without any explanation of importance. In this case the important item
-(and thus to be done <em>first</em>) becomes <em>determining the importance of the
-extremely urgent item in question</em>, even if it means delaying it.</p>
-
-<p>The reason I so strongly believe that understanding the importance of
-every thing we do is essential is quite simple: understanding
-the importance implies understanding of the ultimate objective. And
-inversely, not understanding the importance implies not understanding
-the objective.</p>
-
-<p>And if after some discussion and thinking one still cannot assess the
-importance of a task, and nobody can explain it, then it
-is simply not important, however urgent it may seem.</p>
-
-<p>There are exceptions, however. Sometimes importance can be difficult
-to verbalize. We should always be attuned to that. In my personal
-experience reiterated urgency in response to &#8220;why it is important&#8221; is
-a bad sign, whereas an emotional reaction of the &#8220;you just don&#8217;t get
-it, how can I explain this to you?&#8221; is a very good sign.</p>
-
-<p>And sometimes, when you trust that the person requesting something of
-you truly believes it is both important and urgent but is unable to
-verbalize the importance sufficiently well, you may have to take their
-word for it and just do it, without fully understanding the
-importance.</p>
-
-<p>It is also important to remember to always take the time to explain
-importance of things we request of others. We naturally enjoy working
-on important things and resent &#8220;urgent&#8221; and unimportant tasks.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/">On Keeping Lots of Integers in Memory</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-25T22:09:00-04:00" pubdate data-updated="true">Mar 25<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Once upon a time (over a year ago) I found myself needing to store large numbers of
-integers in memory. The goal was to store a graph of all our
-purchasers and items purchased, so that we could quickly identify
-like-minded purchasers based on common purchases and make real-time
-recommendations of the form &#8220;people like you also bought&#8221;. This
-approach is commonly known as <a href="http://en.wikipedia.org/wiki/Collaborative_filtering">collaborative filtering</a>,
-and exactly how we did it would be a subject of some future post
-(perhaps).</p>
-
-<p>At the time, I was looking at tens of millions of purchases by tens of
-millions people of hundreds of thousands of items. The only
-information I needed to store were id&#8217;s of people and items, which
-were just integers. While this seemed like a lot of data, I
-believed it was entirely feasible to store them all in memory.</p>
-
-<p>I didn&#8217;t have time to write my own implementation for storing this
-graph, so I looked at a bunch of tools out there, asked around, and
-the only one that seemed to fit the bill exactly in the end was
-<a href="http://redis.io/">Redis</a>. Yes, there are a few projects out there
-that tout graph storage as their specialty, but none of them could
-scale anywhere close to the level I needed. And in the end the term
-&#8220;graph database&#8221; turned out to be a red herring of sorts. Any language
-such as Python, Ruby or Java provides the basic data structures
-quite sufficient for storing a graph as an adjacency list
-out-of-the-box. You can store a graph in any key-value store, or even
-in your favorite RDBMS. (To this day I&#8217;m not convinced there is any
-good use case for the so-called graph databases out there.)</p>
-
-<p>There were a few things that set Redis apart:</p>
-
-<p>First, it keeps everything in RAM, which meant that updating this
-dataset would be very fast, fast enough to keep it up-to-date in real
-time.</p>
-
-<p>The second great thing about Redis is <a href="http://redis.io/commands#sorted_set">Sorted Sets</a>. This data structure
-and the operations it supports fit what we needed to do
-precisely. (Again, sorry for sparing you the details, but roughly, you
-need to store a Set of item ids for every person as well as a Set of
-person ids for every item, and &#8220;people like you&#8221; then becomes the
-union of all the Sets of items that are directly linked to &#8220;you&#8221;.)</p>
-
-<p>Thirdly, Redis supports replication, which meant that if the most
-CPU-intensive task of computing the actual recommendations (which
-requires union-ing of a large number of large Sorted Sets) becomes a
-bottle neck, we could address this by running it on slaves, and
-we could easily scale the system by simply adding more slaves.</p>
-
-<p>Last (but hardly least) is Redis&#8217; ability to persist and quickly load
-the in-memory database. You begin to appreciate the immense value of
-this once you start populating Redis by pulling historical data from
-your RDBMS and realize that it could take many hours or even days.</p>
-
-<p>Everything was going great with my plan but soon I ran into a problem.
-Not even a quarter of the way through the initial load process, I
-noticed Redis reporting 20+ GB being used, which meant that the
-particular machine I was testing this on wouldn&#8217;t have enough
-RAM. That was a bummer. Especially because it began to look like the
-whole architecture would require more memory than would be financially
-sensible for this project (yes, you could get a machine with 1TB of
-memory, but it was and still is prohibitively expensive).</p>
-
-<p>My hunch (supported by some quick back-of-the-napkin calculations) was
-that this was a software problem, not a hardware one.</p>
-
-<p>The first obvious inefficiency of storing integers on a 64-bit
-system is how much space an integer takes up. 64 bits (or 8 bytes)
-is enough to store a number as large as 92,23,372,036,854,775,807. Yet
-this number takes up exactly as much memory as 17 or 1234 (pick your
-favorite small number). In fact, the range of integers I was dealing
-with was well under 1 billion and 32 bits would more than suffice.</p>
-
-<p>Add to this that on a 64-bit system every <em>pointer</em> is also (you guessed
-it) - 64 bits. So if you&#8217;re storing a (singly) linked list of
-integers, you end up with 8 bytes for the integer and 8 bytes for the
-&#8220;next&#8221; pointer, or 16 bytes per integer. And if your data structure
-is even more complex, such as a Redis Sorted Set, which is actually
-implemented as two structures updated simultaneously (a Skip List and a
-Hash), well, then you begin to see that our integers may end up taking
-up as much if not less memory than the pointers pointing to them.</p>
-
-<p>One simple way to reduce the memory bloat was to compile Redis in
-32-bit mode.  Redis makes it super easy with &#8220;make 32bit&#8221;.  Because of
-the smaller pointer size the 32-bit mode uses much less memory, but of
-course the caveat is that the total address space is limited to 32
-bits or about 4GB.  While this did reduce the footprint by a great
-deal, it wasn&#8217;t sufficient for my data set, which still looked to be
-more than 4GB in size.</p>
-
-<p>Then I came across this page on <a href="http://redis.io/topics/memory-optimization" title="">memory optimization</a>.  Little
-did I know Redis already provided a very compact way of storing
-integers. For small lists, sets or hashes, Redis uses a special
-structure it calls <em>ziplist</em> that can store variable-length
-integers and strings. The advantage is that it is very compact, but
-the flipside is that such lists can only be processed
-sequentially. (This is because you can&#8217;t access an n-th element in
-such a list because sizes of elements vary, so you must scan from
-beginning). But it tunrs out that sequential processing is actually
-more efficient for small lists rather than following a more complex
-algorithm (hashing or whatever) because it requires no
-indirection and can be accomplished with simple pointer math.</p>
-
-<p>Redis&#8217; zset-max-ziplist-entries config setting sets a threshold - any
-Sorted Set that has fewer elements than the setting is stored as a
-ziplist and as soon as it reaches the number greater than the setting
-it is converted to the full-fledged Sorted Set data
-structure.</p>
-
-<p>What was interesting is that in my tests bumping up the value from the
-default of 128 to as high as 10000 didn&#8217;t seem to have any noticeable
-performance impact while reduced the memory usage by an order of
-magnitude. My best guess is that even at 10K elements this list is
-small enough to be processed entirely in the CPU cache.</p>
-
-<p>The effect of tweaking this setting seemed like pure magic, so I just
-had to dig deeper and figure out exactly how it works. You can see the
-description of the format in the comments for this file in Redis
-source: <a href="https://github.com/antirez/redis/blob/unstable/src/ziplist.c">src/ziplist.c</a>.</p>
-
-<p>The technique is very simple - the first 4 bits are used to identify
-the size of the integer. The relevant comment text:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11000000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int16_t</span> <span class="p">(</span><span class="mi">2</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11010000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int32_t</span> <span class="p">(</span><span class="mi">4</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11100000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="kt">int64_t</span> <span class="p">(</span><span class="mi">8</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11110000</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">24</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">3</span> <span class="n">bytes</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">11111110</span><span class="o">|</span> <span class="o">-</span> <span class="mi">1</span> <span class="n">byte</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Integer</span> <span class="n">encoded</span> <span class="n">as</span> <span class="mi">8</span> <span class="n">bit</span> <span class="kt">signed</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">).</span>
-</span><span class='line'><span class="o">*</span> <span class="o">|</span><span class="mi">1111</span><span class="n">xxxx</span><span class="o">|</span> <span class="o">-</span> <span class="p">(</span><span class="n">with</span> <span class="n">xxxx</span> <span class="n">between</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1101</span><span class="p">)</span> <span class="n">immediate</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">integer</span><span class="p">.</span>
-</span><span class='line'><span class="o">*</span> <span class="n">Unsigned</span> <span class="n">integer</span> <span class="n">from</span> <span class="mi">0</span> <span class="n">to</span> <span class="mf">12.</span> <span class="n">The</span> <span class="n">encoded</span> <span class="n">value</span> <span class="n">is</span> <span class="n">actually</span> <span class="n">from</span>
-</span><span class='line'><span class="o">*</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">13</span> <span class="n">because</span> <span class="mo">0000</span> <span class="n">and</span> <span class="mi">1111</span> <span class="n">can</span> <span class="n">not</span> <span class="n">be</span> <span class="n">used</span><span class="p">,</span> <span class="n">so</span> <span class="mi">1</span> <span class="n">should</span> <span class="n">be</span>
-</span><span class='line'><span class="o">*</span> <span class="n">subtracted</span> <span class="n">from</span> <span class="n">the</span> <span class="n">encoded</span> <span class="mi">4</span> <span class="n">bit</span> <span class="n">value</span> <span class="n">to</span> <span class="n">obtain</span> <span class="n">the</span> <span class="n">right</span> <span class="n">value</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Actually, back when I looked at it, there was no 24-bit integer
-encoding, which led me to submitting a <a href="https://github.com/antirez/redis/issues/469">patch</a>, which
-was gladly accepted (and corrected for <a href="http://en.wikipedia.org/wiki/Two%27s_complement">two&#8217;s complement</a> support) by <a href="http://invece.org/">antirez</a>.</p>
-
-<p>Since that time I&#8217;ve been noticing different takes on variable-length
-integer storage in other projects.</p>
-
-<p>For example <a href="http://www.bitcoin.org">Bitcoin</a> uses <a href="https://en.bitcoin.it/wiki/Protocol_specification#Variable_length_integer">variable-length integers</a> to minimize the total size of the block
-chain. The bitcoin algo is as follows:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'> <span class="o">*</span> <span class="n">Examine</span> <span class="n">at</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="n">less</span> <span class="n">than</span> <span class="mi">253</span><span class="p">,</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">use</span> <span class="n">the</span> <span class="n">byte</span> <span class="n">literally</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">253</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">two</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">16</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">254</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">four</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>    <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">32</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span>
-</span><span class='line'> <span class="o">*</span>  <span class="o">-</span> <span class="n">If</span> <span class="n">that</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">is</span> <span class="mi">255</span><span class="p">,</span> <span class="n">read</span> <span class="n">the</span> <span class="n">next</span> <span class="n">eight</span> <span class="n">bytes</span>
-</span><span class='line'> <span class="o">*</span>   <span class="n">as</span> <span class="n">a</span> <span class="n">little</span> <span class="n">endian</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">number</span> <span class="p">(</span><span class="n">total</span> <span class="n">bytes</span> <span class="n">read</span> <span class="o">=</span> <span class="mi">9</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a href="http://sqlite.org/">SQLite3</a> uses its own variable-length integer format,
-possibly cleverer than the two above:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="o">**</span> <span class="n">Cell</span> <span class="n">content</span> <span class="n">makes</span> <span class="n">use</span> <span class="n">of</span> <span class="n">variable</span> <span class="n">length</span> <span class="n">integers</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span>
-</span><span class='line'><span class="o">**</span> <span class="n">length</span> <span class="n">integer</span> <span class="n">is</span> <span class="mi">1</span> <span class="n">to</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="n">where</span> <span class="n">the</span> <span class="n">lower</span> <span class="mi">7</span> <span class="n">bits</span> <span class="n">of</span> <span class="n">each</span>
-</span><span class='line'><span class="o">**</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span><span class="p">.</span>  <span class="n">The</span> <span class="n">integer</span> <span class="n">consists</span> <span class="n">of</span> <span class="n">all</span> <span class="n">bytes</span> <span class="n">that</span> <span class="n">have</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">set</span> <span class="n">and</span>
-</span><span class='line'><span class="o">**</span> <span class="n">the</span> <span class="n">first</span> <span class="n">byte</span> <span class="n">with</span> <span class="n">bit</span> <span class="mi">8</span> <span class="n">clear</span><span class="p">.</span>  <span class="n">The</span> <span class="n">most</span> <span class="n">significant</span> <span class="n">byte</span> <span class="n">of</span> <span class="n">the</span> <span class="n">integer</span>
-</span><span class='line'><span class="o">**</span> <span class="n">appears</span> <span class="n">first</span><span class="p">.</span>  <span class="n">A</span> <span class="n">variable</span><span class="o">-</span><span class="n">length</span> <span class="n">integer</span> <span class="n">may</span> <span class="n">not</span> <span class="n">be</span> <span class="n">more</span> <span class="n">than</span> <span class="mi">9</span> <span class="n">bytes</span> <span class="kt">long</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span> <span class="n">As</span> <span class="n">a</span> <span class="n">special</span> <span class="k">case</span><span class="p">,</span> <span class="n">all</span> <span class="mi">8</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">the</span> <span class="mi">9</span><span class="n">th</span> <span class="n">byte</span> <span class="n">are</span> <span class="n">used</span> <span class="n">as</span> <span class="n">data</span><span class="p">.</span>  <span class="n">This</span>
-</span><span class='line'><span class="o">**</span> <span class="n">allows</span> <span class="n">a</span> <span class="mi">64</span><span class="o">-</span><span class="n">bit</span> <span class="n">integer</span> <span class="n">to</span> <span class="n">be</span> <span class="n">encoded</span> <span class="n">in</span> <span class="mi">9</span> <span class="n">bytes</span><span class="p">.</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x00</span>                      <span class="n">becomes</span>  <span class="mh">0x00000000</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x7f</span>                      <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000080</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x82</span> <span class="mh">0x00</span>                 <span class="n">becomes</span>  <span class="mh">0x00000100</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x80</span> <span class="mh">0x7f</span>                 <span class="n">becomes</span>  <span class="mh">0x0000007f</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x8a</span> <span class="mh">0x91</span> <span class="mh">0xd1</span> <span class="mh">0xac</span> <span class="mh">0x78</span>  <span class="n">becomes</span>  <span class="mh">0x12345678</span>
-</span><span class='line'><span class="o">**</span>    <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x81</span> <span class="mh">0x01</span>  <span class="n">becomes</span>  <span class="mh">0x10204081</span>
-</span><span class='line'><span class="o">**</span>
-</span><span class='line'><span class="o">**</span> <span class="n">Variable</span> <span class="n">length</span> <span class="n">integers</span> <span class="n">are</span> <span class="n">used</span> <span class="k">for</span> <span class="n">rowids</span> <span class="n">and</span> <span class="n">to</span> <span class="n">hold</span> <span class="n">the</span> <span class="n">number</span> <span class="n">of</span>
-</span><span class='line'><span class="o">**</span> <span class="n">bytes</span> <span class="n">of</span> <span class="n">key</span> <span class="n">and</span> <span class="n">data</span> <span class="n">in</span> <span class="n">a</span> <span class="n">btree</span> <span class="n">cell</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>There are also other more sophisticated techniques of storing lists of integers such as
-<a href="http://en.wikipedia.org/wiki/Elias_gamma">Elias encoding</a> and <a href="http://en.wikipedia.org/wiki/Golomb_coding">Golomb coding</a>.</p>
+</td></tr></td></tr></p></fieldset></form>
 </div>
   
   
@@ -1560,21 +1853,41 @@ possibly cleverer than the two above:</p>
 <aside class="sidebar">
   
     
+
 <section>
-  <div style="width: 50%; margin: 0 auto;">
-  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
-    data-show-count="">Follow @humblehack</a>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
   </div>
+</div>
 </section>
 
 <section>
   <h1>About Me</h1>
-  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I&#8217;ve spent most of my early career working at large ISP&#8217;s solving industrial-scale hosting challenges. Since around 2009 I&#8217;ve become more intersted in and now work exclusively on &#8220;Big Data&#8221; type stuff.</p>
+  I&#8217;ve spent most of my early career working at large ISP&#8217;s solving industrial-scale hosting challenges. Since around 2009 I&#8217;ve become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
   <p>I was born and grew up in Moscow, Russia, though I&#8217;ve lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it&#8217;s gradually become home for us.</p>
 </section>
 <section>
@@ -1582,23 +1895,23 @@ possibly cleverer than the two above:</p>
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
       </li>
     
   </ul>

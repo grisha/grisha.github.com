@@ -80,21 +80,61 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/10/25/mod-python-the-long-story/</loc>
-        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
+        <lastmod>2016-02-16T22:06:28-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/</loc>
-        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
+        <lastmod>2016-02-16T22:06:28-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/
         </loc>
-        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
+        <lastmod>2016-02-16T22:06:28-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2015/03/20/influxdb-data/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2015/03/28/on-time-series/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2015/05/04/recording-time-series/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/
+        </loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/</loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+    </url>
+    <url>
+        <loc>
+            http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/
+        </loc>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -102,6 +142,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
+        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
 </urlset>

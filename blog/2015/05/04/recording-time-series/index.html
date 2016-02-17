@@ -1,0 +1,564 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Time Series Accuracy - Graphite vs RRDTool - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn’t try this with Graphite. In this write up I try
+to explain why it &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2015/05/04/recording-time-series">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Time Series Accuracy - Graphite vs RRDTool</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-04T17:40:00-04:00" pubdate data-updated="true">May 4<span>th</span>, 2015</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn’t try this with Graphite. In this write up I try
+to explain why it is so by comparing the method of recording time series
+used by
+<a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
+with the one used by <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a>.</p>
+
+<p>Graphite uses
+<a href="http://graphite.wikidot.com/whisper">Whisper</a> to store data, which in
+the FAQ is portrayed as a <a href="http://graphite.wikidot.com/whisper#toc1">better alternative</a> to RRDTool, but
+this is potentially misleading, because the flexibility afforded by the
+design of Whisper comes at the price of inaccuracy.</p>
+
+<p>A time series is most often described as a sequence of <code>(time, value)</code>
+tuples [1]. The most naive method of recording a time series is to
+store timestamps as is. Since the data points might arrive at
+arbitrary and inexact intervals, to correlate the series with a
+particular point in time might be tricky. If data points are arriving
+somewhere in between one minute bounaries (as they always naturally
+would), to answer the question of what happened during a particular
+minute would require specifying a range, which is not as clean as
+being able to specify a precise value. To join two series on a range
+is even more problematic.</p>
+
+<p>One way to improve upon this is to divide time into equal intervals
+and assign data points to the intervals. We could then use the
+beginning of the interval instead of the actual data point timestamp,
+thereby giving us more uniformity. For example, if our interval size
+is 10 seconds (I may sometimes refer to it as the <em>step</em>), we could
+divide the entire timeline starting from the
+<a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a>
+and until the end of
+universe into 10 second slots. Since the first slot begins at 0, any
+10-second-step time series will have slots starting at the exact same
+times. Now correlation across series or other time values becomes much
+easier.</p>
+
+<p>Calculating the slot is trivially easy: <code>time - time % step</code> (<code>%</code> being
+the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
+There is, however, a subtle complexity lurking when it comes to
+storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.
+Graphite simply changes the timestamp of the data point to the
+aligned one. If multiple data points arrive in the same
+step, then the last one “wins”.</p>
+
+<p>On the surface there is little wrong with Graphite’s approach. In fact,
+under right circumstances, there is absolutely nothing wrong with
+it. Consider the following example:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">Graphite, 10 second step.
+</span><span class="line">
+</span><span class="line">Actual Time   Aligned Time
+</span><span class="line">1430701282    1430701280     50  &lt;-- This data point is lost
+</span><span class="line">1430701288    1430701280     10
+</span><span class="line">1430701293    1430701290     30
+</span><span class="line">1430701301    1430701300     30</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let’s pretend those values are some system metric like the number of
+files open. The consequence of the 50 being dropped is that we will
+never know it existed, but towards the end of the 10 second interval
+it went down to 10, which is still a true fact. If we really wanted to
+know about the variations within a 10 second interval, we should have
+chosen a smaller step, e.g. 1 second. By deciding that the step is
+going to be 10 seconds, we thus declared that <em>variations within a
+smaller period are of no interest</em> to us, and from this perspective,
+Graphite <em>is correct</em>.</p>
+
+<p>But what if those numbers are the price of a stock: there may be
+hundreds of thousand of trades within a 10 second interval, yet we do
+not want to (or cannot, for technical reasons) record every single one
+of them? In this scenario having the last value override all previous
+ones doesn’t exactly seem correct.</p>
+
+<p>Enter RRDTool which uses a different method. RRDTool keeps track of
+the last timestamp and calculates a weight for every incoming
+data point based on time since last update or beginning of the step and
+the step length. Here is what the same sequence of points looks like
+in RRDTool. The lines marked with a <code>*</code> are not actual data points,
+but are the last value for the preceding step, it’s used for
+computing the value for the remainder of the step after a new one has
+begun.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">RRDTool, 10 second step.
+</span><span class="line">
+</span><span class="line">  Time          Value       Time since  Weight  Adjusted   Recorded
+</span><span class="line">                            last                value      value
+</span><span class="line">  1430701270    0           N/A
+</span><span class="line">* 1430701280    50         10s          1       50* 1= 50
+</span><span class="line">                                                           50
+</span><span class="line">  1430701282    50          2s          .2      50*.2= 10
+</span><span class="line">  1430701288    10          6s          .6      10*.6= 6
+</span><span class="line">* 1430701290    30          2s          .2      30*.2= 6
+</span><span class="line">                                                           10+6+6= 22
+</span><span class="line">  1430701293    30          3s          .3      30*.3= 9
+</span><span class="line">* 1430701300    30          7s          .7      30*.7= 21
+</span><span class="line">                                                           9+21=   30
+</span><span class="line">  1430701301    30   # this data point is incomplete</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Note, by the way, that the Whisper FAQ says that “RRD will store your
+updates in a temporary workspace area and after the minute has passed,
+aggregate them and store them in the archive”, which to me sounds like
+there is some sort of a temporary storage area holding all the unsaved
+updates. In fact, to be able to compute the weighted average, RRD only
+needs to store the time of the last update and the current sum, i.e.
+exactly just two variables, regardless of the number of updates in a
+single step. This is evident from the above figure.</p>
+
+<p>So to compare the results of the two tools:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">Time Slot     Graphite    RRDTool
+</span><span class="line">1430701270       N/A        50
+</span><span class="line">1430701280       10         22
+</span><span class="line">1430701290       30         30
+</span><span class="line">1430701300       N/A        N/A
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Before you say “so what, I don’t really understand the difference”,
+let’s pretend that those numbers were actually the rate of sale of
+trinkets from our website (per second). Here is a horizontal ascii-art
+rendition of our timeline, 0 is 1430701270.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">0         10        20        30    time (seconds)
+</span><span class="line">+.........+.........+.........+.....
+</span><span class="line">|           |     |    |       |
+</span><span class="line">0           50    10   30      30   data points</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>At 12 seconds we recorded selling 50 trinkets per second. Assuming we
+started selling at the beginning of our timeline, i.e. 12 seconds
+earlier, we can state that during the first step we sold exactly 500
+trinkets. Then 2 seconds into the second step we sold another 100
+(we’re still selling at 50/s). Then for the next 6 seconds we were
+selling at 10/s, thus another 60 trinkets, and for the last 2 seconds
+of the slot we sold another 60 at 30/s. In the third step we were
+selling steadily at 30/s, thus exactly 300 were sold.</p>
+
+<p>Comparing RRDTool and Graphite side-by-side, the stories are quite different:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">Trinkets per second and sold:
+</span><span class="line">   Time Slot     Graphite Trinkets     RRDTool Trinkets
+</span><span class="line">1. 1430701270      N/A      N/A          50      500
+</span><span class="line">2. 1430701280       10      100          22      220 (100+60+60)
+</span><span class="line">3. 1430701290       30      300          30      300
+</span><span class="line">4. 1430701300       30      N/A          N/A     N/A
+</span><span class="line">                          -----                -----
+</span><span class="line">   TOTAL SOLD:              400                 1020
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Two important observations here:</p>
+
+<ol>
+  <li>The totals are vastly different.</li>
+  <li>The rate recorded by RRDTool for the second slot (22/s), yields
+<em>exactly</em> the number of trinkets sold during that period: 220.</li>
+</ol>
+
+<p>Last, but hardly the least, consider what happens when we consolidate
+data points into larger intervals by averaging the values. Let’s say
+20 seconds, twice our step. If we consolidate the second and the third
+steps, we would get:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">Graphite:  average(10,30) = 20  =&gt; 400 trinkets in 20 seconds
+</span><span class="line">RRDTool:   average(22,30) = 26  =&gt; 520 trinkets in 20 seconds</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Since the Graphite numbers were off to begin with, we have no reason
+to trust the 400 trinkets number. But using the RRDTool data, the new
+number happens to still be 100% accurate even after the data points
+have been consolidated. This is a very useful property of <em>rates</em> in
+time series. It also explains why RRDTool does not permit updating
+data prior to the last update: RRD is <em>always accurate</em>.</p>
+
+<p>As an exercise, try seeing it for yourself: pretent the value of 10 in
+the second step never arrived, which should make the final value of
+the second slot 34. If the 10 arrived some time later, averaging it in
+will not give you the correct 22.</p>
+
+<p>Whisper allows past updates, but is quasi-accurate to begin with - I’m
+not sure I understand which is better - <em>inaccurate</em> data with a data
+point missing, or the <em>whole inaccurate</em> data. RRD could accomplish
+the same thing by adding some <code>--inaccurate</code> flag, though it would
+seem like more of a bug than a feature to me.</p>
+
+<p>If you’re interested in learning more about this, I recommend reading
+the documentation for
+<a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool create</a>, in
+particular the “It’s always a Rate” section, as well as
+<a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
+by Alex van den Bogaerdt.</p>
+
+<p>P.S. After this post was written, someone suggested that instead of
+storing a rate, we coud store a <em>count delta</em>. In other words, instead
+of recording that we’re selling 10 trinkets per second for the past 6
+seconds, we would store the total count of trinkets sold, i.e. 60. At
+first this seems like the solution to being able to update historical
+data accurately: if later we found out that we sold another 75
+trinkets in the second time slot, we could just add it to the total
+and all would be well and most importantly <em>accurate</em>.</p>
+
+<p>Here is the problem with this approach: note that in the previous
+sentence I had to specify that the additional trinkets were sold <em>in
+the second time slot</em>, a small, but crucial detail. If time series
+data point is a timestamp and a value, then there isn’t even a way to
+relay this information in a single data point - we’d need two
+timestamps. On the other hand if every data point arrived with two
+timestamps, i.e. as a duration, then which to store, rate or count,
+becomes a moot point, we can infer one from the other.</p>
+
+<p>So perhaps another way of explaining the historical update problem is
+that it <em>is</em> possible, but the datapoint must specify a <em>time
+interval</em>. This is something that neither RRDTool or Graphite
+currently support, even though it’d be a very useful feature in my
+opinion.</p>
+
+<p>[1] Perhaps the biggest misconception about time series is that it is
+a series of data points. What time series represent is <em>continuous</em>
+rather than <em>descrete</em>, i.e. it’s the line that connects the points
+that matters, not the specific points themselves, they are just
+samples at semi-random intervals that help define the line. And as we
+know, a line cannot be defined by a single point.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-05-04T17:40:00-04:00" pubdate data-updated="true">May 4<span>th</span>, 2015</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2015/05/04/recording-time-series/" data-via="humblehack" data-counturl="http://grisha.org/blog/2015/05/04/recording-time-series/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/03/28/on-time-series/" title="Previous Post: On Time Series">&laquo; On Time Series</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/" title="Next Post: Storing Time Series in PostgreSQL efficiently">Storing Time Series in PostgreSQL efficiently &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
+  </div>
+</div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2016 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2015/05/04/recording-time-series/';
+        var disqus_url = 'http://grisha.org/blog/2015/05/04/recording-time-series/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

@@ -32,6 +32,22 @@ have a virtually &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -115,14 +131,9 @@ does NOT store anything anywhere or transfer anything over the
 network (100% browser-side Javascript).
 </p>
 
-
-
-
 <script type="text/javascript" src="/javascripts/sha.js"></script>
 
-
 <script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
-
 
 <script type="text/javascript">
 function calc_pw(n) {
@@ -176,14 +187,10 @@ function clear_all() {
 }
 </script>
 
-
-<p><form action="#" method="get">
+<form action="#" method="get">
 <fieldset style="margin: 3px 0px; border: 1px solid #000000; padding: 10px;">
-<legend>Stupid Simple Password Generator</legend></p>
-
+<legend>Stupid Simple Password Generator</legend>
 <h3>Step 1:</h3>
-
-
 <p>
 Think of a phrase you will always remember. Keep typing until the text
 on the right says &#8220;strong&#8221;. Punctuation, spaces, unusual words and
@@ -191,75 +198,63 @@ mixed case while not required, are generally a good idea. The most
 important thing is that the script considers it <span style="color: green; font-weight: bold;">strong</span>.
 </p>
 
-
-
-
 <p> Make sure this passphrase is impossible to guess by people who
 know you, e.g. don&#8217;t pick quotes from your favorite song or
 movie. Don&#8217;t <em>ever</em> write it down or save it on your computer in any way or form!
-<table border=0>
+&lt;table border=0&gt;
 <tr><th>Passphrase: </th><td><input type="password" size="60" name="pw_phrase" id="pw_phrase" style="margin-right: 1em; margin-left: 1em;" onkeyup="pw_strength()" />
-<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
+<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
 <tr><th>Verify: </th><td><input type="password" size="60" name="pw_phrase2" id="pw_phrase2" style="margin-right: 1em; margin-left: 1em;" onkeyup="check_pw2_same()" />
-<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
-</table>
-</p>
-
+<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
 
 
 
 <h3>Step 2:</h3>
-
-
 <p> Think of a short keyword describing a password, e.g. &#8220;amazon&#8221;,
 &#8220;gmail&#8221;, etc. This word has to be easy to remember and there is no need for
 it to be unique or hard to guess.</p>
 
-
-
-
-<table border=0>
+&lt;table border=0&gt;
 <tr><th>Keyword</th><th>Password</th></tr>
-<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly /></td></tr>
-<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly /></td></tr>
-</table>
+<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly="" /></td></tr>
 
-
-<br>
-
-
+<br />
 <p>That&#8217;s it! You can regenerate any of the passwords above at any time by coming back to this page, all you need to know is the passphrase (and the keywords).</p>
 
 
-<p></fieldset>
-</form>
+
+
 <span style="font-size: 12px">Fine print: This is a proof-of-concept, use at your own risk!</span>
-<body onload="clear_all()"></body></p>
+<body onload="clear_all()" />
+
 
 <h2>How does it work?</h2>
 
-
-<p>First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
+First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
 excellent <a href="https://github.com/Caligatio/jsSHA">jsSHA</a> Javascript SHA lib and
 <a href="https://github.com/lowe">Dan Wheeler&#8217;s</a> amazing <a href="https://github.com/lowe/zxcvbn">zxcvbn</a>
-password strength checking lib.</p>
+password strength checking lib.
 
-<p>All we are doing here is computing a SHA-512 of the passphrase +
+All we are doing here is computing a SHA-512 of the passphrase +
 keyword, then selecting a substring of the result. (We also append a 0
 and/or a ! to satisfy most password checker requirements for numbers
-and punctuation).</p>
+and punctuation).
 
-<p>If you don&#8217;t trust that generated passwords are strong, just paste
+If you don&#8217;t trust that generated passwords are strong, just paste
 them into the passphrase field, I assure you, no password here will
-ever be weak. (Or, rather, it is <em>extremely</em> unlikely).</p>
+ever be weak. (Or, rather, it is <em>extremely</em> unlikely).
 
-<p>Some improvements could be made, but the point here is that there is
+Some improvements could be made, but the point here is that there is
 no reason to keep encrypted files with your passwords along with
 software to open them around, all that&#8217;s needed is <em>one</em> strong
-password and a well established and easily available algorithm.</p>
+password and a well established and easily available algorithm.
+
+
+</td></tr></td></tr></p></fieldset></form>
 </div>
 
 
@@ -319,21 +314,41 @@ password and a well established and easily available algorithm.</p>
 <aside class="sidebar">
   
     
+
 <section>
-  <div style="width: 50%; margin: 0 auto;">
-  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
-    data-show-count="">Follow @humblehack</a>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
   </div>
+</div>
 </section>
 
 <section>
   <h1>About Me</h1>
-  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
   <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
 </section>
 <section>
@@ -341,23 +356,23 @@ password and a well established and easily available algorithm.</p>
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
       </li>
     
   </ul>

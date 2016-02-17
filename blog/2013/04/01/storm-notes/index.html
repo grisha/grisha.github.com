@@ -31,6 +31,22 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -113,7 +129,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
 clear I have found a perfect use for it. (This is not
 a criticism of Storm, the point is that the concepts it introduces are
 new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz&#8217;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
+understanding of Storm concepts is to watch Nathan Marz’s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>. </p>
 
 <p>In simple terms, Storm is a tool that lets you run code in parallel
 across a cluster of servers. It differs from Map/Reduce in that the
@@ -127,14 +143,14 @@ such as grouping data by using hashing, etc.</p>
 <p>Storm is mainly meant for stream processing. A stream could be
 anything, some of the most obvious examples may be your web logs,
 tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it&#8217;s
+purchases, trades, etc. If the data is coming in at a rate where it’s
 challenging to process it on one server, Storm provides a way to scale
 it across a cluster of servers and can handle ridiculous amounts of
 incoming data. The result is a real-time view of summary data that is
 always up to date.</p>
 
 <p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as &#8220;native&#8221;. Storm also provides a
+denominator, so any JVM language should work as “native”. Storm also provides a
 primitive for using pipes to a process which means that you can write
 a component in anything - from a Bash script to C, all it needs to do
 is read stdin and write stdout.</p>
@@ -148,20 +164,24 @@ time is well worth any trade offs, and you always have the option of
 perfecting it later by porting your code to something JVM-native when
 your understanding of how it ought to work is solidified in your mind.</p>
 
-<p>If you&#8217;re going to go the Redstorm route, a couple of gotchas that I
+<p>If you’re going to go the Redstorm route, a couple of gotchas that I
 came across were:</p>
 
 <ul>
-<li><p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don&#8217;t know what the solution is if you absolutely must parse
+  <li>
+    <p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
+jar (snakeyaml). Don’t know what the solution is if you absolutely must parse
 Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p></li>
-<li><p>If you&#8217;re going to use ActiveRecord (which does work fine), watch
+use something other than Yaml: JSON or just plain eval().</p>
+  </li>
+  <li>
+    <p>If you’re going to use ActiveRecord (which does work fine), watch
 out for how to properly use it in a multi-threaded environment. You
 might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
 You will also need make sure your ActiveRecord connections are not
 shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p></li>
+<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p>
+  </li>
 </ul>
 
 </div>
@@ -223,21 +243,41 @@ shared by concurrent threads by using
 <aside class="sidebar">
   
     
+
 <section>
-  <div style="width: 50%; margin: 0 auto;">
-  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
-    data-show-count="">Follow @humblehack</a>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
   </div>
+</div>
 </section>
 
 <section>
   <h1>About Me</h1>
-  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
   <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
 </section>
 <section>
@@ -245,23 +285,23 @@ shared by concurrent threads by using
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
       </li>
     
   </ul>

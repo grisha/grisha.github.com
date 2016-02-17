@@ -1,0 +1,530 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Storing Time Series in PostgreSQL efficiently - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="With the latest advances in PostgreSQL (and other db’s), a relational
+database begins to look like a very viable TS storage platform. In
+this write &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Storing Time Series in PostgreSQL Efficiently</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-09-23T22:01:00-04:00" pubdate data-updated="true">Sep 23<span>rd</span>, 2015</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>With the latest advances in PostgreSQL (and other db’s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL.</p>
+
+<p>A TS is a series of [timestamp, measurement] pairs, where measurement
+is typically a floating point number. These pairs (aka “data points”)
+usually arrive at a high and steady rate. As time goes on, detailed
+data usually becomes less interesting and is often consolidated into
+larger time intervals until ultimately it is expired.</p>
+
+<h2 id="the-obvious-approach">The obvious approach</h2>
+
+<p>The “naive” approach is a three-column table, like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(Let’s gloss over some details such as an index on the time column and
+choice of data type for time and value as it’s not relevant to this
+discussion.)</p>
+
+<p>One problem with this is the inefficiency of appending data. An insert
+requires a look up of the new id, locking and (usually) blocks until
+the data is synced to disk. Given the TS’s “firehose” nature, the
+database can quite quickly get overwhelmed.</p>
+
+<p>This approach also does not address consolidation and eventual
+expiration of older data points.</p>
+
+<h2 id="round-robin-database">Round-robin database</h2>
+
+<p>A better alternative is something called a <em>round-robin database</em>.  An
+RRD is a circular structure with a separately stored pointer denoting
+the last element and its timestamp.</p>
+
+<p>A everyday life example of an RRD is a week. Imagine a structure of 7
+slots, one for each day of the week. If you know today’s date and day
+of the week, you can easily infer the date for each slot. For example
+if today is Tuesday, April 1, 2008, then the Monday slot refers to
+March 31st, Sunday to March 30th and (most notably) Wednesday to March
+26.</p>
+
+<p>Here’s what a 7-day RRD of average temperature might look as of
+Tuesday, April 1:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                    <span class="o">^</span>
+</span><span class="line">                    <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                         <span class="o">^</span>
+</span><span class="line">                         <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Note how little has changed, and that the update required no
+allocation of space: all we did to record 92F on Wednesday is
+overwrite one value. Even more remarkably, the previous value
+automatically “expired” when we overwrote it, thus solving the
+eventual expiration problem without any additional operations.</p>
+
+<p>RRD’s are also very space-efficient. In the above example we specified
+the date of every slot for clarity. In an actual implementation only
+the date of the last slot needs to be stored, thus the RRD can be kept
+as a sequence of 7 numbers plus the position of the last entry and
+it’s timestamp. In Python syntax it’d look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
+
+<p>Here is a naive approach to having a round-robin table. Carrying on
+with our 7 day RRD example, it might look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
+</span><span class="line"><span class="o">---------+--------</span>
+</span><span class="line">     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
+</span><span class="line">     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
+</span><span class="line">     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
+</span><span class="line">     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
+</span><span class="line">     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
+</span><span class="line">     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
+</span><span class="line">     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Somewhere separately we’d also need to record that the last entry is
+week_day 3 (Tuesday) and it’s 2008-04-01. Come April 2, we could
+record the temperature using:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This might be okay for a 7-slot RRD, but a more typical TS might have
+a slot per minute going back 90 days, which would require 129600
+rows. For recording data points one at a time it might be fast enough,
+but to copy the whole RRD would require 129600 UPDATE statements which
+is not very efficient.</p>
+
+<p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
+
+<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
+
+<p>An array would allow us to store the whole series in a single
+row. Sticking with the 7-day RRD example, our table would be created
+as follows:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+(Nevemind that there is no id column for now)</p>
+
+<p>We could populate the whole RRD in a single statement:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+…or record 92F for Wednesday as so:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
+(In PostgreSQL arrays are 1-based, not 0-based like in most
+programming languages)</p>
+
+<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
+
+<p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
+make sense to keep chunks in which our RRD is written to disk in line
+with page size, or at least smaller than one page. (PostgreSQL provides
+configuration parameters for how much of a page is used, etc, but this
+is way beyond the scope of this article).</p>
+
+<p>Having the series split into chunks also paves the way for some kind
+of a caching layer, we could have a server which waits for one row
+worth of data points to accumulate, then flushes then all at once.</p>
+
+<p>For simplicity, let’s take the above example and expand the RRD to 4
+weeks, while keeping 1 week per row. In our table definition we need
+provide a way for keeping the order of every row of the TS with a
+column named n, and while we’re at it, we might as well introduce a
+notion of an id, so as to be able to store multiple TS in the same
+table.</p>
+
+<p>Let’s start with two tables, one called rrd where we would store the
+last position and date, and another called ts which would store the
+actual data.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We could then populate the TS with fictitious data like so:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>To update the data for April 2, we would:
+&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<span class="line-number">2</span>
+&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+
+<p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
+
+<p>This article omits a lot of detail such as having resolution finer
+than one day, but it does describe the general idea. For an actual
+implementation of this you might want to check out a project I’ve been
+working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-09-23T22:01:00-04:00" pubdate data-updated="true">Sep 23<span>rd</span>, 2015</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/" data-via="humblehack" data-counturl="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/05/04/recording-time-series/" title="Previous Post: Time Series Accuracy - Graphite vs RRDTool">&laquo; Time Series Accuracy - Graphite vs RRDTool</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/" title="Next Post: Holt-Winters Forecasting for Dummies (or Developers) - Part I">Holt-Winters Forecasting for Dummies (or Developers) - Part I &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+    </script>
+  </div>
+</div>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 50%; margin: 0 auto;">
+  <a href="http://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="http://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2016 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/';
+        var disqus_url = 'http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
