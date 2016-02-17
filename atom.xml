@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-16T22:43:55-05:00</updated>
+  <updated>2016-02-16T22:44:47-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -162,7 +162,8 @@ but two data points. In Python:</p>
 </span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>And here is a picture of double exponential smoothing in action.</p>
+<p>And here is a picture of double exponential smoothing in action (the
+green dotted line).</p>
 
 <p><img src="http://grisha.org/images/hw03.png" /></p>
 
