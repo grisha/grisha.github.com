@@ -2,106 +2,106 @@
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
         <loc>http://grisha.org/blog/2013/03/25/how-does-this-work/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/03/27/on-prioritization/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/04/01/storm-notes/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/
         </loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/
         </loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/05/23/checking-out-cloudera-impala/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/05/31/compiling-impala-from-github/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/06/06/avro/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/06/11/avro-performance/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/06/21/on-converting-json-to-avro/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/
         </loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/10/10/mod-python-performance/</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/10/25/mod-python-the-long-story/</loc>
-        <lastmod>2016-02-16T21:33:03-05:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/</loc>
-        <lastmod>2016-02-16T21:33:03-05:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
             http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/
         </loc>
-        <lastmod>2016-02-16T21:33:03-05:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2016-02-16T21:33:03-05:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
-        <lastmod>2013-10-30T15:29:57-04:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2016-02-16T21:33:03-05:00</lastmod>
+        <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
 </urlset>
