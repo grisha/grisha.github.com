@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-16T21:28:05-05:00</updated>
+  <updated>2016-02-16T21:31:26-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,7 @@
     <link href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/"/>
     <updated>2016-02-16T13:05:00-05:00</updated>
     <id>http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii</id>
-    <content type="html"><![CDATA[<p>If you haven’t read <a href="triple-exponential-smoothing-forecasting">Part I</a>,
+    <content type="html"><![CDATA[<p>If you haven’t read <a href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
 you probably should, or the following will be hard to make sense of.</p>
 
 <p>All the forecasting methods we covered so far, including single
@@ -617,7 +617,7 @@ weighted moving average and, finally, simple exponential smoothing.</p>
 remarkably, they can only forecast a <em>single</em> point. That’s correct,
 just one.</p>
 
-<p>In <a href="#">Part II</a> we will focus on methods that can forecast more than
+<p>In <a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
 one point.</p>
 ]]></content>
   </entry>
