@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-16T22:10:46-05:00</updated>
+  <updated>2016-02-16T22:26:56-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -495,8 +495,8 @@ forecasts (except for naive).</p>
 
 <p>It’s important to understand that which of the above methods is better
 very much depends on the nature of the series. The order in which I
-presented them was from simple to complex, but that complex doesn’t
-necessarily mean better.</p>
+presented them was from simple to complex, but “more complex” doesn’t
+necessarily mean “better”.</p>
 
 <h3 id="single-exponential-smoothing">Single Exponential Smoothing</h3>
 
