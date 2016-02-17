@@ -211,7 +211,7 @@ expected $\hat{y}$.</p>
 <script type="math/tex; mode=display">% <![CDATA[
 
 \begin{align}
-& \ell_x = \alpha \cdot y_x + (1-\alpha) \cdot \ell_{x-1} & \mbox{(level)} \\
+& \ell_x = \alpha \cdot y_x + (1-\alpha) \cdot (\ell_{x-1} + b_{x-1})& \mbox{(level)} \\
 & b_x = \beta \cdot (\ell_x - \ell_{x-1}) + (1-\beta) \cdot b_{x-1} & \mbox{(trend)} \\
 & \hat{y}_x = \ell_x + b_x & \mbox{(forecast)}\\
 \end{align}
@@ -747,7 +747,7 @@ several). The process of finding the best $\alpha$ is referred to as
 <p>We’ve learned some history, basic terminology (series and how it knows
 no time, method, error SSE, MSE and fitting). And we’ve learned some
 basic forecasting methods: naive, simple average, moving average,
-weighted moving average and, finally, simple exponential smoothing.</p>
+weighted moving average and, finally, single exponential smoothing.</p>
 
 <p>One very important characteristic of all of the above methods is that
 remarkably, they can only forecast a <em>single</em> point. That’s correct,
