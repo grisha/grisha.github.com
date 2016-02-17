@@ -402,7 +402,7 @@ _fitting_ and we will discuss it later separately.
 We've learned some history, basic terminology (series and how it knows
 no time, method, error SSE, MSE and fitting). And we've learned some
 basic forecasting methods: naive, simple average, moving average,
-weighted moving average and, finally, simple exponential smoothing.
+weighted moving average and, finally, single exponential smoothing.
 
 One very important characteristic of all of the above methods is that
 remarkably, they can only forecast a _single_ point. That's correct,

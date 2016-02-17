@@ -91,7 +91,7 @@ expected $\hat{y}$.
 
 $$
 \begin{align}
-& \ell_x = \alpha \cdot y_x + (1-\alpha) \cdot \ell_{x-1} & \mbox{(level)} \\
+& \ell_x = \alpha \cdot y_x + (1-\alpha) \cdot (\ell_{x-1} + b_{x-1})& \mbox{(level)} \\
 & b_x = \beta \cdot (\ell_x - \ell_{x-1}) + (1-\beta) \cdot b_{x-1} & \mbox{(trend)} \\
 & \hat{y}_x = \ell_x + b_x & \mbox{(forecast)}\\
 \end{align}
