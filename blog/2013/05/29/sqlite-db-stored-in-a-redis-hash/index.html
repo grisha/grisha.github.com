@@ -32,22 +32,6 @@ store by virtue of B-Trees. This sounded great in theory, but I &hellip;">
 <link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 <link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
-<!-- MathJax -->
-<!-- mathjax config similar to math.stackexchange -->
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-  jax: ["input/TeX", "output/HTML-CSS"],
-  tex2jax: {
-    inlineMath: [ ['$', '$'] ],
-    displayMath: [ ['$$', '$$']],
-    processEscapes: true,
-  },
-  messageStyle: "none",
-  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
-  });
-</script>
-<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
-
   
   <script type="text/javascript">
     var _gaq = _gaq || [];
@@ -126,100 +110,102 @@ store by virtue of B-Trees. This sounded great in theory, but I &hellip;">
 <div class="entry-content"><p>In a <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">recent post</a>
 I explained how a relational database could be backed by a key-value
 store by virtue of B-Trees. This sounded great in theory, but I wanted
-to see that it actually works. And so last night I wrote a 
-<a href="https://github.com/grisha/thredis/commit/2beaee3a13f0dbe0c161470da04ef8af21d78fc9">commit</a> to 
+to see that it actually works. And so last night I wrote a
+<a href="https://github.com/grisha/thredis/commit/2beaee3a13f0dbe0c161470da04ef8af21d78fc9">commit</a> to
 <a href="http://thredis.org/">Thredis</a>, which does exactly that.</p>
 
-<p>If you’re not familiar with Thredis - it’s something I hacked together
+<p>If you&#8217;re not familiar with Thredis - it&#8217;s something I hacked together
 last Christmas. Thredis started out as threaded Redis, but eventually
 evolved into SQLite + Redis. Thredis uses a separate file to save
-SQLite data. But with this patch it’s no longer necessary - a SQLite
+SQLite data. But with this patch it&#8217;s no longer necessary - a SQLite
 DB is entirely stored in a Redis Hash object.</p>
 
 <p>A very neat side-effect of this little hack is that it lets a SQLite
 database be automatically replicated using Redis replication.</p>
 
 <p>I was able to code this fairly easily because SQLite provides a very nice way of
-implementing a custom <a href="http://www.sqlite.org/vfs.html">Virtual File System</a> (VFS).  </p>
+implementing a custom <a href="http://www.sqlite.org/vfs.html">Virtual File System</a> (VFS).</p>
 
 <p>Granted this is only proof-of-concept and not anything you should dare
-use anywhere near production, it’s enough to get a little taste, so
-let’s start an empty Thredis instance and create a SQL table:</p>
+use anywhere near production, it&#8217;s enough to get a little taste, so
+let&#8217;s start an empty Thredis instance and create a SQL table:</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">$ redis-cli
-</span><span class="line">redis 127.0.0.1:6379&gt; sql "create table test (a int, b text)"
-</span><span class="line">(integer) 0
-</span><span class="line">redis 127.0.0.1:6379&gt; sql "insert into test values (1, 'hello')"
-</span><span class="line">(integer) 1
-</span><span class="line">redis 127.0.0.1:6379&gt; sql "select * from test"
-</span><span class="line">1) 1) 1) "a"
-</span><span class="line">      2) "int"
-</span><span class="line">   2) 1) "b"
-</span><span class="line">      2) "text"
-</span><span class="line">2) 1) (integer) 1
-</span><span class="line">   2) "hello"
-</span><span class="line">redis 127.0.0.1:6379&gt; 
-</span></code></pre></td></tr></table></div></figure></notextile></div>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ redis-cli
+</span><span class='line'>redis 127.0.0.1:6379&gt; sql "create table test (a int, b text)"
+</span><span class='line'>(integer) 0
+</span><span class='line'>redis 127.0.0.1:6379&gt; sql "insert into test values (1, 'hello')"
+</span><span class='line'>(integer) 1
+</span><span class='line'>redis 127.0.0.1:6379&gt; sql "select * from test"
+</span><span class='line'>1) 1) 1) "a"
+</span><span class='line'>      2) "int"
+</span><span class='line'>   2) 1) "b"
+</span><span class='line'>      2) "text"
+</span><span class='line'>2) 1) (integer) 1
+</span><span class='line'>   2) "hello"
+</span><span class='line'>redis 127.0.0.1:6379&gt; 
+</span></code></pre></td></tr></table></div></figure>
 
-<p>Now let’s start a slave on a different port and fire up another
+
+<p>Now let&#8217;s start a slave on a different port and fire up another
 redis-client to connect to it. (This means <code>slaveof</code> is set to
-localhost:6379 and <code>slave-read-only</code> is set to false, I won’t bore you
+localhost:6379 and <code>slave-read-only</code> is set to false, I won&#8217;t bore you
 with a paste of the config here).</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">$ redis-cli -p 6380
-</span><span class="line">redis 127.0.0.1:6380&gt; sql "select * from test"
-</span><span class="line">1) 1) 1) "a"
-</span><span class="line">      2) "int"
-</span><span class="line">   2) 1) "b"
-</span><span class="line">      2) "text"
-</span><span class="line">2) 1) (integer) 1
-</span><span class="line">   2) "hello"
-</span><span class="line">redis 127.0.0.1:6380&gt; </span></code></pre></td></tr></table></div></figure></notextile></div>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ redis-cli -p 6380
+</span><span class='line'>redis 127.0.0.1:6380&gt; sql "select * from test"
+</span><span class='line'>1) 1) 1) "a"
+</span><span class='line'>      2) "int"
+</span><span class='line'>   2) 1) "b"
+</span><span class='line'>      2) "text"
+</span><span class='line'>2) 1) (integer) 1
+</span><span class='line'>   2) "hello"
+</span><span class='line'>redis 127.0.0.1:6380&gt; </span></code></pre></td></tr></table></div></figure>
 
-<p>Here you go - the DB’s replicated!</p>
+
+<p>Here you go - the DB&#8217;s replicated!</p>
 
 <p>You can also see what SQLite data looks like in Redis (not terribly exciting):</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">redis 127.0.0.1:6379&gt; hlen _sql:redis_db
-</span><span class="line">(integer) 2
-</span><span class="line">redis 127.0.0.1:6379&gt; hget _sql:redis_db 0
-</span><span class="line">"SQLite format 3\x00 \x00\x01\x01\x00@  \x00\x00\x00\x02\x00\x00\x00\x02\x00\x00 ...</span></code></pre></td></tr></table></div></figure></notextile></div>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>redis 127.0.0.1:6379&gt; hlen _sql:redis_db
+</span><span class='line'>(integer) 2
+</span><span class='line'>redis 127.0.0.1:6379&gt; hget _sql:redis_db 0
+</span><span class='line'>"SQLite format 3\x00 \x00\x01\x01\x00@  \x00\x00\x00\x02\x00\x00\x00\x02\x00\x00 ...</span></code></pre></td></tr></table></div></figure>
+
 
 <p>Another potential benefit to this approach is that with not too much
-more tinkering the database could be backed by 
+more tinkering the database could be backed by
 <a href="http://redis.io/topics/cluster-spec">Redis Cluster</a>, which would give you a
 fully-functional horizontally-scalable clustered in-memory SQL
 database.  Of course, only the <em>store</em> would be distributed, not the
 query <em>processing</em>. So this would be no match to Impala and the like
-which can process queries in a distributed fasion, but still, it’s
-pretty cool for some 300 lines of code, n’est-ce pas?</p>
-
+which can process queries in a distributed fasion, but still, it&#8217;s
+pretty cool for some 300 lines of code, n&#8217;est-ce pas?</p>
 </div>
 
 
@@ -279,41 +265,21 @@ pretty cool for some 300 lines of code, n’est-ce pas?</p>
 <aside class="sidebar">
   
     
-
 <section>
-<script type="text/javascript"><!--
-google_ad_client = "pub-9718360309690383";
-google_ad_width = 200;
-google_ad_height = 200;
-google_ad_format = "200x200_as";
-google_ad_type = "image";
-//-->
-</script>
-<div style="text-align: center;">
-  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
-    <script type="text/javascript"
-            src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
-    </script>
-  </div>
-</div>
-</section>
-
-<section>
-  <h1>About Me</h1>
-
-  <p>
   <div style="width: 50%; margin: 0 auto;">
   <a href="http://twitter.com/humblehack" class="twitter-follow-button"
     data-show-count="">Follow @humblehack</a>
   </div>
-  </p>
+</section>
 
-  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+<section>
+  <h1>About Me</h1>
+  <p>I am currently a (Big Data) Hacker at <a href="http://livingsocial.com">LivingSocial</a>.</p>
   <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on "Big Data" type stuff.</p>
   <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
 </section>
 <section>
@@ -321,23 +287,23 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
+        <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
+        <a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL efficiently</a>
+        <a href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a>
+        <a href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015/03/28/on-time-series/">On Time Series</a>
+        <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/">Running a WSGI app on Apache should not be this hard</a>
       </li>
     
   </ul>
