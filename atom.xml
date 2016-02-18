@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-17T20:49:17-05:00</updated>
+  <updated>2016-02-18T10:04:31-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -470,6 +470,8 @@ also known as the Holt-Winters method, is one of the many methods or
 algorithms that can be used to forecast data points in a series,
 provided that the series is “seasonal”, i.e. repetitive over some
 period.</p>
+
+<p><img src="http://grisha.org/images/hw00.png" /></p>
 
 <h1 id="a-little-history">A little history</h1>
 
