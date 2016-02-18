@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-17T20:41:05-05:00</updated>
+  <updated>2016-02-17T20:49:17-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -611,8 +611,9 @@ Sometimes you may come across <em><a href="https://en.wikipedia.org/wiki/Residua
 
 <p>In the next few examples we are going to be using this tiny series:</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">series = [3,10,12,13,12,10,12]</span></code></pre></td></tr></table></div></figure></notextile></div>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">12</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>(Feel free to paste it and any of the following code snippets into your Python
 <a href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">repl</a>)</p>
@@ -644,18 +645,18 @@ simplistic approach.</p>
 <p>(Okay, this formula is only here because I think the <a href="https://en.wikipedia.org/wiki/Summation">capital Sigma</a>
 looks cool. I am sincerely hoping that the average requires no explanation.) In Python:</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
 <span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">def average(series):
-</span><span class="line">    return float(sum(series))/len(series)
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">average</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 </span><span class="line">
-</span><span class="line"># Given the above series, the average is:
-</span><span class="line"># &gt;&gt;&gt; average(series)
-</span><span class="line"># 10.285714285714286
+</span><span class="line"><span class="c"># Given the above series, the average is:</span>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series)</span>
+</span><span class="line"><span class="c"># 10.285714285714286</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>As a forecasting method, there are actually situations where it’s spot
@@ -669,7 +670,7 @@ points. Obviously the thinking here is that only the recent values
 matter. Calculation of the moving average involves what is sometimes
 called a “sliding window” of size $n$:</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -677,14 +678,15 @@ called a “sliding window” of size $n$:</p>
 <span class="line-number">6</span>
 <span class="line-number">7</span>
 <span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class=""><span class="line"># moving average using n last points
-</span><span class="line">def moving_average(series, n):
-</span><span class="line">    return average(series[-n:])
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># moving average using n last points</span>
+</span><span class="line"><span class="k">def</span> <span class="nf">moving_average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">average</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:])</span>
 </span><span class="line">
-</span><span class="line"># &gt;&gt;&gt; moving_average(series, 3)
-</span><span class="line"># 11.333333333333334
-</span><span class="line"># &gt;&gt;&gt; moving_average(series, 4)
-</span><span class="line"># 11.75</span></code></pre></td></tr></table></div></figure></notextile></div>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; moving_average(series, 3)</span>
+</span><span class="line"><span class="c"># 11.333333333333334</span>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; moving_average(series, 4)</span>
+</span><span class="line"><span class="c"># 11.75</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>A moving average can actually be quite effective, especially if you
 pick the right $n$ for the series. Stock analysts adore it.</p>
@@ -693,7 +695,7 @@ pick the right $n$ for the series. Stock analysts adore it.</p>
 the two functions above could be re-written as a single recursive one
 (just for fun):</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -702,15 +704,16 @@ the two functions above could be re-written as a single recursive one
 <span class="line-number">7</span>
 <span class="line-number">8</span>
 <span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">def average(series, n=None):
-</span><span class="line">    if n is None:
-</span><span class="line">        return average(series, len(series))
-</span><span class="line">    return float(sum(series[-n:]))/n
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+</span><span class="line">    <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+</span><span class="line">        <span class="k">return</span> <span class="n">average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span><span class="o">/</span><span class="n">n</span>
 </span><span class="line">
-</span><span class="line"># &gt;&gt;&gt; average(series, 3)
-</span><span class="line"># 11.333333333333334
-</span><span class="line"># &gt;&gt;&gt; average(series)
-</span><span class="line"># 10.285714285714286</span></code></pre></td></tr></table></div></figure></notextile></div>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series, 3)</span>
+</span><span class="line"><span class="c"># 11.333333333333334</span>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series)</span>
+</span><span class="line"><span class="c"># 10.285714285714286</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <h3 id="weighted-moving-average">Weighted Moving Average</h3>
 
@@ -723,7 +726,7 @@ more recent points matter more.</p>
 0.2, 0.3, 0.4]</code> as weights, we would be giving 10%, 20%, 30% and 40%
 to the last 4 points respectively. In Python:</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -734,17 +737,17 @@ to the last 4 points respectively. In Python:</p>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
 <span class="line-number">11</span>
-</pre></td><td class="code"><pre><code class=""><span class="line"># weighted average, weights is a list of weights
-</span><span class="line">def weighted_average(series, weights):
-</span><span class="line">    result = 0.0
-</span><span class="line">    weights.reverse()
-</span><span class="line">    for n in range(len(weights)):
-</span><span class="line">        result += series[-n-1] * weights[n]
-</span><span class="line">    return result
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># weighted average, weights is a list of weights</span>
+</span><span class="line"><span class="k">def</span> <span class="nf">weighted_average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span class="line">    <span class="n">weights</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)):</span>
+</span><span class="line">        <span class="n">result</span> <span class="o">+=</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
 </span><span class="line">
-</span><span class="line"># &gt;&gt;&gt; weights = [0.1, 0.2, 0.3, 0.4]
-</span><span class="line"># &gt;&gt;&gt; weighted_average(series, weights)
-</span><span class="line"># 11.5
+</span><span class="line"><span class="c"># &gt;&gt;&gt; weights = [0.1, 0.2, 0.3, 0.4]</span>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; weighted_average(series, weights)</span>
+</span><span class="line"><span class="c"># 11.5</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Weighted moving average is fundamental to what follows, please take a
