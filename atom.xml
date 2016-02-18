@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-18T10:04:31-05:00</updated>
+  <updated>2016-02-18T11:05:16-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -456,7 +456,9 @@ we’ll finally talk about triple exponential smoothing.</p>
     <link href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/"/>
     <updated>2016-01-29T15:36:00-05:00</updated>
     <id>http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting</id>
-    <content type="html"><![CDATA[<p>This three part write up is my attempt at a down-to-earth explanation of the
+    <content type="html"><![CDATA[<p>This three part write up [<a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+<a href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
+is my attempt at a down-to-earth explanation of the
 Holt-Winters method for those of us who while hypothetically might be
 quite good at math, still try to avoid it at every opportunity. I had
 to dive into this subject while tinkering on
