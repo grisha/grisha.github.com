@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-17T20:11:49-05:00</updated>
+  <updated>2016-02-17T20:15:51-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -259,19 +259,19 @@ series, followed by the last 24 points from the result of the
 
 <p><img src="http://grisha.org/images/hw05.png" /></p>
 
-<h3 id="a-note-on-alpha-beta-and-gamma">A Note on Alpha, Beta and Gamma</h3>
+<h3 id="a-note-on---and-">A Note on α, β and γ</h3>
 
 <p>You may be wondering how I came up with 0.716, 0.029 and 0.993 for
-alpha, beta and gamma, respectively. To make long story short, you it
-is done by way of trial and error - running the algorithm over and
+$\alpha$, $\beta$ and $\gamma$, respectively. To make long story short, it
+was done by way of trial and error: simply running the algorithm over and
 over again and selecting the values that give you the smallest
 <a href="https://en.wikipedia.org/wiki/Residual_sum_of_squares">SSE</a>. As I
 mentioned before, this process is known as <em>fitting</em>.</p>
 
-<p>If you want to compute the smothing factors to three decimal points
-you may have to run through 1,000,000,000 iterations, but luckily
+<p>To compute the smothing factors to three decimal points
+we may have to run through 1,000,000,000 iterations, but luckily
 there are more efficient methods at zooming in on best
-values. Unfortunately this would be whole other very long post to
+values. Unfortunately this would take a whole other very long post to
 describe this process. One good algorithm for this is
 <a href="https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method">Nelder-Mead</a>,
 which is what <a href="https://github.com/tgres/tgres">tgres</a> uses.</p>
