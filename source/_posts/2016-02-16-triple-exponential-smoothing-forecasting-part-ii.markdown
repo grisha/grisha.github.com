@@ -91,9 +91,9 @@ expected $\hat{y}$.
 
 $$
 \begin{align}
-& \ell_x = \alpha \cdot y_x + (1-\alpha) \cdot (\ell_{x-1} + b_{x-1})& \mbox{(level)} \\
-& b_x = \beta \cdot (\ell_x - \ell_{x-1}) + (1-\beta) \cdot b_{x-1} & \mbox{(trend)} \\
-& \hat{y}_x = \ell_x + b_x & \mbox{(forecast)}\\
+& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
+& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
+& \hat{y}_x = \ell_x + b_x & \mbox{forecast}\\
 \end{align}
 $$
 
@@ -134,7 +134,8 @@ def double_exponential_smoothing(series, alpha, beta):
 # [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]
 {% endcodeblock %}
 
-And here is a picture of of double exponential smoothing in action.
+And here is a picture of double exponential smoothing in action (the
+green dotted line).
 
 {% img /images/hw03.png %}
 
@@ -145,5 +146,5 @@ level and a trend, and we have learned how to appliy exponential
 smoothing to each of them to be able to forecast not one, but two
 points.
 
-Hold on for part III which will finally talk about triple exponential
-smoothing.
+In [Part III](/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/)
+we'll finally talk about triple exponential smoothing.
