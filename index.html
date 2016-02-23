@@ -1247,15 +1247,19 @@ as follows:</p>
 
 <p>(Nevemind that there is no id column for now)</p>
 
-<p>We could populate the whole RRD in a single statement:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
-…or record 92F for Wednesday as so:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
-(In PostgreSQL arrays are 1-based, not 0-based like in most
+<p>We could populate the whole RRD in a single statement:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>…or record 92F for Wednesday as so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(In PostgreSQL arrays are 1-based, not 0-based like in most
 programming languages)</p>
 
 <h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
@@ -1301,27 +1305,29 @@ actual data.</p>
 </span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>We could then populate the TS with fictitious data like so:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>We could then populate the TS with fictitious data like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
 <span class="line-number">6</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
 </span><span class="line">
 </span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
 </span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
 </span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
 </span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>To update the data for April 2, we would:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>To update the data for April 2, we would:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
 </span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
 
