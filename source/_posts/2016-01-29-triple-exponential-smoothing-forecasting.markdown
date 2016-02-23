@@ -6,11 +6,13 @@ comments: true
 categories:
 ---
 
-This write up is my attempt at a down-to-earth explanation of the
+This three part write up [[Part II](/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/)
+[Part III](/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/)]
+is my attempt at a down-to-earth explanation (and Python code) of the
 Holt-Winters method for those of us who while hypothetically might be
 quite good at math, still try to avoid it at every opportunity. I had
 to dive into this subject while tinkering on
-[tgres](https://github.com/tgres/tgres). And
+[tgres](https://github.com/tgres/tgres) (which features a Golang implementation). And
 having found it somewhat complex (and yet so brilliantly
 simple), figured that it'd be good to share this knowledge, and
 in the process, to hopefully solidify it in my head as well.
@@ -20,6 +22,8 @@ also known as the Holt-Winters method, is one of the many methods or
 algorithms that can be used to forecast data points in a series,
 provided that the series is "seasonal", i.e. repetitive over some
 period.
+
+{% img /images/hw00.png %}
 
 # A little history
 
@@ -161,9 +165,9 @@ Sometimes you may come across _[Mean Squared Error](https://en.wikipedia.org/wik
 
 In the next few examples we are going to be using this tiny series:
 
-```
+{% codeblock lang:python %}
 series = [3,10,12,13,12,10,12]
-```
+{% endcodeblock %}
 
 (Feel free to paste it and any of the following code snippets into your Python
 [repl](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop))
@@ -197,7 +201,7 @@ $$
 looks cool. I am sincerely hoping that the average requires no explanation.) In Python:
 
 
-```
+{% codeblock lang:python %}
 def average(series):
     return float(sum(series))/len(series)
 
@@ -205,7 +209,7 @@ def average(series):
 # >>> average(series)
 # 10.285714285714286
 
-```
+{% endcodeblock %}
 
 As a forecasting method, there are actually situations where it's spot
 on. For example your final school grade may be the average of all the
@@ -218,7 +222,7 @@ points. Obviously the thinking here is that only the recent values
 matter. Calculation of the moving average involves what is sometimes
 called a "sliding window" of size $n$:
 
-```
+{% codeblock lang:python %}
 # moving average using n last points
 def moving_average(series, n):
     return average(series[-n:])
@@ -227,7 +231,7 @@ def moving_average(series, n):
 # 11.333333333333334
 # >>> moving_average(series, 4)
 # 11.75
-```
+{% endcodeblock %}
 
 A moving average can actually be quite effective, especially if you
 pick the right $n$ for the series. Stock analysts adore it.
@@ -236,7 +240,7 @@ Also note that simple average is a variation of a moving average, thus
 the two functions above could be re-written as a single recursive one
 (just for fun):
 
-```
+{% codeblock lang:python %}
 def average(series, n=None):
     if n is None:
         return average(series, len(series))
@@ -246,7 +250,7 @@ def average(series, n=None):
 # 11.333333333333334
 # >>> average(series)
 # 10.285714285714286
-```
+{% endcodeblock %}
 
 ### Weighted Moving Average
 
@@ -259,7 +263,7 @@ Instead of selecting a window size, it requires a list of weights
 0.2, 0.3, 0.4]` as weights, we would be giving 10%, 20%, 30% and 40%
 to the last 4 points respectively. In Python:
 
-```
+{% codeblock lang:python %}
 # weighted average, weights is a list of weights
 def weighted_average(series, weights):
     result = 0.0
@@ -271,8 +275,7 @@ def weighted_average(series, weights):
 # >>> weights = [0.1, 0.2, 0.3, 0.4]
 # >>> weighted_average(series, weights)
 # 11.5
-
-```
+{% endcodeblock %}
 
 Weighted moving average is fundamental to what follows, please take a
 moment to understand it, give it a think before reading on.

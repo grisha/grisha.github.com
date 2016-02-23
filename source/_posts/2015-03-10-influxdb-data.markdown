@@ -69,6 +69,7 @@ There is no need to create series or measurements, they are created on
 the fly.
 
 To list the measurements, we can use `SHOW MEASUREMENTS`:
+
 ```
 > show measurements
 name            tags    name
@@ -76,6 +77,7 @@ name            tags    name
 measurements            disk
 ```
 We can use `SHOW SERIES` to list the series:
+
 ```
 > show series
 name    tags    id      server   unit
@@ -86,6 +88,7 @@ disk            1       bw123    1
 If we send a record that contains different tags, we automatically
 create a different series (or so it seems), for example if we send
 this (note we changed "unit" to "foo"):
+
 ```
 {"database" : "foo", "retentionPolicy" : "bar",
  "points" : [
@@ -179,5 +182,3 @@ decommission a node or re-balance the cluster similar to the Hadoop
 balancer, etc. I think as of this writing this has not been fully
 implemented yet, and there is no documentation, but hopefully it's
 coming soon.
-
-

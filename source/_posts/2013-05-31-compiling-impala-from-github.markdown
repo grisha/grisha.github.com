@@ -3,7 +3,7 @@ layout: post
 title: "Compiling Impala from Github"
 date: 2013-05-31 10:48
 comments: true
-categories: 
+categories:
 ---
 
 Apparently Impala has two versions of source code, one internal to
@@ -15,7 +15,7 @@ available code to the official Impala (binary) release, currently 1.0.
 Anyway, I tried compiling the github code last night, and here are the
 steps that worked for me.
 
-My setup: 
+My setup:
 
 - Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).
 
@@ -40,6 +40,7 @@ git branch -v
 ```
 
 - Install Impala pre-requisites as per Impala README, except for Boost:
+
 ```
 sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel \
     make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn \
@@ -52,6 +53,7 @@ sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-deve
 
 - Remove the CentOS version of Boost (1.41) if you have it. Impala
   needs uuid, which is only supported in 1.42 and later:
+
 ```sh
 # YMMV - this is how I did it, you may want to be more cautious
 sudo yum erase `rpm -qa | grep boost`
@@ -74,5 +76,3 @@ sudo ./bjam --libdir=/usr/lib64 threading=multi --layout=tagged install
   [http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz](http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz) instead
 
 - Now you should be able to compile Impala - just follow the steps in the README starting with `. bin/impala-config.sh`
-
-

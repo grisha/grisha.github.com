@@ -124,21 +124,27 @@ This is where using PostgrSQL _arrays_ become very useful.
 An array would allow us to store the whole series in a single
 row. Sticking with the 7-day RRD example, our table would be created
 as follows:
+
 ```sql
 CREATE TABLE ts (dp DOUBLE PRECISION[] NOT NULL DEFAULT '{}',
                  last_date DATE,
                  pos INT);
 ```
+
 (Nevemind that there is no id column for now)
 
 We could populate the whole RRD in a single statement:
+
 ```sql
 INSERT INTO ts VALUES('{79,82,90,69,75,80,81}', '2008-08-01', 3);
 ```
+
 ...or record 92F for Wednesday as so:
+
 ```sql
 UPDATE ts SET dp[4] = 92, last_date = '2008-04-02', pos = 4;
 ```
+
 (In PostgreSQL arrays are 1-based, not 0-based like in most
 programming languages)
 
@@ -178,6 +184,7 @@ CREATE TABLE ts (
 ```
 
 We could then populate the TS with fictitious data like so:
+
 ```sql
 INSERT INTO rrd (id, last_date, last_pos) VALUES (1, '2008-04-01', 24);
 
@@ -188,6 +195,7 @@ INSERT INTO ts VALUES (1, 4, '{79,82,90,69,75,80,81}');
 ```
 
 To update the data for April 2, we would:
+
 ```sql
 UPDATE ts SET dp[4] = 92 WHERE rrd_id = 1 AND n = 4;
 UPDATE rrd SET last_date = '2008-04-02', last_pos = 25 WHERE id = 1;

@@ -3,7 +3,7 @@ layout: post
 title: "Apache Avro"
 date: 2013-06-06 22:53
 comments: true
-categories: 
+categories:
 ---
 
 ## Short version
@@ -30,10 +30,10 @@ finding the bad record and figuring out the root cause of the problem
 is usually difficult and often even impossible.
 
 So you might be considering a slightly more rigid and space efficient
-format, and in the Hadoop world it is [Apache Avro](http://en.wikipedia.org/wiki/Apache_Avro). 
+format, and in the Hadoop world it is [Apache Avro](http://en.wikipedia.org/wiki/Apache_Avro).
 [Avro](http://avro.apache.org/docs/current/) is especially
-compelling because it is supported by 
-[Impala](http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/), 
+compelling because it is supported by
+[Impala](http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/),
 while JSON isn't (not yet, at least).
 
 Named after a [British aircraft maker](http://en.wikipedia.org/wiki/Avro), Avro is a schema-enforced
@@ -41,7 +41,7 @@ format for serializing arbitrary data. It is in the same category as
 [Thrift](http://en.wikipedia.org/wiki/Thrift_%28protocol%29), only it seems like Thrift has found its niche in
 RPC, whereas Avro appears more compelling as the on-disk
 format (even though both Avro and Thrift were designed for both storage
-and RPC). Thrift seems more insistent on you using its code 
+and RPC). Thrift seems more insistent on you using its code
 generator, whereas Avro does it the old-school way, but providing
 you libraries you can use in your code. (It does code generation as
 well, if that's your thing. I prefer to hand-write all my code).
@@ -77,7 +77,7 @@ called *schema resolution*.
 
 First we need an Avro file. Our schema is just one string column named
 "test". Here's a quick Ruby program to generate a file of 10 random
-records (you'll need to `gem install avro`): 
+records (you'll need to `gem install avro`):
 
 ```ruby
 require 'rubygems'
@@ -133,6 +133,7 @@ X6935 Y5523
 ```
 
 Now we also happen to have Impala running, let's see if it's able to read this file:
+
 ```sql
 > select * from test_avro;
 Query: select * from test_avro
@@ -172,7 +173,7 @@ keyword this time, we're appending a second file to our table).
 ```sql
 hive> LOAD DATA LOCAL INPATH 'test2.avro' INTO TABLE test_avro;
 OK
-hive> select * from test_avro;                                           
+hive> select * from test_avro;
 OK
 X1800 Y9002
 X3859 Y8971
@@ -187,6 +188,7 @@ records as before, and the 3 new ones got converted to Hive's version
 of the schema, where the "age" column does not exist.
 
 Let's see what Impala thinks of this:
+
 ```sql
 > select * from test_avro;
 Query: select * from test_avro
@@ -207,6 +209,7 @@ regarding this on the Impala users list, awaiting response).
 
 Now let's alter the table schema so that age is part of it. (This is
 not your typical ALTER TABLE, we're just changing `avro.schema.literal`).
+
 ```sql
 hive> ALTER TABLE test_avro SET TBLPROPERTIES (
     'avro.schema.literal'='{"name":"test_record",
@@ -233,7 +236,7 @@ hive> ALTER TABLE test_avro SET TBLPROPERTIES (
                               {"name":"full_name", "type":"string"},
                               {"name":"age",  "type":"int", "default":999}]}');
 OK
-hive> select * from test_avro;                                                       
+hive> select * from test_avro;
 OK
 X1800 Y9002     999
 X3859 Y8971     999

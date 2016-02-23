@@ -126,6 +126,7 @@ WSGIScriptAlias / /home/grisha/mp_test/htdocs/mp_wsgi.py
 ```
 
 For uWSGI (I am not an expert), I first used the following command:
+
 ```
 /home/grisha/src/mp_test/bin/uwsgi \
    --http 0.0.0.0:8888 \
@@ -218,4 +219,3 @@ can crank out "Hello world!".
 
 Last, but not least, mod_python 3.4.1 (used in this article) is
 ready for pre-release testing, please help me [test it](https://github.com/grisha/mod_python/issues/8)!
-

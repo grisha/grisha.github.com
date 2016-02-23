@@ -200,6 +200,7 @@ problems with 25 threads). --single-interpreter didn't seem to have
 any significant impact.
 
 The actual uWSGI command was:
+
 ```
 uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L
 ```
