@@ -1946,40 +1946,43 @@ the combination of the measurement name and the tags.</p>
 <p>There is no need to create series or measurements, they are created on
 the fly.</p>
 
-<p>To list the measurements, we can use <code>SHOW MEASUREMENTS</code>:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>To list the measurements, we can use <code>SHOW MEASUREMENTS</code>:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">&gt; show measurements
+</pre></td><td class="code"><pre><code class=""><span class="line">&gt; show measurements
 </span><span class="line">name            tags    name
 </span><span class="line">----            ----    ----
-</span><span class="line">measurements            disk</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;
-We can use <code>SHOW SERIES</code> to list the series:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+</span><span class="line">measurements            disk</span></code></pre></td></tr></table></div></figure></notextile></div>
+<p>We can use <code>SHOW SERIES</code> to list the series:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">&gt; show series
+</pre></td><td class="code"><pre><code class=""><span class="line">&gt; show series
 </span><span class="line">name    tags    id      server   unit
 </span><span class="line">----    ----    --      -------  ----
-</span><span class="line">disk            1       bw123    1</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span><span class="line">disk            1       bw123    1</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>If we send a record that contains different tags, we automatically
 create a different series (or so it seems), for example if we send
-this (note we changed “unit” to “foo”):
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+this (note we changed “unit” to “foo”):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
 <span class="line-number">6</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">{"database" : "foo", "retentionPolicy" : "bar",
+</pre></td><td class="code"><pre><code class=""><span class="line">{"database" : "foo", "retentionPolicy" : "bar",
 </span><span class="line"> "points" : [
 </span><span class="line">   {"name" : "disk",
 </span><span class="line">    "tags" : {"server" : "bwi23", "foo" : "bar"},
 </span><span class="line">    "timestamp" : "2015-03-16T01:02:26.234Z",
-</span><span class="line">    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span><span class="line">    "fields" : {"total" : 100, "used" : 40, "free" : 60}}]}</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>we get</p>
 
@@ -2068,7 +2071,6 @@ decommission a node or re-balance the cluster similar to the Hadoop
 balancer, etc. I think as of this writing this has not been fully
 implemented yet, and there is no documentation, but hopefully it’s
 coming soon.</p>
-
 </div>
   
   
