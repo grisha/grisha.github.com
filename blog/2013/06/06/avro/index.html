@@ -147,10 +147,10 @@ finding the bad record and figuring out the root cause of the problem
 is usually difficult and often even impossible.</p>
 
 <p>So you might be considering a slightly more rigid and space efficient
-format, and in the Hadoop world it is <a href="http://en.wikipedia.org/wiki/Apache_Avro">Apache Avro</a>. 
+format, and in the Hadoop world it is <a href="http://en.wikipedia.org/wiki/Apache_Avro">Apache Avro</a>.
 <a href="http://avro.apache.org/docs/current/">Avro</a> is especially
-compelling because it is supported by 
-<a href="http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/">Impala</a>, 
+compelling because it is supported by
+<a href="http://blog.cloudera.com/blog/2013/05/cloudera-impala-1-0-its-here-its-real-its-already-the-standard-for-sql-on-hadoop/">Impala</a>,
 while JSON isn’t (not yet, at least).</p>
 
 <p>Named after a <a href="http://en.wikipedia.org/wiki/Avro">British aircraft maker</a>, Avro is a schema-enforced
@@ -158,7 +158,7 @@ format for serializing arbitrary data. It is in the same category as
 <a href="http://en.wikipedia.org/wiki/Thrift_%28protocol%29">Thrift</a>, only it seems like Thrift has found its niche in
 RPC, whereas Avro appears more compelling as the on-disk
 format (even though both Avro and Thrift were designed for both storage
-and RPC). Thrift seems more insistent on you using its code 
+and RPC). Thrift seems more insistent on you using its code
 generator, whereas Avro does it the old-school way, but providing
 you libraries you can use in your code. (It does code generation as
 well, if that’s your thing. I prefer to hand-write all my code).</p>
@@ -194,7 +194,7 @@ called <em>schema resolution</em>.</p>
 
 <p>First we need an Avro file. Our schema is just one string column named
 “test”. Here’s a quick Ruby program to generate a file of 10 random
-records (you’ll need to <code>gem install avro</code>): </p>
+records (you’ll need to <code>gem install avro</code>):</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
@@ -278,8 +278,9 @@ property.</p>
 </span><span class="line"><span class="n">X6935</span> <span class="n">Y5523</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>Now we also happen to have Impala running, let’s see if it’s able to read this file:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>Now we also happen to have Impala running, let’s see if it’s able to read this file:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -289,7 +290,7 @@ property.</p>
 <span class="line-number">8</span>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
 </span><span class="line"><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
 </span><span class="line"><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
 </span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
@@ -299,7 +300,7 @@ property.</p>
 </span><span class="line"><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
 </span><span class="line"><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
 </span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>So far so good! Now let’s create a second avro file, with one
 additional column <code>age</code>, using the following Ruby:</p>
@@ -363,8 +364,9 @@ keyword this time, we’re appending a second file to our table).</p>
 records as before, and the 3 new ones got converted to Hive’s version
 of the schema, where the “age” column does not exist.</p>
 
-<p>Let’s see what Impala thinks of this:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>Let’s see what Impala thinks of this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -374,7 +376,7 @@ of the schema, where the “age” column does not exist.</p>
 <span class="line-number">8</span>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
 </span><span class="line"><span class="n">Query</span><span class="p">:</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span>
 </span><span class="line"><span class="n">Query</span> <span class="n">finished</span><span class="p">,</span> <span class="n">fetching</span> <span class="n">results</span> <span class="p">...</span>
 </span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
@@ -384,7 +386,7 @@ of the schema, where the “age” column does not exist.</p>
 </span><span class="line"><span class="o">|</span> <span class="n">X3859</span> <span class="n">Y8971</span> <span class="o">|</span>
 </span><span class="line"><span class="o">|</span> <span class="n">X6935</span> <span class="n">Y5523</span> <span class="o">|</span>
 </span><span class="line"><span class="o">+</span><span class="c1">-------------+</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Alas - we’re only getting the 3 original rows. Bummer! What’s
 worrisome is that <em>no indication</em> was given to us that 3 other rows got
@@ -392,8 +394,9 @@ swallowed because Impala didn’t do schema resolution. (I’ve posted
 regarding this on the Impala users list, awaiting response).</p>
 
 <p>Now let’s alter the table schema so that age is part of it. (This is
-not your typical ALTER TABLE, we’re just changing <code>avro.schema.literal</code>).
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+not your typical ALTER TABLE, we’re just changing <code>avro.schema.literal</code>).</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
@@ -403,7 +406,7 @@ not your typical ALTER TABLE, we’re just changing <code>avro.schema.literal</c
 <span class="line-number">8</span>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_avro</span> <span class="k">SET</span> <span class="n">TBLPROPERTIES</span> <span class="p">(</span>
 </span><span class="line">    <span class="s1">&#39;avro.schema.literal&#39;</span><span class="o">=</span><span class="s1">&#39;{&quot;name&quot;:&quot;test_record&quot;,</span>
 </span><span class="line"><span class="s1">                            &quot;type&quot;:&quot;record&quot;,</span>
 </span><span class="line"><span class="s1">                            &quot;fields&quot;: [</span>
@@ -413,7 +416,7 @@ not your typical ALTER TABLE, we’re just changing <code>avro.schema.literal</c
 </span><span class="line"><span class="n">hive</span><span class="o">&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">test_avro</span><span class="p">;</span>
 </span><span class="line"><span class="n">OK</span>
 </span><span class="line"><span class="n">Failed</span> <span class="k">with</span> <span class="n">exception</span> <span class="n">java</span><span class="p">.</span><span class="n">io</span><span class="p">.</span><span class="n">IOException</span><span class="p">:</span><span class="n">org</span><span class="p">.</span><span class="n">apache</span><span class="p">.</span><span class="n">avro</span><span class="p">.</span><span class="n">AvroTypeException</span><span class="p">:</span> <span class="k">Found</span> <span class="n">test_record</span><span class="p">,</span> <span class="n">expecting</span> <span class="n">test_record</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>This error should not be surprising. Hive is trying to provide a value
 for <code>age</code> for those records where it did not exist, but we neglected
