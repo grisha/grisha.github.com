@@ -94,7 +94,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/</loc>
-        <lastmod>2016-02-16T22:09:27-05:00</lastmod>
+        <lastmod>2016-02-23T12:41:20-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/</loc>
@@ -140,7 +140,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2016-02-23T12:39:53-05:00</lastmod>
+        <lastmod>2016-02-23T12:41:20-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -148,6 +148,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2016-02-23T12:39:53-05:00</lastmod>
+        <lastmod>2016-02-23T12:41:20-05:00</lastmod>
     </url>
 </urlset>

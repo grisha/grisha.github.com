@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-02-23T12:40:01-05:00</updated>
+  <updated>2016-02-23T12:41:24-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -2530,9 +2530,10 @@ workers) reduced r/s to 55925 (by half, which is weird - mod_python has no
 problems with 25 threads). –single-interpreter didn’t seem to have
 any significant impact.</p>
 
-<p>The actual uWSGI command was:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class=""><span class="line">uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+<p>The actual uWSGI command was:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">uwsgi -s logs/uwsgi.sock --pp htdocs  -M -p 16 --threads 1 -w mp_wsgi -z 30 -l 120 -L</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>A note on the uWSGI performance. Initially it seemed to be
 outperforming the mod_python handler by nearly a factor of two. Then
