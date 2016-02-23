@@ -132,7 +132,7 @@ available code to the official Impala (binary) release, currently 1.0.</p>
 <p>Anyway, I tried compiling the github code last night, and here are the
 steps that worked for me.</p>
 
-<p>My setup: </p>
+<p>My setup:</p>
 
 <ul>
   <li>
@@ -169,15 +169,16 @@ just ran yum install as described in the installation guide.</p>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <ul>
-  <li>Install Impala pre-requisites as per Impala README, except for Boost:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span></figure></notextile></li>
+  <li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
 </ul>
-<p>&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sh"><span class="line">sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
 </span><span class="line">    make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn <span class="se">\</span>
 </span><span class="line">    libevent-devel cyrus-sasl-devel wget git unzip
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/notextile&gt;&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <ul>
   <li>
@@ -188,14 +189,15 @@ just ran yum install as described in the installation guide.</p>
   </li>
   <li>
     <p>Remove the CentOS version of Boost (1.41) if you have it. Impala
-needs uuid, which is only supported in 1.42 and later:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
-<span class="line-number">2</span></figure></notextile></p>
+needs uuid, which is only supported in 1.42 and later:</p>
   </li>
 </ul>
-<p>&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="sh"><span class="line"><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
 </span><span class="line">sudo yum erase <span class="sb">`</span>rpm -qa | grep boost<span class="sb">`</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;&lt;/figure&gt;&lt;/notextile&gt;&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <ul>
   <li>
@@ -227,7 +229,6 @@ needs uuid, which is only supported in 1.42 and later:
     <p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p>
   </li>
 </ul>
-
 </div>
 
 
