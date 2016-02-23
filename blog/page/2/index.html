@@ -854,14 +854,15 @@ then another 500K for the actual measurement.</p>
 </span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>For uWSGI (I am not an expert), I first used the following command:
-&lt;div class=&#8217;bogus-wrapper&#8217;&gt;<notextile><figure class="code">&lt;figcaption&gt;<span></span>&lt;/figcaption&gt;&lt;div class=&#8221;highlight&#8221;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&#8221;gutter&#8221;&gt;&lt;pre class=&#8221;line-numbers&#8221;&gt;<span class="line-number">1</span>
+<p>For uWSGI (I am not an expert), I first used the following command:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
-&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#8217;code&#8217;&gt;&lt;pre&gt;<code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
 </span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
 </span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
-</span></code>&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;</figure></notextile>&lt;/div&gt;</p>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Which yielded a pretty dismal result, so I tried using a unix socket
 <code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
@@ -962,7 +963,6 @@ can crank out “Hello world!”.</p>
 
 <p>Last, but not least, mod_python 3.4.1 (used in this article) is
 ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
-
 </div>
   
   
