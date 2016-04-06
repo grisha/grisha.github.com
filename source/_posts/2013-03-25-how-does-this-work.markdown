@@ -14,6 +14,7 @@ And I Tweet, too?
 <blockquote class="twitter-tweet"><p>Thanks to Octopress and Github pages I now have a blog: <a href="http://t.co/yKm0TVRMMu" title="http://grisha.org/">grisha.org</a></p>&mdash; Grisha Trubetskoy (@humblehack) <a href="https://twitter.com/humblehack/status/316339220371349508">March 26, 2013</a></blockquote>
 <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
-
-    
-
+<p>
+<a href="https://www.youtube.com/channel/UCPL5zsiUm0Psny8xD3mK1pg">A link to Gregory Trubetskoy videos</a>
+or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
+</p>
