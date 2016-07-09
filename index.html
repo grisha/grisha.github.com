@@ -364,7 +364,7 @@ here it is in Python. The result is a season-length array of seasonal components
 </span><span class="line">    <span class="k">return</span> <span class="n">seasonals</span>
 </span><span class="line">
 </span><span class="line"><span class="c"># &gt;&gt;&gt; initial_seasonal_components(series, 12)</span>
-</span><span class="line"><span class="c"># {0: 0.7239775628255621, 1: 0.44551357823820403, 2: 0.7319527959882016, 3: 0.8111360166299738, 4: 1.1264658229988345, 5: 1.292031539537972, 6: 1.6164889793493173, 7: 1.3577242858829093, 8: 0.9645963718333742, 9: 1.067206834525068, 10: 0.8792926517545249, 11: 0.9836135604360585}</span>
+</span><span class="line"><span class="c"># {0: -7.4305555555555545, 1: -15.097222222222221, 2: -7.263888888888888, 3: -5.097222222222222, 4: 3.402777777777778, 5: 8.069444444444445, 6: 16.569444444444446, 7: 9.736111111111112, 8: -0.7638888888888887, 9: 1.902777777777778, 10: -3.263888888888889, 11: -0.7638888888888887}</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <h3 id="the-algorithm">The Algorithm</h3>
@@ -419,7 +419,7 @@ forecasted.:</p>
 </span><span class="line">
 </span><span class="line"><span class="c"># # forecast 24 points (i.e. two seasons)</span>
 </span><span class="line"><span class="c"># &gt;&gt;&gt; triple_exponential_smoothing(series, 12, 0.716, 0.029, 0.993, 24)</span>
-</span><span class="line"><span class="c"># [30, 20.052662759277222, 28.15220274074342, 30.249475572455367, 39.45956689718808, ...</span>
+</span><span class="line"><span class="c"># [30, 20.34449316666667, 28.410051892109554, 30.438122252647577, 39.466817731253066, ...</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>And here is what this looks like if we were to plot the original
