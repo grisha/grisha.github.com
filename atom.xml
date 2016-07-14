@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-07-09T10:23:17-04:00</updated>
+  <updated>2016-07-14T11:52:37-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -271,7 +271,7 @@ forecasted.:</p>
 </span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </span><span class="line">            <span class="k">continue</span>
 </span><span class="line">        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
-</span><span class="line">            <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">            <span class="n">m</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 </span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">smooth</span> <span class="o">+</span> <span class="n">m</span><span class="o">*</span><span class="n">trend</span><span class="p">)</span> <span class="o">+</span> <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span>
 </span><span class="line">        <span class="k">else</span><span class="p">:</span>
 </span><span class="line">            <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
