@@ -24,7 +24,7 @@ could accomplish such a tedious task, but I have say my confidence in
 Terraform grew the more I used it.
 
 The main top level tool for everything is the good old
-[make](https://en.wikipedia.org/wiki/Make_%28software%29),a tool that
+[make](https://en.wikipedia.org/wiki/Make_%28software%29), a tool that
 stood the test of time.
 
 Here is the code of the example, read the README, I hope you find it
