@@ -179,25 +179,24 @@ the network admins of the then burgeoning Internet realized that TS is
 essential to device monitoring, not much has happened.</p>
 
 <p><a href="http://oss.oetiker.ch/rrdtool/">RRDTool</a> was definitely a major step
-forward from MRTG which was merely a Perl script. RRDTool is to this
-day is the best C implementation of a round-robin database for time
-series data. Similarly to MRTG, RRDTool was designed as a command-line
-tool, the server component was left as an exercise for the user. And
-even though linking RRDTool into your app was not too difficult
-(I <a href="https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c">did it</a>
+forward from MRTG which was merely a Perl script. RRDTool to this day
+is the best implementation of a round-robin database for time series
+data (in C to boot). Similarly to MRTG, RRDTool was designed as a command-line tool,
+the server component was left as an exercise for the user. And even
+though linking RRDTool into your app was not too difficult (I <a href="https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c">did
+it</a>
 in 2004), somehow an “RRD server” never appeared.</p>
 
-<p>Then there was <a href="https://graphiteapp.org/">Graphite</a>. I think Graphite
-is a reflection of the Python-can-do-anything era. Graphite borrowed a
-lot of ideas from RRDTool, though its re-implementation of round-robin
-on-disk files in pure Python while <a href="http://graphite.wikidot.com/whisper">claiming superiority</a>
-is not that much better, if at all,  IMHO when compared to RRDTool
-in both accuracy and performance. In general
-though, I think storing data directly infiles is the wrong approach to
-begin with.</p>
+<p>Then there was <a href="https://graphiteapp.org/">Graphite</a>. (I think Graphite
+is a reflection of the Python-can-do-anything era.) Graphite borrowed
+a lot of ideas from RRDTool, though its re-implementation of
+round-robin on-disk files in pure Python while <a href="http://graphite.wikidot.com/whisper">claiming superiority</a> is not that much
+better, if at all, IMHO when compared to RRDTool in both accuracy and
+performance. In general though, I think storing data directly in files
+is the wrong approach to begin with.</p>
 
-<p>Graphite’s appeal was (is?) that it’s an easy-to-start server that did
-everything, and it became especially popular along side
+<p>Graphite’s appeal is that it’s an easy-to-start server that does
+everything, and it became especially popular alongside
 <a href="https://github.com/etsy/statsd/wiki">Statsd</a> a tool with umpteen
 different implementation designed to sit in front of
 Graphite. Eventually people stopped using Graphite to make charts
@@ -225,18 +224,15 @@ mainstream application development.</p>
 <h3 id="data-isolation">Data isolation</h3>
 
 <p>Virtually all of the aforementioned tools contribute to a problem I
-dub <em>data isolation</em>. We are so used to it, we don’t even
-question it.</p>
-
-<p>Data isolation is when a part of our data is stored using a separate
-tool in a different format and is therefore not as easily accessible.
-For example if our metrics are in Graphite, we probably don’t even
-know how to get them out of it, nor does it occur to us that it might
-be useful.  All we’ve been able to do is get a Grafana chart and are
-quite satisfied with it. We do not question why it isn’t a first-class
-citizen right in the database as a table, where we could use it in SQL
-joins, for example. Or export it to our big data rig and query it with
-Hive or Spark, etc.</p>
+dub <em>data isolation</em>. Data isolation is when a part of our data is
+stored using a separate tool in a different format and is therefore
+not as easily accessible.  For example if our metrics are in Graphite,
+we probably don’t even know how to get them out of it, nor does it
+occur to us that it might be useful.  All we’ve been able to do is get
+a Grafana chart and are quite satisfied with it. We do not question
+why it isn’t a first-class citizen right in the database as a table,
+where we could use it in SQL joins, for example. Or export it to our
+big data rig and query it with Hive or Spark, etc.</p>
 
 <p>Why is getting a quick chart of customer sign-ups per second next to
 all my customer data such a big deal these days? Why can’t it be as
@@ -460,14 +456,12 @@ it addresses the horizontal scaling problem.</p>
 
 <h2 id="theres-still-lots-to-do">There’s still lots to do…</h2>
 
-<p>There’s still a lot of work to be on Tgres. For one thing, I don’t
-have any tests. This is mainly because I don’t believe in testing that
-which hasn’t “gelled”, and I wouldn’t be surprised if the above
-organization of packages and how they interface changes as I
-understand the problem better.</p>
-
-<p>We also need documentation. And some real-life use/testing/feedback
-would be great as well.</p>
+<p>There’s still a lot of work to be done on Tgres. For one thing, I
+don’t have any tests. This is mainly because I don’t believe in
+testing that which hasn’t “gelled”, and I wouldn’t be surprised if the
+above organization of packages and how they interface changes as I
+understand the problem better. We also need documentation. And some
+real-life use/testing/feedback would be great as well.</p>
 </div>
   
   
