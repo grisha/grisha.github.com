@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-07-31T20:45:08-04:00</updated>
+  <updated>2016-07-31T20:45:41-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -21,7 +21,7 @@
     <content type="html"><![CDATA[<p>It’s been over a year since I began hacking on
 <a href="http://github.com/tgres/tgres">Tgres</a>. Tgres came about when I first
 decided to dive into <a href="https://golang.org/">Go</a>. Go could do great
-stuff, but didn’t see how it applied to anything I was working on at
+stuff, but I didn’t see how it applied to anything I was working on at
 the time. I needed a project that was a better match for the domain of
 applications that Go aims for, something where performance and scale
 matter, something with concurrent moving pieces, something
