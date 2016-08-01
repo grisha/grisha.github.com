@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-07-31T20:46:50-04:00</updated>
+  <updated>2016-07-31T20:48:58-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -53,7 +53,7 @@ used as a standalone server or as a Go package compiled into your app.</p>
 
 <p>Don’t get too excited just yet, Tgres is still not production quality,
 though it’s probably stable enough for someone who knows their way
-around Go to give it a whirl. At this point I am definitely proved the
+around Go to give it a whirl. At this point I have proven the
 concept, and believe the architecture is sound, but the magnitude of
 the project turned out to be much grater than I originally pictured,
 and so it still needs lots and lots of proofreading, t’s crossed and
