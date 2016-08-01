@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-07-31T20:45:41-04:00</updated>
+  <updated>2016-07-31T20:46:50-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[State of Tgres - Summer 2016]]></title>
+    <title type="html"><![CDATA[Introducing Tgres - A Time Series DB on top of PostgreSQL]]></title>
     <link href="http://grisha.org/blog/2016/07/29/state-of-tgres-2016/"/>
     <updated>2016-07-29T10:12:00-04:00</updated>
     <id>http://grisha.org/blog/2016/07/29/state-of-tgres-2016</id>
