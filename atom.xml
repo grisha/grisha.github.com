@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-07-31T20:52:59-04:00</updated>
+  <updated>2016-07-31T20:54:33-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -81,11 +81,11 @@ in 2004), somehow an “RRD server” never appeared.</p>
 <p>Then there was <a href="https://graphiteapp.org/">Graphite</a>. I think Graphite
 is a reflection of the Python-can-do-anything era. Graphite borrowed a
 lot of ideas from RRDTool, though its re-implementation of round-robin
-on-disk files in pure Python while <a href="http://graphite.wikidot.com/whisper">claiming
-superiority</a> is not that great
-IMHO when compared to RRDTool in both accuracy and performance. In
-general though, I think storing data directly infiles is the wrong
-approach to begin with.</p>
+on-disk files in pure Python while <a href="http://graphite.wikidot.com/whisper">claiming superiority</a>
+is not that much better, if at all,  IMHO when compared to RRDTool
+in both accuracy and performance. In general
+though, I think storing data directly infiles is the wrong approach to
+begin with.</p>
 
 <p>Graphite’s appeal was (is?) that it’s an easy-to-start server that did
 everything, and it became especially popular along side
