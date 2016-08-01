@@ -1,0 +1,347 @@
+---
+layout: post
+title: "State of Tgres - Summer 2016"
+date: 2016-07-29 10:12
+comments: true
+categories:
+---
+
+It's been over a year since I began hacking on
+[Tgres](http://github.com/tgres/tgres). Tgres came about when I first
+decided to dive into [Go](https://golang.org/). I really liked what Go
+could do, but didn't see how it applied to anything I was working on
+at the time. I needed a project that was a better match for the domain
+of applications that Go aims for, something where performance and
+scale matter, something with concurrent moving pieces, something
+challenging. A "time series database" seemed like it had potential. It
+has all kinds of curious requirements that could be great fun to
+implement in Go.
+
+## What is Tgres
+
+So Tgres is a metrics collection and storage server, aka a time series
+database. I'm not very comfortable with referring to it as a
+_database_, because at least in case of Tgres, the database is
+actually PostgreSQL. But also "database" to me is in the same category
+as "operating system" or "compiler", a thing so advanced that only few
+can claim to be it without appearing pretentious. But for the sake of
+tautology avoidance, I might occasionally refer to Tgres as a TS
+database.
+
+Ulike [Graphite](https://graphiteapp.org/) or
+[RRDTool](http://oss.oetiker.ch/rrdtool/), Tgres produces no charts,
+it assumes you're using something like
+[Grafana](http://grafana.org/). Currently Tgres supports most of the
+Graphite functionality (including vast majority of the functions) as
+well as Statsd functionality. Tgres supports clustering, albeit
+whereby all nodes must share the PostgreSQL instance. Tgres can be
+used as a standalone server or as a Go package compiled into your app.
+
+### Current status
+
+Don't get too excited just yet, Tgres is still not production quality,
+though it's probably stable enough for someone who knows their way
+around Go to give it a whirl. At this point I am definitely proved the
+concept, and believe the architecture is sound, but the magnitude of
+the project turned out to be much grater than I originally pictured,
+and so it still needs lots and lots of proofreading, t's crossed and
+i's dotted.
+
+## Raisons d'etre
+
+### Present state of "time series databases" is dismal
+
+I was (and still am) frustrated with the state of TS in our
+industry. Since the appearance of
+[MRTG](http://oss.oetiker.ch/mrtg/doc/mrtg.en.html) back in 1995 when
+the network admins of the then burgeoning Internet realized that TS is
+essential to device monitoring, not much has happened.
+
+[RRDTool](http://oss.oetiker.ch/rrdtool/) was definitely a major step
+forward from MRTG which was merely a Perl script. RRDTool is to this
+day is the best C implementation of a round-robin database for time
+series data. Similarly to MRTG, RRDTool was designed as a command-line
+tool, the server component was left as an exercise for the user. And
+even though linking RRDTool into your app was not too difficult
+(I [did it](https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c)
+in 2004), somehow an "RRD server" never appeared.
+
+Then there was [Graphite](https://graphiteapp.org/). Graphite is a
+reflection of the Python-can-do-anything era. Graphite borrowed a lot
+of ideas from RRDTool, but its re-implementation of round-robin
+on-disk files while [claiming superiority](http://graphite.wikidot.com/whisper) is actually
+[quite inferior](http://grisha.org/blog/2015/05/04/recording-time-series/)
+to RRDTool in both accuracy and performance.
+
+Graphite's appeal was that it was an easy-to-start server that did
+everything, and it became especially popular along side
+[Statsd](https://github.com/etsy/statsd/wiki) a tool with umpteen
+different implementation designed to sit in front of
+Graphite. Eventually people stopped using Graphite to make charts
+favoring instead the most excellent Grafana,
+while Graphite (or its nephew [Graphite-API](https://github.com/brutasse/graphite-api))
+became a UI-less server-only component to store and retrieve data.
+
+Graphite and RRDTool didn't scale very well, so for "Big Time Series"
+(as in very large networks, or specialized fields like finance,
+weather, etc.) people used solutions backed by
+[Cassandra](http://cassandra.apache.org/), [HBase](https://hbase.apache.org/),
+or [Solr](http://lucene.apache.org/solr/) such as
+[OpenTSDB](http://opentsdb.net/).
+
+There are also new kids on the block such as
+[InfluxDB](https://influxdata.com/) or
+[Prometheus](https://prometheus.io/), which are a little too flashy
+and commercial by my taste, each trying to solve problems that I don't
+think I have.
+
+Bottom line is that some 20 years after MRTG, time series remains
+mostly a system monitoring aid and has never crossed over to the
+mainstream application development.
+
+### Data isolation
+
+Virtually all of the aforementioned tools contribute to a problem I
+dub _data isolation_. We are so used to it, we don't even
+question it.
+
+Data isolation is when a part of our data is stored using a separate
+tool in a different format and is therefore not as easily accessible.
+For example if our metrics are in Graphite, we probably don't even
+know how to get them out of it, nor does it occur to us that it might
+be useful.  All we've been able to do is get a Grafana chart and are
+quite satisfied with it. We do not question why it isn't a first-class
+citizen right in the database as a table, where we could use it in SQL
+joins, for example. Or export it to our big data rig and query it with
+Hive or Spark, etc.
+
+Why is getting a quick chart of customer sign-ups per second next to
+all my customer data such a big deal these days? Why can't it be as
+simple as a model in my Rails or Django app?
+
+### PostgreSQL - Avoid the storage mire
+
+I believe that there is nothing about time series that makes it unfit
+for a relational database. Many projects out there are spinning
+their wheels solving the wrong problem, that of data storage. Storage
+is one of the hardest problems in computers, time series databases
+should focus on time series and delegate the storage to tried-and-true
+tools which are good at it.
+
+Time series data does carry certain special requirements, and I've
+researched extensively all different ways TS can be stored in a
+relational database. It does require taking advantage of some newer
+features that in the open source database world seem most available in
+PostgreSQL. I am guessing that with time these capabilities will
+become more available in other databases, and some of them already
+are, but for the time being I've decided that Tgres is
+PostgreSQL-only.
+
+## A bit of detail
+
+### Emulating Graphite as a starting point
+
+I would like Tgres to be useful. The simplest way I could think of
+achieving usefulness is by emulating an existing tool so that it can
+become a drop-in replacement. This makes adoption easy and it also
+proves that the underlying architecture is capable. It also lets us
+compare performance.
+
+It doesn't mean that I am a fan of how Graphite does things, but I
+think that if Tgres is architected in such a way that there is a lower
+level which does the heavy lifting and then a layer on top of it that
+makes it behave like Graphite, that's a great start, and it leaves
+options open for potential improvement and a different/better
+interface.
+
+### General terminology
+
+I always liked how RRDTool documentation broke down the problem of
+time series into concise and clear terms. Tgres tries to leverage the
+RRDTool terminology. Tgres also adopts the same techniques to the
+extent that is possible given a considerably different
+architecuture. Unlike RRDTool, Tgres uses a millisecond as the
+smallest unit of time measure.
+
+#### Data Point (DP)
+
+A _data point_ is a _value_ (a floating point number) a _time stamp_
+and a string _name_ identifying the series. (For a while I
+contemplated allowing a data point to have multiple values, but it
+made things too complicated, so I reverted to a single value per data
+point).
+
+#### Round-Robin Archive (RRA)
+
+Tgres stores data points in _round-robin archives_.  While
+"round-robin" is an implementation detail, it is part of the name
+because the only way it can be round-robin is the number of data
+points in the archive is constant. The size of the RRA is determined
+by the _step_ (resolution) and the size of the archive. Thus RRA's are
+defined by step and size, e.g. 10s for 24 hours (a data point every
+10s for 24 hours, or 8,640 points).
+
+A series is usually is stored in multiple RRA's. The RRA's typically
+have varying resolutions, e.g. we want a 10s step for the past 24h,
+but also a 1h step for a week and a 6h step for 3 years. In this
+example we have 3 RRA's. Tgres takes care of maintaining the RRA's and
+selecting the right resultion for a given query so that there is no
+need to deal with individual RRA's directly.
+
+#### Data Source (DS)
+
+A group of RRA's under the same identifier (aka series name) is
+referred to as a data source (DS). I suppose "DS" can be used
+interchangeably with "series". Depending on how Tgres is configured,
+DS's are either predefined or are created on the fly based on DS name
+matching rules.
+
+Note that Tgres does not store the original data points, but only the
+weighted averages of the received data points in each RRA. This is how
+RRDTool does it. Graphite doesn't bother averaging the points but
+simply discards previous data points within the same step. At first it
+may seem not ideal that the original data is discarded, but experience
+shows that just about any time series operation results in a
+conversion to a fixed interval form as the first step, so it might as
+well just be done upfront.
+
+#### Heartbeat (HB)
+
+Every DS has a _heartbeat_, a time duration which defines the longest
+possible period of inactivity before the DS becomes considered
+dysfunctional. If the heartbeat is exceeded, the data since the last
+update will be recorded as NaNs.
+
+#### Xfiles factor (XFF)
+
+When data is consolidated from smaller to larger step RRAs, the XFF
+determines how much of the data is allowed to be NaN before the
+consolidated value becomes NaN. For example if we are consolidating
+per-minute values into a per-hour value, if one of the minutes happens
+to be NaN, strictly speaking the whole hour ought ot be NaN, but that
+wouldn't be very useful. Default XFF is .5, i.e. more than half of the
+per-minute values should be NaN before the per-hour value is
+considered NaN.
+
+### Postgres storage format
+
+A time series is a series of floats. Note that when it's stored in
+RRA's, there is no need for timestamps - each position in an RRA has
+its timestamp defined by the current state of the RRA. If we know the
+timestamp of the tip, we know the timestamp of every element going
+back to the beginning of the RRA.
+
+To store data points Tgres takes advantage of PostgreSQL arrays. A
+single row stores many data points. Tgres further splits series into
+multiple rows to optimize the IO.
+
+To make the data easy to use, Tgres also creates a view which makes
+the data points structured as a regular table with a row per data
+point.
+
+There are only 3 tables and 1 view required for Tgres operation. You
+can use the same database you use for any other web app you have. This
+means you can access the time series by simply just adding a model
+pointing at the Tgres time series view to your Rails/Django/whatever
+to get access to the data.
+
+## Tgres components
+
+Tgres is organized as a set of Go packages.
+
+### tgres/daemon
+
+The [daemon](https://github.com/tgres/tgres/tree/master/daemon) is the
+main process that runs everything. It includes the config parser, and
+the listeners that receive and parse incoming data points using both
+UDP and TCP Graphite formats, as well as Python Pickle format (though
+I'm not sure who out there really uses it). It's not too hard to add
+more formats, for example I think it'd be neat if Tgres could receive
+data points via an HTTP pixel that could be embedded in web pages.
+
+The daemon also takes care of graceful restarts, logging and other
+typical long-running service stuff.
+
+### trges/tranceiver
+
+The[transceiver](https://github.com/tgres/tgres/tree/master/transceiver)
+is the data point router and cache. It maintains a set of workers
+responsible for writing the data points to their respective RRA's, as
+well as caching and periodic flushing of the cache. Flushing is done
+once a certian number of points has accumulated or a period of time
+has passed, but not more often than the minimal flush frequency (all
+configurable).
+
+### tgres/rrd
+
+The responsibility of [rrd](https://github.com/tgres/tgres/tree/master/rrd) is to add data
+points to RRA's. This is not as simple as it sounds, a good
+description of the concepts behind it is available here:
+http://rrdtool.vandenbogaerdt.nl/process.php#Rate
+
+### tgres/http
+
+[http](https://github.com/tgres/tgres/tree/master/http) is the place
+for all things related to HTTP, which currently is just the Graphite
+API. The API requests are passed down to the DSL level for processing.
+
+### tgres/dsl
+
+[dsl](https://github.com/tgres/tgres/tree/master/dsl) is an
+implementation of the Graphite
+[functions](http://graphite.readthedocs.io/en/latest/functions.html). There
+are a few differences because I used the Go parser which is nearly
+syntactically identical. (For example a series name cannot begin with
+a digit because that is not a proper Go identifier).
+
+Graphite has a lot number of functions available in its DSL, and I
+spent a lot of time during our beach vacation last summer trying to
+implement them all, but I think a few are still left undone. Some were
+harder than others, and some led me on side adventures such as
+figuring out the Holt-Winters triple exponential smoothing and how to
+do it correctly. (ZZZ - link)
+
+### tgres/serde
+
+The interface to the database is reduced to a fairly compact
+[SerDe](https://github.com/tgres/tgres/tree/master/serde)
+(Serialize-Deserializer) interface. While the SerDe itself is utterly
+simplistic (e.g. "get me this series"), the SQL behind it anything
+but, still, it should be possible to throw together an alternative
+SerDe for a different relational database (or not a database at all?).
+
+### tgres/statd
+
+[Statd](https://github.com/tgres/tgres/tree/master/statd) is currently
+in a separate Go package, but I might integrate with the RRD because
+it is not very clear that it needs to be a separate thing. Somehow it
+so happened that Graphite and Statd are two separate projects, but the
+reasons for this are probably more cultural than by design.
+
+### tgres/cluster
+
+[Cluster](https://github.com/tgres/tgres/tree/master/cluster) supports
+very basic clustering. At this point it's "good enough" given that
+it's OK to occasionally lose data points during cluster transitions
+and all that we want to make sure of is that nodes can come and go
+without disruptions.
+
+The principle behind cluster is that each node is responsible for one
+or more series and other nodes will forward data points to the
+responsible node. There is nearly zero configuration, and any node can
+act as the point of contact, i.e. there is no leader.
+
+The way clustering is done is in flux at the moment, we might change
+it to something more robust in the near future, but for the time being
+it addresses the horizontal scaling problem.
+
+## There's still lots to do...
+
+There's still a lot of work to be on Tgres. For one thing, I don't
+have any tests. This is mainly because I don't believe in testing that
+which hasn't "gelled", and I wouldn't be surprised if the above
+organization of packages and how they interface changes as I
+understand the problem better.
+
+We also need documentation. And some real-life use/testing/feedback
+would be great as well.
