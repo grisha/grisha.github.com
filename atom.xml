@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-02T23:06:55-04:00</updated>
+  <updated>2016-08-02T23:09:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,7 @@
     <link href="http://grisha.org/blog/2016/07/29/state-of-tgres-2016/"/>
     <updated>2016-07-29T10:12:00-04:00</updated>
     <id>http://grisha.org/blog/2016/07/29/state-of-tgres-2016</id>
-    <content type="html"><![CDATA[<p>Tgres is a metrics collection and storage server, aka a time series
+    <content type="html"><![CDATA[<p><a href="http://github.com/tgres/tgres">Tgres</a> is a metrics collection and storage server, aka a time series
 database. I’m not very comfortable with referring to it as a
 <em>database</em>, because at least in case of Tgres, the database is
 actually PostgreSQL. But also “database” to me is in the same category
@@ -38,22 +38,23 @@ used as a standalone server or as a Go package compiled into your app.</p>
 
 <h3 id="current-status">Current status</h3>
 
-<p>Tgres is still not quite production quality,
+<p>It’s been over a year since I began hacking on it in this incarnation,
+though the idea and a couple of scrapped implementations thereof go
+back more than two years. Tgres is still not quite production quality,
 though it’s probably stable enough for someone who knows their way
-around Go to give it a whirl. At this point I have proven the
-concept, and believe the architecture is sound, but the magnitude of
-the project turned out to be much grater than I originally pictured,
-and so it still needs lots and lots of proofreading, t’s crossed and
-i’s dotted.</p>
+around Go to give it a whirl. At this point I have proven the concept,
+and believe the architecture is sound, but the magnitude of the
+project turned out to be much grater than I originally pictured, and
+so it still needs lots and lots of proofreading, t’s crossed and i’s
+dotted.</p>
 
 <h2 id="raisons-detre">Raisons d’etre</h2>
 
 <h3 id="with-go-new-things-are-possible">With Go, new things are possible</h3>
 
-<p>It’s been over a year since I began hacking on
-<a href="http://github.com/tgres/tgres">Tgres</a>. Tgres came about when I first
-decided to dive into <a href="https://golang.org/">Golang</a>. Go can do great
-stuff, but I didn’t see how it applied to anything I was working on at
+<p>The idea of a TS database came about when I first decided to dive into
+<a href="https://golang.org/">Golang</a>. Go can do great stuff, but I didn’t see
+how it applied to anything I was working on at
 the time. I needed a project that was a better match for the domain of
 applications that Go made possible, something where performance and scale
 matter, something with concurrent moving pieces, something
