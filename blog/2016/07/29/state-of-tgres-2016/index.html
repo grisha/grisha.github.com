@@ -9,10 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="It’s been over a year since I began hacking on
-Tgres. Tgres came about when I first
-decided to dive into Golang. Go can do great
-stuff, but I didn’t &hellip;">
+  <meta name="description" content="Tgres is a metrics collection and storage server, aka a time series
+database. I’m not very comfortable with referring to it as a
+database, because at &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -124,20 +123,7 @@ stuff, but I didn’t &hellip;">
   </header>
 
 
-<div class="entry-content"><p>It’s been over a year since I began hacking on
-<a href="http://github.com/tgres/tgres">Tgres</a>. Tgres came about when I first
-decided to dive into <a href="https://golang.org/">Golang</a>. Go can do great
-stuff, but I didn’t see how it applied to anything I was working on at
-the time. I needed a project that was a better match for the domain of
-applications that Go aims for, something where performance and scale
-matter, something with concurrent moving pieces, something
-challenging. A “time series database” seemed like it had potential. It
-has all kinds of curious requirements that could be great fun to
-implement in Go.</p>
-
-<h2 id="what-is-tgres">What is Tgres</h2>
-
-<p>So Tgres is a metrics collection and storage server, aka a time series
+<div class="entry-content"><p>Tgres is a metrics collection and storage server, aka a time series
 database. I’m not very comfortable with referring to it as a
 <em>database</em>, because at least in case of Tgres, the database is
 actually PostgreSQL. But also “database” to me is in the same category
@@ -166,6 +152,19 @@ and so it still needs lots and lots of proofreading, t’s crossed and
 i’s dotted.</p>
 
 <h2 id="raisons-detre">Raisons d’etre</h2>
+
+<h3 id="with-go-new-things-are-possible">With Go, new things are possible</h3>
+
+<p>It’s been over a year since I began hacking on
+<a href="http://github.com/tgres/tgres">Tgres</a>. Tgres came about when I first
+decided to dive into <a href="https://golang.org/">Golang</a>. Go can do great
+stuff, but I didn’t see how it applied to anything I was working on at
+the time. I needed a project that was a better match for the domain of
+applications that Go made possible, something where performance and scale
+matter, something with concurrent moving pieces, something
+challenging. A “time series database” seemed like it had potential. It
+has all kinds of curious requirements that could be great fun to
+implement in Go.</p>
 
 <h3 id="present-state-of-time-series-databases-is-dismal">Present state of “time series databases” is dismal</h3>
 
@@ -292,8 +291,8 @@ point).</p>
 <p>Tgres stores data points in <em>round-robin archives</em>.  While
 “round-robin” is an implementation detail, it is part of the name
 because the only way it can be round-robin is the number of data
-points in the archive is constant. The size of the RRA is determined
-by the <em>step</em> (resolution) and the size of the archive. Thus RRA’s are
+points in the archive is constant. The time-span of the RRA is determined
+by the <em>step</em> (resolution) and the <em>size</em> of the archive (in steps). Thus RRA’s are
 defined by step and size, e.g. 10s for 24 hours (a data point every
 10s for 24 hours, or 8,640 points).</p>
 
