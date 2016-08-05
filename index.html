@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Tgres is a metrics collection and storage server, aka a time series
-database. I’m not very comfortable with referring to it as a
-database, because at &hellip;">
+  <meta name="description" content="This silly visualisation (I only learned about SVG animation this
+morning) demonstrates what happens when multiple Tgres data points
+arrive within &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -95,6 +95,136 @@ database, because at &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/08/04/data-points/">Time Series Data Points SVG Animation</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-08-04T10:35:00-04:00" pubdate data-updated="true">Aug 4<span>th</span>, 2016</time>
+        
+         | <a href="/blog/2016/08/04/data-points/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>This silly visualisation (I only learned about SVG animation this
+morning) demonstrates what happens when multiple Tgres data points
+arrive within the same step (i.e. smallest time interval for this
+series). Different tools do different things, e.g. Graphite simply
+discards the previous data point, while Tgres does the same thing as
+RRDTool by computing a weighted average.</p>
+
+<p>One way to think about it is that the incomplete step is an empty
+swimming pool as wide as 1 step, into which we dump blocks of
+water. The first data point dumps a 2.0 x 0.25 block of water, which
+fills the pool to 0.375. The second data point dumps a 3.0 x 0.75
+block, which raises the water level to 1.5. The last data point dumps
+a 1.0 x 0.25 block which raises it to the final value of 1.6875.</p>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400px" height="150px">
+
+<title>Small SVG example</title>
+
+<svg x="50">
+<polyline points="5 25, 5 100, 105 100, 105 25" stroke-width="4" stroke="black" style="fill: none;" />
+
+
+<svg x="5">
+
+<text x="156" y="115" font-family="Verdana" font-size="12" style="fill:green;">click to start</text>
+<rect id="startbox" x="150" y="100" width="90" height="20" stroke="green" fill="transparent" />
+
+<line x1="0" y1="150" x2="0" stroke="red">
+  <animate attributename="x1" from="0" to="100" begin="startbox.click" dur="10s" fill="freeze" />
+  <animate attributename="x2" from="0" to="100" begin="startbox.click" dur="10s" fill="freeze" />
+</line>
+
+<!-- data points and values -->
+
+<text x="25" y="46" font-family="Verdana" font-size="10" style="visibility:hidden">
+2.0
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
+</text>
+<circle cx="25" cy="50" r="3" fill="blue" style="visibility:hidden">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
+</circle>
+<rect x="0" y="50" width="25" height="50" fill="transparent" stroke="blue" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
+</rect>
+<rect x="0" y="87.5" width="100" height="12.5" fill="#aed6f1" stroke="transparent" fill-opacity="0.4" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
+</rect>
+<text x="105" y="89.5" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
+ 0.375
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="hidden" dur="10s" values="hidden; visible; hidden; hidden" keytimes="0; 0.25; 0.75; 1" fill="freeze" />
+</text>
+
+<text x="75" y="22" font-family="Verdana" font-size="10" style="visibility:hidden">
+3.0
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.75; 1" fill="freeze" />
+</text>
+<circle cx="75" cy="25" r="3" fill="blue" style="visibility:hidden">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.75; 1" fill="freeze" />
+</circle>
+<rect x="25" y="25" width="50" height="75" fill="transparent" stroke="blue" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.75; 1" fill="freeze" />
+</rect>
+<rect x="0" y="50" width="100" height="50" fill="#aed6f1" stroke="transparent" fill-opacity="0.4" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.75; 1" fill="freeze" />
+</rect>
+<text x="105" y="52" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
+ 1.5
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="hidden" dur="10s" values="hidden; visible; hidden" keytimes="0; 0.75; 1" fill="freeze" />
+</text>
+
+<text x="100" y="72" font-family="Verdana" font-size="10" style="visibility:hidden">
+1.0
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
+</text>
+<circle cx="100" cy="75" r="3" fill="blue" style="visibility:hidden">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
+</circle>
+<rect x="75" y="75" width="25" height="25" fill="transparent" stroke="blue" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
+</rect>
+<rect x="0" y="43.75" width="100" height="56.25" fill="#aed6f1" stroke="transparent" fill-opacity="0.4" style="visibility: hidden;">
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
+</rect>
+<text x="105" y="45.75" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
+ 1.6875
+  <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
+</text>
+</svg>
+</svg>
+</svg>
+
+<p>Compare this with Graphite which would simply discard the first two
+data points and we are left with 1.0 as the final value.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2527,248 +2657,6 @@ coming soon.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-08-19T08:03:00-04:00" pubdate data-updated="true">Aug 19<span>th</span>, 2014</time>
-        
-         | <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Recently I found myself needing to connect to HiveServer2 with
-Kerberos authentication enabled from a Ruby app. As it turned out
-<a href="https://github.com/forward3d/rbhive">rbhive gem</a> we were using did not have
-support for Kerberos authentication. So I had to
-<a href="https://github.com/forward3d/rbhive/pull/23">roll my own</a>.</p>
-
-<p>This post is to document the experience of figuring out the details of
-a SASL/GSSAPI connection before it is lost forever in my neurons and synapses.</p>
-
-<p>First, the terminology. The authentication system that Hadoop uses is
-<em>Kerberos</em>. Note that <a href="http://www.ietf.org/rfc/rfc4120.txt">Kerberos</a> is not a
-network protocol. It describes the method by which
-authentication happens, but not the format of how to send Kerberos
-tickets and what not over the wire. For that, you need <em>SASL</em> and
-<em>GSSAPI</em>.</p>
-
-<p><a href="http://tools.ietf.org/html/rfc2222">SASL</a> is a generic protocol
-designed to be able to wrap just about any authentication
-handshake. It’s very simple: the client sends a START followed by some
-payload, and expects an OK, BAD or COMPLETE from the server. OK means
-that there are more steps to this conversation, BAD is
-self-explanatory and COMPLETE means “I’m satisfied”. The objective is
-to go from START via a series of OK’s to each side sending the other a
-COMPLETE.</p>
-
-<p>SASL doesn’t define the payload of each message. The payload is
-specified by <a href="http://tools.ietf.org/html/rfc2743">GSSAPI</a>
-protocol. GSSAPI is another generic protocol. Unlike SASL it is
-actually very complex and covers a variety of authentication methods,
-including Kerberos.</p>
-
-<p>The combination of SASL and GSSAPI and what happens at the network
-layer is documented in
-<a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>.</p>
-
-<p>Bottom line is you need to read at least four RFC’s to be able to
-understand every detail of this process:
-<a href="http://tools.ietf.org/html/rfc4120">RFC4120</a>,
-<a href="http://tools.ietf.org/html/rfc2222">RFC2222</a>,
-<a href="http://tools.ietf.org/html/rfc2743">RFC2743</a> and
-<a href="http://tools.ietf.org/html/rfc4752">RFC4752</a>. Fun!</p>
-
-<h2 id="the-handshake-in-ruby">The Handshake in Ruby</h2>
-
-<p>First, you’ll need some form of binding to the GSSAPI libraries. I’ve
-been using the most excellent <a href="https://github.com/zenchild/gssapi">GSSAPI gem</a>
-by <a href="http://distributed-frostbite.blogspot.ru/">Dan Wanek</a> which wraps the MIT GSSAPI library.</p>
-
-<p>If you follow the code in
-<a href="https://github.com/grisha/rbhive/blob/gssapi/lib/thrift/sasl_client_transport.rb">sasl_client_transport.rb</a>,
-you’ll see the following steps are required to establish a connection.</p>
-
-<p>First, we instantiate a GSSAPI object passing it the remote host and
-the remote principal. Note that there is no TCP port number to be
-specifies anywhere, because this isn’t to establish a TCP connection,
-but only for Kerberos <em>host authentication</em>. (Kerberos requires that
-not only the client authenticates itself to the host, but also that
-the host authenticates itself to the client.)</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line"><span class="c1"># Thrift::SaslClientTransport.initialize()</span>
-</span><span class="line"><span class="vi">@gsscli</span> <span class="o">=</span> <span class="ss">GSSAPI</span><span class="p">:</span><span class="ss">:Simple</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@sasl_remote_host</span><span class="p">,</span> <span class="vi">@sasl_remote_principal</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The rest of the action takes place in the
-<code>initiate_hand_shake_gssapi()</code> method.</p>
-
-<p>First, we call <code>@gsscli.init_context()</code> with no arguments. This call
-creates a token based on our current Kerberos credentials. (If there
-are no credentials in our cache, this call will fail).</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">token</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Next we compose a SASL message which consists of START (0x01)
-followed by payload length, followed by the actual payload, which is
-the SASL mechanism name: ‘GSSAPI’. Without waiting for response, we
-also send an OK (0x02) and the token returned from init_context().</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:START</span><span class="o">]</span><span class="p">,</span> <span class="vi">@sasl_mechanism</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="vi">@sasl_mechanism</span>
-</span><span class="line">  <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="n">token</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">  <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">token</span>
-</span><span class="line">  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Next we read 5 bytes of response. The first byte is the status
-returned from the server, which hopefully is OK, followed by the
-length of the payload, and then we read the payload itself:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">  <span class="n">status</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">  <span class="k">case</span> <span class="n">status</span>
-</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class="line">    <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class="line">    <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at initial stage&quot;</span>
-</span><span class="line">  <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class="line">    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The payload is a <em>challenge</em> created for us by the server. We can
-verify this challenge by calling <code>init_context()</code> a second time, this
-time passing in the challenge to verify it:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class="line">    <span class="k">unless</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">init_context</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
-</span><span class="line">      <span class="k">raise</span> <span class="s2">&quot;GSSAPI: challenge provided by server could not be verified&quot;</span>
-</span><span class="line">    <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>If the challenge verifies, then it is our turn to send an OK (with an
-empty payload this time):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span><span class="p">,</span> <span class="mi">0</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">    <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>At this point in the SASL ‘conversation’ we have verified that the
-server is who they claim to be.</p>
-
-<p>Next the server sends us another challenge, this one is so that we can
-authenticate ourselves to the server and at the same time agree on the
-<em>protection level</em> for the communication channel.</p>
-
-<p>We need to decrypt (“unwrap” in the GSSAPI terminology) the challenge,
-examine the protection level and if it is acceptable, encrypt it on
-our side and send it back to the server in a SASL COMPLETE message. In
-this particular case we’re agreeable to any level of protection (which
-is none in case of HiveServer2, i.e. the conversation is not
-encrypted). Otherwise there are additional steps that RFC4752
-describes whereby the client can select an acceptable protection
-level.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">    <span class="n">status2</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">    <span class="k">case</span> <span class="n">status2</span>
-</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class="line">      <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class="line">      <span class="k">raise</span> <span class="s2">&quot;Not expecting COMPLETE at second stage&quot;</span>
-</span><span class="line">    <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class="line">      <span class="n">challenge</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class="line">      <span class="n">unwrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">unwrap_message</span><span class="p">(</span><span class="n">challenge</span><span class="p">)</span>
-</span><span class="line">      <span class="n">rewrapped</span> <span class="o">=</span> <span class="vi">@gsscli</span><span class="o">.</span><span class="n">wrap_message</span><span class="p">(</span><span class="n">unwrapped</span><span class="p">)</span>
-</span><span class="line">      <span class="n">header</span> <span class="o">=</span> <span class="o">[</span><span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span><span class="p">,</span> <span class="n">rewrapped</span><span class="o">.</span><span class="n">length</span><span class="o">].</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">      <span class="vi">@transport</span><span class="o">.</span><span class="n">write</span> <span class="n">header</span> <span class="o">+</span> <span class="n">rewrapped</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The server should then respond with COMPLETE as well, at which point
-we’re done with the authentication process and cat start sending
-whatever we want over this connection:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="ruby"><span class="line">      <span class="n">status3</span><span class="p">,</span> <span class="n">len</span> <span class="o">=</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="no">STATUS_BYTES</span> <span class="o">+</span> <span class="no">PAYLOAD_LENGTH_BYTES</span><span class="p">)</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;cl&gt;&#39;</span><span class="p">)</span>
-</span><span class="line">      <span class="k">case</span> <span class="n">status3</span>
-</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:BAD</span><span class="o">]</span><span class="p">,</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:ERROR</span><span class="o">]</span>
-</span><span class="line">        <span class="k">raise</span> <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">len</span><span class="p">)</span>
-</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:COMPLETE</span><span class="o">]</span>
-</span><span class="line">        <span class="vi">@transport</span><span class="o">.</span><span class="n">to_io</span><span class="o">.</span><span class="n">read</span> <span class="n">len</span>
-</span><span class="line">        <span class="vi">@sasl_complete</span> <span class="o">=</span> <span class="kp">true</span>
-</span><span class="line">      <span class="k">when</span> <span class="no">NEGOTIATION_STATUS</span><span class="o">[</span><span class="ss">:OK</span><span class="o">]</span>
-</span><span class="line">        <span class="k">raise</span> <span class="s2">&quot;Failed to complete GSS challenge exchange&quot;</span>
-</span><span class="line">      <span class="k">end</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2822,6 +2710,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/08/04/data-points/">Time Series Data Points SVG Animation</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/07/29/state-of-tgres-2016/">Introducing Tgres - A Time Series DB on top of PostgreSQL</a>
       </li>
     
@@ -2835,10 +2727,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a>
       </li>
     
   </ul>
