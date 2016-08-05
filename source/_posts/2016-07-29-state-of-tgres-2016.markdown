@@ -1,25 +1,12 @@
 ---
 layout: post
-title: "State of Tgres - Summer 2016"
+title: "Introducing Tgres - A Time Series DB on top of PostgreSQL"
 date: 2016-07-29 10:12
 comments: true
 categories:
 ---
 
-It's been over a year since I began hacking on
-[Tgres](http://github.com/tgres/tgres). Tgres came about when I first
-decided to dive into [Go](https://golang.org/). I really liked what Go
-could do, but didn't see how it applied to anything I was working on
-at the time. I needed a project that was a better match for the domain
-of applications that Go aims for, something where performance and
-scale matter, something with concurrent moving pieces, something
-challenging. A "time series database" seemed like it had potential. It
-has all kinds of curious requirements that could be great fun to
-implement in Go.
-
-## What is Tgres
-
-So Tgres is a metrics collection and storage server, aka a time series
+[Tgres](http://github.com/tgres/tgres) is a metrics collection and storage server, aka a time series
 database. I'm not very comfortable with referring to it as a
 _database_, because at least in case of Tgres, the database is
 actually PostgreSQL. But also "database" to me is in the same category
@@ -39,15 +26,29 @@ used as a standalone server or as a Go package compiled into your app.
 
 ### Current status
 
-Don't get too excited just yet, Tgres is still not production quality,
+It's been over a year since I began hacking on it in this incarnation,
+though the idea and a couple of scrapped implementations thereof go
+back more than two years. Tgres is still not quite production quality,
 though it's probably stable enough for someone who knows their way
-around Go to give it a whirl. At this point I am definitely proved the
-concept, and believe the architecture is sound, but the magnitude of
-the project turned out to be much grater than I originally pictured,
-and so it still needs lots and lots of proofreading, t's crossed and
-i's dotted.
+around Go to give it a whirl. At this point I have proven the concept,
+and believe the architecture is sound, but the magnitude of the
+project turned out to be much grater than I originally pictured, and
+so it still needs lots and lots of proofreading, t's crossed and i's
+dotted.
 
 ## Raisons d'etre
+
+### With Go, new things are possible
+
+The idea of a TS database came about when I first decided to dive into
+[Golang](https://golang.org/). Go can do great stuff, but I didn't see
+how it applied to anything I was working on at
+the time. I needed a project that was a better match for the domain of
+applications that Go made possible, something where performance and scale
+matter, something with concurrent moving pieces, something
+challenging. A "time series database" seemed like it had potential. It
+has all kinds of curious requirements that could be great fun to
+implement in Go.
 
 ### Present state of "time series databases" is dismal
 
@@ -58,23 +59,24 @@ the network admins of the then burgeoning Internet realized that TS is
 essential to device monitoring, not much has happened.
 
 [RRDTool](http://oss.oetiker.ch/rrdtool/) was definitely a major step
-forward from MRTG which was merely a Perl script. RRDTool is to this
-day is the best C implementation of a round-robin database for time
-series data. Similarly to MRTG, RRDTool was designed as a command-line
-tool, the server component was left as an exercise for the user. And
-even though linking RRDTool into your app was not too difficult
-(I [did it](https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c)
+forward from MRTG which was merely a Perl script. RRDTool to this day
+is the best implementation of a round-robin database for time series
+data (in C to boot). Similarly to MRTG, RRDTool was designed as a command-line tool,
+the server component was left as an exercise for the user. And even
+though linking RRDTool into your app was not too difficult (I [did
+it](https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c)
 in 2004), somehow an "RRD server" never appeared.
 
-Then there was [Graphite](https://graphiteapp.org/). Graphite is a
-reflection of the Python-can-do-anything era. Graphite borrowed a lot
-of ideas from RRDTool, but its re-implementation of round-robin
-on-disk files while [claiming superiority](http://graphite.wikidot.com/whisper) is actually
-[quite inferior](http://grisha.org/blog/2015/05/04/recording-time-series/)
-to RRDTool in both accuracy and performance.
+Then there was [Graphite](https://graphiteapp.org/). (I think Graphite
+is a reflection of the Python-can-do-anything era.) Graphite borrowed
+a lot of ideas from RRDTool, though its re-implementation of
+round-robin on-disk files in pure Python while [claiming superiority](http://graphite.wikidot.com/whisper) is not that much
+better, if at all, IMHO when compared to RRDTool in both accuracy and
+performance. In general though, I think storing data directly in files
+is the wrong approach to begin with.
 
-Graphite's appeal was that it was an easy-to-start server that did
-everything, and it became especially popular along side
+Graphite's appeal is that it's an easy-to-start server that does
+everything, and it became especially popular alongside
 [Statsd](https://github.com/etsy/statsd/wiki) a tool with umpteen
 different implementation designed to sit in front of
 Graphite. Eventually people stopped using Graphite to make charts
@@ -102,18 +104,15 @@ mainstream application development.
 ### Data isolation
 
 Virtually all of the aforementioned tools contribute to a problem I
-dub _data isolation_. We are so used to it, we don't even
-question it.
-
-Data isolation is when a part of our data is stored using a separate
-tool in a different format and is therefore not as easily accessible.
-For example if our metrics are in Graphite, we probably don't even
-know how to get them out of it, nor does it occur to us that it might
-be useful.  All we've been able to do is get a Grafana chart and are
-quite satisfied with it. We do not question why it isn't a first-class
-citizen right in the database as a table, where we could use it in SQL
-joins, for example. Or export it to our big data rig and query it with
-Hive or Spark, etc.
+dub _data isolation_. Data isolation is when a part of our data is
+stored using a separate tool in a different format and is therefore
+not as easily accessible.  For example if our metrics are in Graphite,
+we probably don't even know how to get them out of it, nor does it
+occur to us that it might be useful.  All we've been able to do is get
+a Grafana chart and are quite satisfied with it. We do not question
+why it isn't a first-class citizen right in the database as a table,
+where we could use it in SQL joins, for example. Or export it to our
+big data rig and query it with Hive or Spark, etc.
 
 Why is getting a quick chart of customer sign-ups per second next to
 all my customer data such a big deal these days? Why can't it be as
@@ -176,8 +175,8 @@ point).
 Tgres stores data points in _round-robin archives_.  While
 "round-robin" is an implementation detail, it is part of the name
 because the only way it can be round-robin is the number of data
-points in the archive is constant. The size of the RRA is determined
-by the _step_ (resolution) and the size of the archive. Thus RRA's are
+points in the archive is constant. The time-span of the RRA is determined
+by the _step_ (resolution) and the _size_ of the archive (in steps). Thus RRA's are
 defined by step and size, e.g. 10s for 24 hours (a data point every
 10s for 24 hours, or 8,640 points).
 
@@ -310,9 +309,9 @@ simplistic (e.g. "get me this series"), the SQL behind it anything
 but, still, it should be possible to throw together an alternative
 SerDe for a different relational database (or not a database at all?).
 
-### tgres/statd
+### tgres/statsd
 
-[Statd](https://github.com/tgres/tgres/tree/master/statd) is currently
+[Statsd](https://github.com/tgres/tgres/tree/master/statsd) is currently
 in a separate Go package, but I might integrate with the RRD because
 it is not very clear that it needs to be a separate thing. Somehow it
 so happened that Graphite and Statd are two separate projects, but the
@@ -337,11 +336,9 @@ it addresses the horizontal scaling problem.
 
 ## There's still lots to do...
 
-There's still a lot of work to be on Tgres. For one thing, I don't
-have any tests. This is mainly because I don't believe in testing that
-which hasn't "gelled", and I wouldn't be surprised if the above
-organization of packages and how they interface changes as I
-understand the problem better.
-
-We also need documentation. And some real-life use/testing/feedback
-would be great as well.
+There's still a lot of work to be done on Tgres. For one thing, I
+don't have any tests. This is mainly because I don't believe in
+testing that which hasn't "gelled", and I wouldn't be surprised if the
+above organization of packages and how they interface changes as I
+understand the problem better. We also need documentation. And some
+real-life use/testing/feedback would be great as well.
