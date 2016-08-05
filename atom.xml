@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-05T18:31:09-04:00</updated>
+  <updated>2016-08-05T18:44:52-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -28,7 +28,7 @@ RRDTool by computing a weighted average.</p>
 <p>One way to think about it is that the incomplete step is an empty
 swimming pool as wide as 1 step, into which we dump blocks of
 water. The first data point dumps a 2.0 x 0.25 block of water, which
-fills the pool to 0.375. The second data point dumps a 3.0 x 0.75
+fills the pool to 0.375. The second data point dumps a 3.0 x 0.50
 block, which raises the water level to 1.5. The last data point dumps
 a 1.0 x 0.25 block which raises it to the final value of 1.6875.</p>
 
