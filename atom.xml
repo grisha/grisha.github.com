@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-05T18:44:52-04:00</updated>
+  <updated>2016-08-06T10:23:43-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -22,8 +22,36 @@
 morning) demonstrates what happens when multiple Tgres data points
 arrive within the same step (i.e. smallest time interval for this
 series). Different tools do different things, e.g. Graphite simply
-discards the previous data point, while Tgres does the same thing as
+discards all points but the last, while Tgres does the same thing as
 RRDTool by computing a weighted average.</p>
+
+<p>Let’s say we have a series with a step of 100 seconds. We receive the
+following data points:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>25s</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>75s</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <td>100s</td>
+      <td>2.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Tgres adds this up to 1.6875 for the 100s step. Why?</p>
 
 <p>One way to think about it is that the incomplete step is an empty
 swimming pool as wide as 1 step, into which we dump blocks of
@@ -111,6 +139,12 @@ a 1.0 x 0.25 block which raises it to the final value of 1.6875.</p>
 
 <p>Compare this with Graphite which would simply discard the first two
 data points and we are left with 1.0 as the final value.</p>
+
+<p>Why is this important? Because this is how rates add up. If this was
+speed of a car in meters per second (more like a bycicle, I guess),
+its weighted average speed for the duration of this step of 1.6875
+meters per second would mean that in the 100s it would have traveled
+exactly 168.75 meters.</p>
 ]]></content>
   </entry>
   
