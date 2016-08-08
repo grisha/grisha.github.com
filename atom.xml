@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-08T10:07:25-04:00</updated>
+  <updated>2016-08-08T10:07:59-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,9 +14,9 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Data Points]]></title>
+    <title type="html"><![CDATA[How Data Points Add Up]]></title>
     <link href="http://grisha.org/blog/2016/08/04/data-points/"/>
-    <updated>2016-08-04T00:00:00-04:00</updated>
+    <updated>2016-08-04T10:35:00-04:00</updated>
     <id>http://grisha.org/blog/2016/08/04/data-points</id>
     <content type="html"><![CDATA[<p>This silly SVG animation (I only learned how to make an SVG animation
 this morning) demonstrates what happens when multiple Tgres data
