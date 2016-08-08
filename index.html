@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="This silly visualisation (I only learned about SVG animation this
-morning) demonstrates what happens when multiple Tgres data points
-arrive within &hellip;">
+  <meta name="description" content="This silly SVG animation (I only learned how to make an SVG animation
+this morning) demonstrates what happens when multiple Tgres data
+points arrive &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -101,7 +101,7 @@ arrive within &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2016/08/04/data-points/">Time Series Data Points SVG Animation</a></h1>
+      <h1 class="entry-title"><a href="/blog/2016/08/04/data-points/">Data Points</a></h1>
     
     
       <p class="meta">
@@ -117,7 +117,7 @@ arrive within &hellip;">
   
 
 
-<time datetime="2016-08-04T10:35:00-04:00" pubdate data-updated="true">Aug 4<span>th</span>, 2016</time>
+<time datetime="2016-08-04T00:00:00-04:00" pubdate data-updated="true">Aug 4<span>th</span>, 2016</time>
         
          | <a href="/blog/2016/08/04/data-points/#disqus_thread">Comments</a>
         
@@ -126,12 +126,10 @@ arrive within &hellip;">
   </header>
 
 
-  <div class="entry-content"><p>This silly visualisation (I only learned about SVG animation this
-morning) demonstrates what happens when multiple Tgres data points
-arrive within the same step (i.e. smallest time interval for this
-series). Different tools do different things, e.g. Graphite simply
-discards all points but the last, while Tgres does the same thing as
-RRDTool by computing a weighted average.</p>
+  <div class="entry-content"><p>This silly SVG animation (I only learned how to make an SVG animation
+this morning) demonstrates what happens when multiple Tgres data
+points arrive within the same step (i.e. smallest time interval for
+this series).</p>
 
 <p>Let’s say we have a series with a step of 100 seconds. We receive the
 following data points:</p>
@@ -159,7 +157,8 @@ following data points:</p>
   </tbody>
 </table>
 
-<p>Tgres adds this up to 1.6875 for the 100s step. Why?</p>
+<p>Tgres adds this up to 1.6875 for the step, which might seem a little
+surprising at first. How does this happen?</p>
 
 <p>One way to think about it is that the incomplete step is an empty
 swimming pool as wide as 1 step, into which we dump blocks of
@@ -2744,7 +2743,7 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2016/08/04/data-points/">Time Series Data Points SVG Animation</a>
+        <a href="/blog/2016/08/04/data-points/">Data Points</a>
       </li>
     
       <li class="post">
