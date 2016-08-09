@@ -158,11 +158,11 @@ this series).</p>
 <rect x="0" y="50" width="25" height="50" fill="transparent" stroke="blue">
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
 </rect>
-<rect x="0" y="87.5" width="100" height="12.5" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
+<rect x="0" y="93.75" width="100" height="6.25" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.25; 1" fill="freeze" />
 </rect>
-<text x="105" y="89.5" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 0.375
+<text x="105" y="95.75" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
+ 0.5
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="hidden" dur="10s" values="hidden; visible; hidden; hidden" keytimes="0; 0.25; 0.75; 1" fill="freeze" />
 </text>
 
@@ -180,7 +180,7 @@ this series).</p>
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 0.75; 1" fill="freeze" />
 </rect>
 <text x="105" y="52" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 1.5
+ 2.0
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="hidden" dur="10s" values="hidden; visible; hidden" keytimes="0; 0.75; 1" fill="freeze" />
 </text>
 
@@ -198,7 +198,7 @@ this series).</p>
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
 </rect>
 <text x="105" y="45.75" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 1.6875
+ 2.25
   <animate attributetype="CSS" attributename="visibility" begin="startbox.click" from="hidden" to="visible" dur="10s" values="hidden; visible; visible" keytimes="0; 1; 1" fill="freeze" />
 </text>
 </svg>
@@ -237,29 +237,29 @@ single step:</p>
   <tbody>
     <tr>
       <td>Final:</td>
-      <td>1.6875</td>
+      <td>2.25</td>
     </tr>
   </tbody>
 </table>
 
 <p />
-<p>Tgres will store 1.6875 as the final value for this step. So how
-does 1, 2 and 3 add up to <em>1.6875</em>?</p>
+<p>Tgres will store 2.25 as the final value for this step. So how
+does 1, 2 and 3 add up to <em>2.25</em>?</p>
 
 <p>One way to think about it is that the incomplete step is an empty
 swimming pool as wide as 1 step, into which we dump blocks of
 water. The first data point dumps a 2.0 x 0.25 block of water, which
-fills the pool to 0.375. The second data point dumps a 3.0 x 0.50
-block, which raises the water level to 1.5. The last data point dumps
-a 1.0 x 0.25 block which raises it to the final value of 1.6875.
-Compare this with Graphite which would simply discard the first two
-data points and we are left with 1.0 as the final value.</p>
+fills the pool to 0.5. The second data point dumps a 3.0 x 0.50 block,
+which raises the water another 1.5 to 2.0. The last data point dumps a
+1.0 x 0.25 block which raises it to the final value of 2.25.  Compare
+this with Graphite which would simply discard the first two data
+points and we are left with 1.0 as the final value.</p>
 
 <p>Why is it done this way? Because this is how rates add up. If this was
 speed of a car in meters per second (more like a bycicle, I guess),
-its weighted average speed for the duration of this step of 1.6875
+its weighted average speed for the duration of this step of 2.25
 meters per second would mean that in the 100s it would have traveled
-exactly 168.75 meters.</p>
+exactly 225 meters.</p>
 </div>
 
 
