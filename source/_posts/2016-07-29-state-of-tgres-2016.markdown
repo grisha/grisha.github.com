@@ -63,8 +63,8 @@ forward from MRTG which was merely a Perl script. RRDTool to this day
 is the best implementation of a round-robin database for time series
 data (in C to boot). Similarly to MRTG, RRDTool was designed as a command-line tool,
 the server component was left as an exercise for the user. And even
-though linking RRDTool into your app was not too difficult (I [did
-it](https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c)
+though linking RRDTool into your app was not too difficult (I
+[did it](https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c)
 in 2004), somehow an "RRD server" never appeared.
 
 Then there was [Graphite](https://graphiteapp.org/). (I think Graphite
