@@ -378,15 +378,15 @@ data points via an HTTP pixel that could be embedded in web pages.</p>
 <p>The daemon also takes care of graceful restarts, logging and other
 typical long-running service stuff.</p>
 
-<h3 id="trgestranceiver">trges/tranceiver</h3>
+<h3 id="trgesreceiver">trges/receiver</h3>
 
-<p>The transceiver (Edit: it has been renamed to <a href="https://github.com/tgres/tgres/tree/master/receiver">receiver</a>)
-is the data point router and cache. It maintains a set of workers
-responsible for writing the data points to their respective RRA’s, as
-well as caching and periodic flushing of the cache. Flushing is done
-once a certian number of points has accumulated or a period of time
-has passed, but not more often than the minimal flush frequency (all
-configurable).</p>
+<p>The <a href="https://github.com/tgres/tgres/tree/master/receiver">receiver</a>
+(formerly known as transceiver) is the data point router and cache. It
+maintains a set of workers responsible for writing the data points to
+their respective RRA’s, as well as caching and periodic flushing of
+the cache. Flushing is done once a certian number of points has
+accumulated or a period of time has passed, but not more often than
+the minimal flush frequency (all configurable).</p>
 
 <h3 id="tgresrrd">tgres/rrd</h3>
 
