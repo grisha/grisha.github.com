@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-09T09:48:47-04:00</updated>
+  <updated>2016-08-16T22:35:01-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -220,8 +220,8 @@ forward from MRTG which was merely a Perl script. RRDTool to this day
 is the best implementation of a round-robin database for time series
 data (in C to boot). Similarly to MRTG, RRDTool was designed as a command-line tool,
 the server component was left as an exercise for the user. And even
-though linking RRDTool into your app was not too difficult (I <a href="https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c">did
-it</a>
+though linking RRDTool into your app was not too difficult (I
+<a href="https://github.com/grisha/openvps-common/blob/master/py-rrd/_RRD.c">did it</a>
 in 2004), somehow an “RRD server” never appeared.</p>
 
 <p>Then there was <a href="https://graphiteapp.org/">Graphite</a>. (I think Graphite
