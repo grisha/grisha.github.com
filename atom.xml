@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-16T22:39:22-04:00</updated>
+  <updated>2016-08-16T22:40:54-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -432,8 +432,7 @@ the minimal flush frequency (all configurable).</p>
 
 <p>The responsibility of <a href="https://github.com/tgres/tgres/tree/master/rrd">rrd</a> is to add data
 points to RRA’s. This is not as simple as it sounds, a good
-description of the concepts behind it is available here:
-http://rrdtool.vandenbogaerdt.nl/process.php#Rate</p>
+description of the concepts behind it is available <a href="http://rrdtool.vandenbogaerdt.nl/process.php#Rate">here</a>.</p>
 
 <h3 id="tgreshttp">tgres/http</h3>
 
