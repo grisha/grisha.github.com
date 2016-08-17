@@ -11,161 +11,10 @@ this morning) demonstrates what happens when multiple Tgres data
 points arrive within the same step (i.e. smallest time interval for
 this series).
 
-<svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink"
-     width='400px' height='150px'>
+<object data="/images/data_point.svg" type="image/svg+xml">
+  You browser does not support SVG objects?
+</object>
 
-<title>Small SVG example</title>
-
-<svg x='50'>
-<polyline points='5 25, 5 100, 105 100, 105 25' stroke-width='4' stroke="black" style='fill: none;' />
-
-
-<svg x="5">
-
-<text x="156" y="115" font-family="Verdana" font-size="12" style="fill:green;">click to start</text>
-<rect id="startbox" x="150" y="100" width="90" height="20" stroke="green" fill="transparent" />
-
-<line x1='0' y1='0' x2='0' y1='150' stroke='red'>
-  <animate attributeName='x1' from='0' to='100' begin='0' dur='10s' fill="freeze" begin="startbox.click" />
-  <animate attributeName='x2' from='0' to='100' begin='0' dur='10s' fill="freeze" begin="startbox.click" />
-</line>
-
-<!-- data points and values -->
-
-<text x="25" y="46" font-family="Verdana" font-size="10">
-2.0
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.25; 1"
-    fill="freeze" />
-</text>
-<circle cx="25" cy="50" r="3" fill="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.25; 1"
-    fill="freeze" />
-</circle>
-<rect x="0" y="50" width="25" height="50" fill="transparent" stroke="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.25; 1"
-    fill="freeze" />
-</rect>
-<rect x="0" y="93.75" width="100" height="6.25" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.25; 1"
-    fill="freeze" />
-</rect>
-<text x="105" y="95.75" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 0.5
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="hidden"
-    dur="10s"
-    values="hidden; visible; hidden; hidden"
-    keyTimes="0; 0.25; 0.75; 1"
-    fill="freeze" />
-</text>
-
-<text x="75" y="22" font-family="Verdana" font-size="10">
-3.0
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.75; 1"
-    fill="freeze" />
-</text>
-<circle cx="75" cy="25" r="3" fill="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.75; 1"
-    fill="freeze" />
-</circle>
-<rect x="25" y="25" width="50" height="75" fill="transparent" stroke="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.75; 1"
-    fill="freeze" />
-</rect>
-<rect x="0" y="50" width="100" height="50" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 0.75; 1"
-    fill="freeze" />
-</rect>
-<text x="105" y="52" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 2.0
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="hidden"
-    dur="10s"
-    values="hidden; visible; hidden"
-    keyTimes="0; 0.75; 1"
-    fill="freeze" />
-</text>
-
-<text x="100" y="72" font-family="Verdana" font-size="10">
-1.0
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 1; 1"
-    fill="freeze" />
-</text>
-<circle cx="100" cy="75" r="3" fill="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 1; 1"
-    fill="freeze" />
-</circle>
-<rect x="75" y="75" width="25" height="25" fill="transparent" stroke="blue">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 1; 1"
-    fill="freeze" />
-</rect>
-<rect x="0" y="43.75" width="100" height="56.25" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 1; 1"
-    fill="freeze" />
-</rect>
-<text x="105" y="45.75" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 2.25
-  <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
-    from="hidden" to="visible"
-    dur="10s"
-    values="hidden; visible; visible"
-    keyTimes="0; 1; 1"
-    fill="freeze" />
-</text>
-</svg>
-</svg>
-</svg>
-
-<p/>
 ### Explanation
 
 Let's say we have a series with a step of 100 seconds. We receive the
@@ -185,10 +34,10 @@ does 1, 2 and 3 add up to _2.25_?
 
 One way to think about it is that the incomplete step is an empty
 swimming pool as wide as 1 step, into which we dump blocks of
-water. The first data point dumps a 2.0 x 0.25 block of water, which
-fills the pool to 0.5. The second data point dumps a 3.0 x 0.50 block,
+water. The first data point dumps a 2.0 &times; 0.25 block of water, which
+fills the pool to 0.5. The second data point dumps a 3.0 &times; 0.50 block,
 which raises the water another 1.5 to 2.0. The last data point dumps a
-1.0 x 0.25 block which raises it to the final value of 2.25.  Compare
+1.0 &times; 0.25 block which raises it to the final value of 2.25.  Compare
 this with Graphite which would simply discard the first two data
 points and we are left with 1.0 as the final value.
 
@@ -197,3 +46,35 @@ speed of a car in meters per second (more like a bycicle, I guess),
 its weighted average speed for the duration of this step of 2.25
 meters per second would mean that in the 100s it would have traveled
 exactly 225 meters.
+
+### NaNs or "Unknowns"
+
+What if instead of the first data point, the first 25s were "unknown"
+(recorded as NaN)?
+
+| Time  | Value |
+|-------|-------|
+|  25s  | NaN   |
+|  75s  | 3.0   |
+| 100s  | 2.0   |
+|-------|-------|
+| Final:| 2.667 |
+
+<p/>
+Then the total for this data point is 2.666666666. Or 2.67.
+
+But wait a second... 0.50 &times; 3 + 0.25 &times; 2 = 2.0 ? Where did
+2.67 come from?
+
+The reason for this is that NaN ought not be influencing the
+value. The above calculation would only be correct if we assumed that NaN is
+synonymous with zero, but that would be a false assumption, as NaN
+means "we do not know".
+
+Therefore, we must "pretend" that the data point is smaller, i.e. 75s
+long, or 3/4 the original size. Thus to get the final value we must
+divide the result 2.0 by 3/4, yielding 2.67.
+
+<object data="/images/data_point_unk.svg" type="image/svg+xml">
+  You browser does not support SVG objects?
+</object>

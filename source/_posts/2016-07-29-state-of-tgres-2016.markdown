@@ -275,8 +275,7 @@ the minimal flush frequency (all configurable).
 
 The responsibility of [rrd](https://github.com/tgres/tgres/tree/master/rrd) is to add data
 points to RRA's. This is not as simple as it sounds, a good
-description of the concepts behind it is available here:
-http://rrdtool.vandenbogaerdt.nl/process.php#Rate
+description of the concepts behind it is available [here](http://rrdtool.vandenbogaerdt.nl/process.php#Rate).
 
 ### tgres/http
 
