@@ -263,7 +263,7 @@ typical long-running service stuff.
 
 ### trges/tranceiver
 
-The[transceiver](https://github.com/tgres/tgres/tree/master/transceiver)
+The transceiver (Edit: it has been renamed to [receiver](https://github.com/tgres/tgres/tree/master/receiver))
 is the data point router and cache. It maintains a set of workers
 responsible for writing the data points to their respective RRA's, as
 well as caching and periodic flushing of the cache. Flushing is done
