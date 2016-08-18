@@ -22,7 +22,7 @@
 <!-- data points and values -->
 
 <text x="24" y="45" font-family="Verdana" font-size="10">
-NaN
+2.0
   <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
     from="hidden" to="visible"
     dur="10s"
@@ -124,7 +124,7 @@ NaN
     keyTimes="0; 1; 1"
     fill="freeze" />
 </rect>
-<rect x="0" y="43.75" width="100" height="56.25" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
+<rect x="0" y="41.667" width="100" height="58.33" fill="#aed6f1" stroke="transparent" fill-opacity="0.4">
   <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
     from="hidden" to="visible"
     dur="10s"
@@ -132,8 +132,8 @@ NaN
     keyTimes="0; 1; 1"
     fill="freeze" />
 </rect>
-<text x="105" y="26.7" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
- 2.67
+<text x="105" y="39.667" font-family="Verdana" font-size="10" font-weight="bold" style="visibility:hidden">
+ 2.33
   <animate attributeType="CSS" attributeName="visibility" begin="startbox.click"
     from="hidden" to="visible"
     dur="10s"
