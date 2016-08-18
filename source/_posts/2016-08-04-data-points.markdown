@@ -52,9 +52,8 @@ to this post, this boils down the [Fundamental Theorem of Calculus](https://en.w
 
 What if instead of the first data point, the first 25s were "unknown"
 (recorded as NaN)? This would happen, for example, if the series
-heartbeat (maximum duration without any data) was exceeded. Note that
-even though the data point has a value of 2.0, it will get recorded as
-NaN.
+heartbeat (maximum duration without any data) was exceeded. Even
+though the data point has a value of 2.0, it gets recorded as NaN.
 
 | Time  | Value | Recorded |
 |-------|-------|----------|
@@ -65,10 +64,8 @@ NaN.
 |       | Final:| 2.33     |
 
 <p/>
-Then the total for this data point is 2.3333333.
-
 But wait a second... 0.50 &times; 3 + 0.25 &times; 1 = 1.75 ? Where did
-2.33 come from?
+the value of 2.33 come from?
 
 The reason for this is that NaN ought not be influencing the
 value. The above calculation would only be correct if we assumed that NaN is
@@ -76,10 +73,10 @@ synonymous with zero, but that would be a false assumption, as NaN
 means "we do not know".
 
 Therefore, we must only consider the known part of the data point,
-which is 75s. We can think of it that the data point just got smaller.
-Thus the correct calculation for the 3.0 point would be 3.0 &times; 50
-&divide; 75 = 2.0 and for the 1.0 point 2.0 + 1.0 &times; 50 &divide;
-75 = 2.33.
+which is 75s. We can think of it that the data point (the "swimming
+pool") just got smaller.  Thus the correct calculation for the 3.0
+point would be 3.0 &times; 50 &divide; 75 = 2.0 and for the 1.0 point
+2.0 + 1.0 &times; 50 &divide; 75 = 2.33.
 
 Here it is in SVG:
 
