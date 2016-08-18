@@ -1,15 +1,14 @@
 ---
 layout: post
-title: "How Data Points Add Up"
+title: "How Data Points Build Up"
 date: 2016-08-04 10:35
 comments: true
 categories:
 ---
 
-This silly SVG animation (I only learned how to make an SVG animation
-this morning) demonstrates what happens when multiple Tgres data
-points arrive within the same step (i.e. smallest time interval for
-this series).
+This silly SVG animation (animation not my strong suit) demonstrates
+what happens when multiple Tgres data points arrive within the same
+step (i.e. smallest time interval for this series).
 
 <object data="/images/data_point.svg" type="image/svg+xml">
   You browser does not support SVG objects?
@@ -21,13 +20,13 @@ Let's say we have a series with a step of 100 seconds. We receive the
 following data points, all within the 100 second interval of a
 single step:
 
-| Time  | Value |
-|-------|-------|
-|  25s  | 1.0   |
-|  75s  | 3.0   |
-| 100s  | 2.0   |
-|-------|-------|
-| Final:| 2.25  |
+| Time  | Value | Recorded |
+|-------|-------|----------|
+|  25s  | 2.0   | 0.5      |
+|  75s  | 3.0   | 2.0      |
+| 100s  | 1.0   | 2.25     |
+|-------|-------|----------|
+|       | Final:| 2.25     |
 
 <p/> Tgres will store 2.25 as the final value for this step. So how
 does 1, 2 and 3 add up to _2.25_?
@@ -45,36 +44,54 @@ Why is it done this way? Because this is how rates add up. If this was
 speed of a car in meters per second (more like a bycicle, I guess),
 its weighted average speed for the duration of this step of 2.25
 meters per second would mean that in the 100s it would have traveled
-exactly 225 meters.
+exactly 225 meters. As one of the smart readers pointed out in the comments
+to this post, this boils down the [Fundamental Theorem of
+Calculus](https://en.wikipedia.org/wiki/Fundamental_theorem_of_calculus).
 
 ### NaNs or "Unknowns"
 
 What if instead of the first data point, the first 25s were "unknown"
-(recorded as NaN)?
+(recorded as NaN)? This would happen, for example, if the series
+heartbeat (maximum duration without any data) was exceeded. Note that
+even though the data point has a value of 2.0, it will get recorded as
+NaN.
 
-| Time  | Value |
-|-------|-------|
-|  25s  | NaN   |
-|  75s  | 3.0   |
-| 100s  | 2.0   |
-|-------|-------|
-| Final:| 2.667 |
+| Time  | Value | Recorded |
+|-------|-------|----------|
+|  25s  | 2.0   | NaN      |
+|  75s  | 3.0   | 2.0      |
+| 100s  | 1.0   | 2.33     |
+|-------|-------|----------|
+|       | Final:| 2.33     |
 
 <p/>
-Then the total for this data point is 2.666666666. Or 2.67.
+Then the total for this data point is 2.3333333.
 
-But wait a second... 0.50 &times; 3 + 0.25 &times; 2 = 2.0 ? Where did
-2.67 come from?
+But wait a second... 0.50 &times; 3 + 0.25 &times; 1 = 1.75 ? Where did
+2.33 come from?
 
 The reason for this is that NaN ought not be influencing the
 value. The above calculation would only be correct if we assumed that NaN is
 synonymous with zero, but that would be a false assumption, as NaN
 means "we do not know".
 
-Therefore, we must "pretend" that the data point is smaller, i.e. 75s
-long, or 3/4 the original size. Thus to get the final value we must
-divide the result 2.0 by 3/4, yielding 2.67.
+Therefore, we must only consider the known part of the data point,
+which is 75s. We can think of it that the data point just got smaller.
+Thus the correct calculation for the 3.0 point would be 3.0 &times; 50
+&divide; 75 = 2.0 and for the 1.0 point 2.0 + 1.0 &times; 50 &divide;
+75 = 2.33.
+
+Here it is in SVG:
 
 <object data="/images/data_point_unk.svg" type="image/svg+xml">
   You browser does not support SVG objects?
 </object>
+
+Also note how the value of the data point which was recorded as NaN
+(2.0 in our example) is essentially irrelevant. This is because any
+calculation with a NaN always results in a NaN. The only thing we know
+about this data point is that it was not NaN and that it marked the
+end of period recorded as NaN. The next data point after this (3.0 in
+our example) is not affected by the NaN, however, this is because it
+in effect starts its own data point afresh, not considering anything
+in the past.
