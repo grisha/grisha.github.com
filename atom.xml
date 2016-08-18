@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-18T10:35:38-04:00</updated>
+  <updated>2016-08-18T10:38:05-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -91,9 +91,8 @@ to this post, this boils down the <a href="https://en.wikipedia.org/wiki/Fundame
 
 <p>What if instead of the first data point, the first 25s were “unknown”
 (recorded as NaN)? This would happen, for example, if the series
-heartbeat (maximum duration without any data) was exceeded. Note that
-even though the data point has a value of 2.0, it will get recorded as
-NaN.</p>
+heartbeat (maximum duration without any data) was exceeded. Even
+though the data point has a value of 2.0, it gets recorded as NaN.</p>
 
 <table>
   <thead>
@@ -131,10 +130,8 @@ NaN.</p>
 
 <p />
 
-<p>Then the total for this data point is 2.3333333.</p>
-
 <p>But wait a second… 0.50 × 3 + 0.25 × 1 = 1.75 ? Where did
-2.33 come from?</p>
+the value of 2.33 come from?</p>
 
 <p>The reason for this is that NaN ought not be influencing the
 value. The above calculation would only be correct if we assumed that NaN is
@@ -142,10 +139,10 @@ synonymous with zero, but that would be a false assumption, as NaN
 means “we do not know”.</p>
 
 <p>Therefore, we must only consider the known part of the data point,
-which is 75s. We can think of it that the data point just got smaller.
-Thus the correct calculation for the 3.0 point would be 3.0 × 50
-÷ 75 = 2.0 and for the 1.0 point 2.0 + 1.0 × 50 ÷
-75 = 2.33.</p>
+which is 75s. We can think of it that the data point (the swimming
+pool) just got smaller.  Thus the correct calculation for the 3.0
+point would be 3.0 × 50 ÷ 75 = 2.0 and for the 1.0 point
+2.0 + 1.0 × 50 ÷ 75 = 2.33.</p>
 
 <p>Here it is in SVG:</p>
 
