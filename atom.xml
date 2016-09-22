@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-09-22T08:29:44-04:00</updated>
+  <updated>2016-09-22T08:30:19-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -25,7 +25,7 @@ and a function <em>argument</em>? Consider these two bits of code:</p>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 </pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// receiver</span>
-</span><span class="line">   <span class="c1">// do something</span>
+</span><span class="line">     <span class="c1">// do something</span>
 </span><span class="line"><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
@@ -35,7 +35,7 @@ and a function <em>argument</em>? Consider these two bits of code:</p>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 </pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">quack</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// funciton argument</span>
-</span><span class="line">  <span class="c1">// do something</span>
+</span><span class="line">    <span class="c1">// do something</span>
 </span><span class="line"><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
