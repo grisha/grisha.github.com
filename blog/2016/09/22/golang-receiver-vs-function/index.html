@@ -178,7 +178,7 @@ change them, and there is no such thing as a “method variable”:</p>
 <span class="line-number">8</span>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
 </span><span class="line">
 </span><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span>
 </span><span class="line">   <span class="c1">// do something</span>
@@ -202,7 +202,7 @@ change them, and there is no such thing as a “method variable”:</p>
 <span class="line-number">8</span>
 <span class="line-number">9</span>
 <span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
 </span><span class="line">
 </span><span class="line"><span class="kd">var</span> <span class="nx">quack</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
 </span><span class="line">   <span class="c1">// do something</span>
@@ -237,7 +237,7 @@ well.</p>
 </span><span class="line">  <span class="nx">quack</span><span class="p">()</span>
 </span><span class="line"><span class="p">}</span>
 </span><span class="line">
-</span><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</span><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
 </span><span class="line">
 </span><span class="line"><span class="kd">var</span> <span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// satisfies quacker</span>
 </span><span class="line">   <span class="c1">// do something</span>
