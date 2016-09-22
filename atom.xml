@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-08-18T10:38:29-04:00</updated>
+  <updated>2016-09-22T08:15:39-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,147 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Golang receiver vs function]]></title>
+    <link href="http://grisha.org/blog/2016/09/22/golang-receiver-vs-function/"/>
+    <updated>2016-09-22T08:15:00-04:00</updated>
+    <id>http://grisha.org/blog/2016/09/22/golang-receiver-vs-function</id>
+    <content type="html"><![CDATA[<p>What is the difference between a Go <em>receiver</em> (as in “method receiver”)
+and a function <em>argument</em>? Consider these two bits of code:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// receiver</span>
+</span><span class="line">   <span class="c1">// do something</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>versus</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">quack</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// funciton argument</span>
+</span><span class="line">  <span class="c1">// do something</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The “do something” part above would work exactly the same regardless of
+how you declare the function. Which begs the question, which should
+you use?</p>
+
+<p>In the object-oriented world we were used to objects doing things, and
+in that context <code>d.quack()</code> may seem more intuitive or familiar than
+<code>quack(d)</code>, because it reads better. After all, one could argue that
+the former is a duck quacking, but the latter reads like you’re
+quacking a duck, and what does that even mean? I have learned that you
+should not think this way in the Go universe, and here is why.</p>
+
+<p>First, what is the essential difference? It is that at the time of the
+call, the receiver is an <em>interface</em> and the function to be called is
+determined <em>dynamically</em>. If you are not using interfaces, then this
+doesn’t matter whatsoever and the only benefit you are getting from
+using a method is syntactic sweetness.</p>
+
+<p>But what if you need to write a test where you want to stub out
+<code>quack()</code>. If your code looks like this, then it is not possible,
+because methods are attached to their types inflexibly, you cannot
+change them, and there is no such thing as a “method variable”:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">   <span class="c1">// do something</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">// the function we are testing:</span>
+</span><span class="line"><span class="kd">func</span> <span class="nx">testme</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">d</span><span class="p">.</span><span class="nx">quack</span><span class="p">()</span> <span class="c1">// cannot be stubbed</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>However, if you used a function argument, it would be easy:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">var</span> <span class="nx">quack</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">   <span class="c1">// do something</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">// the function we are testing:</span>
+</span><span class="line"><span class="kd">func</span> <span class="nx">foo</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">quack</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now you can assign another function to quack at test time, e.g. <code>quack = func(d *duck) { // do something else }</code>  and all is
+well.</p>
+
+<p>Alternatively, you can use an interface:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">quacker</span> <span class="kd">interface</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">quack</span><span class="p">()</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span> <span class="p">{}</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">var</span> <span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// satisfies quacker</span>
+</span><span class="line">   <span class="c1">// do something</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">// the function we are testing:</span>
+</span><span class="line"><span class="kd">func</span> <span class="nx">foo</span><span class="p">(</span><span class="nx">d</span> <span class="nx">quacker</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">d</span><span class="p">.</span><span class="nx">quack</span><span class="p">()</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Here, if we need to test <code>foo()</code> we can provide a different
+<code>quacker</code>.</p>
+
+<p>Bottom line is that it only makes sense to use a receiver if this
+function is part of an interface implementation, OR if you never ever
+need to augment (stub) that function for testing or some other
+reason. As a practical matter, it seems like (contrary to how it’s
+done in the OO world) it is better to always start out with <code>quack(d)</code>
+rather than <code>d.quack()</code>.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[How Data Points Build Up]]></title>
@@ -4040,70 +4181,6 @@ it helpful. Whenever you find yourself at an impass and progress
 has stopped, ask yourself:</p>
 
 <p>“What is the Next Smallest Step?”</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hacking on mod_python (again)]]></title>
-    <link href="http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/"/>
-    <updated>2013-08-02T16:19:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again</id>
-    <content type="html"><![CDATA[<p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
-to <a href="http://www.modpython.org/">Mod_python</a> I’ve decided to spend some time hacking on it again.</p>
-
-<p>Five years without active development and thirteen since its first
-release, it still seems to me an entirely useful and viable tool. The
-code is exceptionally clean, the documentation is amazing, and the
-test suite is awesome.  Which is a real testament to the noble efforts
-of all the people who contributed to its development.</p>
-
-<p>We live in this new
-<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
-Apache Httpd no longer has the market dominance it once enjoyed, while
-the latest Python web frameworks run without requiring or recommending
-Mod_python. My hunch, however, is that given a thorough dusting it
-could be quite useful (perhaps more than ever) and applied in very
-interesting ways to solve the new problems. I also think the Python
-language is at a very important inflection point. Pyhton 3 is now
-mature, and is slowly but steadily becoming the preferred language of
-many interesting communities such as data science, for example.</p>
-
-<p>The current status of Mod_python as an Apache project is that it’s
-in the <a href="http://attic.apache.org/">attic</a>. This means that the
-<a href="http://www.apache.org/">ASF</a> isn’t providing much in the way of
-infrastructure support any longer, nor will you see an “official” ASF
-release any time soon. (If ever - Mod_python would have to re-enter as
-an <a href="http://incubator.apache.org/">incubator</a> project and at this point
-it is entirely premature to even consider such an option).</p>
-
-<p>For now the main goal is to re-establish the community, and as part of
-that I will have to sort out how to do issue tracking, discussion
-groups, etc. At this point the only thing I’ve decided is that the
-main repository will live on
-<a href="https://github.com/grisha/mod_python">github</a>.</p>
-
-<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
-development goal is to bring it up to compatibility with Python 2.7
-and Apache Httpd 2.4 (I’m nearly there already), then potentially move
-on to Python 3 support. I have rolled back a few commits (most notably
-the new importer) because I did not understand them. There are still a
-few changes in Apache 2.4 that need to be addressed, but they seem
-relatively minor at this point. Authentication has been changed
-significantly in 2.4, though mod_python never had much coverage in that
-area.</p>
-
-<p>Let’s see where this takes us? And if you like this, feel free to
-star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
-
-<p>
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
-
-<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
-
-<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
-<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-</p>
-
 ]]></content>
   </entry>
   
