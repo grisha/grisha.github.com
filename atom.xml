@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-11-07T08:20:53-05:00</updated>
+  <updated>2016-11-08T15:47:33-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,116 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Load testing Tgres]]></title>
+    <link href="http://grisha.org/blog/2016/11/08/load-testing-tgres/"/>
+    <updated>2016-11-08T14:41:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/11/08/load-testing-tgres</id>
+    <content type="html"><![CDATA[<p>So I finally got around to some load testing of <a href="https://github.com/tgres/tgres">Tgres</a>. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is completely unexpcted.</p>
+
+<p>Given that I presently don’t have any spare big iron at my disposal
+and my “servers” are my macbook and an old thinkpad, all I really was
+after is making sure that Tgres is “good enough” whatever that
+means. And I think it is.</p>
+
+<p>I was hoping to gather some concrete numbers and may be even make a
+chart or two, but in the end it all turned out to be so tedious and
+time consuming, running the tests with various setting for hours on,
+that I just gave up for now - after all, “premature optimization is
+the root of all evil”.</p>
+
+<p>I also wanted to see how it stacks up against Graphite
+carbon-cache.py. As in, is it on par, or much better or much worse. My
+expectation was that Graphite could outperform it, because what it
+does is so much simpler (and I was right). First thing I tried to do
+is overwhelm Graphite. I never succeeded in that - I probably could
+have tried harder, but I quickly learned that I don’t know what
+symptoms I’m looking for. I wronte a Go program that blasted UDP data
+points at 10K/sec across 10K different series, and taking it to over
+20K/sec saturated my network before Graphite showed any signs of
+deterioration. There was also no reliable way for me to audit the data
+points - may be some of them got lost, but at 600K+ per minute, I
+don’t know of any practical way of doing it. Not without a lot of
+work, at least.</p>
+
+<p>With Tgres things were much easier. The weakest link is, not
+surpisingly, PostgreSQL. What I learned was that there are two kinds of
+deterioration when it comes to PostgreSQL though. The first one is
+outright, and that one manifests in database requests getting
+progressively slower until Tgres gets stuck with all its channels
+full.</p>
+
+<p>You can make PostgreSQL very significantly faster with a few simple
+tricks. For example the following settings can make it much faster:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">synchronous_commit = off
+</span><span class="line">commit_delay = 100000</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This post isn’t about PostgreSQL, and so I’m not going to get into the
+details of what this does, there is plenty of documentation and blog
+posts on the subject. If you plan on hosting a busy Tgres set up, you
+should probably have the above settings.</p>
+
+<p>The second way PostgreSQL deteriorates is not immediately apparent - it
+is the infamous table bloat. Getting autovacuum to keep up with the ts
+table (which stores all the time series) is tricky, and once you’ve
+ran out of options to tweak, this is probably it - the maximum load
+the database can handle, even if it may seem relatively calm.</p>
+
+<p>Autovacuum has a lot of knobs, but ultimately they all exist to take
+advantage of the variability of load in a database, i.e. you can let
+it get behind during the day and catch up at night when the database
+is not as busy. It doesn’t really work with time series, which are not
+variable by nature - if you’re receiving 5 thousand data points per
+second at noon, you can expect the same rate at 4am. I think the
+setting that worked best for me were:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">autovacuum_max_workers = 10
+</span><span class="line">autovacuum_naptime = 1s
+</span><span class="line">autovacuum_vacuum_threshold = 2000
+</span><span class="line">autovacuum_vacuum_scale_factor = 0.0
+</span><span class="line">autovacuum_vacuum_cost_delay = 0 # disable cost based
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>To the best of my undestanding the above setting disables cost-based
+autovacuum (meaning it doesn’t pause periodically to yield resources
+to the normal db tasks), makes autovacuum kick in after 2K updates
+(which happens in no time), and sleeps 1s in between runs, which means
+it’s running pretty much continuosly.</p>
+
+<p>I was able to sustain a load of ~6K datapoints per second across 6K
+series - anything higher caused my “database server” (which is a 2010
+i7 Thinkpad) autovacuum to get behind.</p>
+
+<p>I also did some testing of how TOAST affects performance. There is no
+setting for turning TOAST on or off, but it can easily be done in
+Tgres by changing the number of data points per row. The default is
+768 which is about 75% of a page. If you for example double it, then
+each row becomes larger than a page and TOAST kicks in. TOAST is
+compressed, which is an advantage, but it is a separate table, which
+is a disadvantage. In the end it seemed like the database detirorated
+quicker with TOAST, but it was rather inconclusive.</p>
+
+<p>In the end the key factor, or the weakest link, was the rate of
+queries per second. I now added a special rate limiting setting
+feature to Tgres (max-flushes-per-second) which trumps all other
+settings and will keep your database happy at the expense of Tgres
+possibly caching a little more points in memory than expected.</p>
+
+<p>I will probably get back to some more load testing in a while, but for
+now this is it.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Golang receiver vs function argument]]></title>
@@ -4110,77 +4220,6 @@ none of that.</p>
 that’s exactly how it is…</p>
 
 <p>Please help me <a href="https://github.com/grisha/mod_python/issues/4">test it</a>.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[The Next Smallest Step Problem]]></title>
-    <link href="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/"/>
-    <updated>2013-08-10T15:10:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem</id>
-    <content type="html"><![CDATA[<p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
-
-<p>Most of my journeys never begin, or cannot continue because of that one
-single step, be it first or next. Because it is hard, at times
-excruciatingly so.</p>
-
-<p>Here I speak of software, but this applies to many other aspects of my
-life just as well.</p>
-
-<p>I recon it’s because I do not think in steps. I think of a
-destination.  I imagine the end-result. I can picture it with clarity
-and in great detail. I know where I need to be. But what is the next
-step to get there? And it doesn’t help that where I travel, there are
-no signs.</p>
-
-<p>The problem of deciding what to do next is so common for me that I
-even have a name for it. I call it “The Next Smallest Step”
-problem. Whenever I find myself idling, clicking over to online
-time-wasters, I pause and ask myself “What is the Next Smallest Step?
-What’s the next smallest thing I can do, right now?”</p>
-
-<p>It doesn’t matter how much further this small step moves me. A
-nanometer is better than standing still. It has to be something that
-is simple enough that I can just do. Right now.</p>
-
-<p>I always plan to do big things that take days, weeks or months. But of
-all that, can I pick that one small simple and quick thing that I can
-do now?</p>
-
-<p>Sometimes focusing on the next smallest step is so difficult that I
-pencil this question on a piece of paper, and sometimes I just type it
-on the command line or in the source code. My short version is:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
-</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(that’s right, in CAPS)</p>
-
-<p>This simple question has taken me on some of the most fascinating and
-challenging journeys ever. In restrospect, I think I would not be able
-to travel any of them without repeatedly asking it of myself, over and
-over again.</p>
-
-<p>It has resulted in most productive and gratifying days of work. Some
-of my greatest projects began with this question. In many instances it
-established what I had to do for months ahead (years, even?). All
-beginning with this one small question.</p>
-
-<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
-gone by without any results to show for and many a great opportunity
-lost.</p>
-
-<p>I must also note that some of my next smallest steps took days of
-thinking to figure out. Nothing wrong with that.</p>
-
-<p>And so I thought I’d share this with you, just in case you might find
-it helpful. Whenever you find yourself at an impass and progress
-has stopped, ask yourself:</p>
-
-<p>“What is the Next Smallest Step?”</p>
 ]]></content>
   </entry>
   

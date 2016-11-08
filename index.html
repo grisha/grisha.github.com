@@ -9,11 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="What is the difference between a Go receiver (as in “method receiver”)
-and a function argument? Consider these two bits of code: 1
-2
-3
-func (d *duck &hellip;">
+  <meta name="description" content="So I finally got around to some load testing of Tgres. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -97,6 +95,145 @@ func (d *duck &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/11/08/load-testing-tgres/">Load Testing Tgres</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-11-08T14:41:00-05:00" pubdate data-updated="true">Nov 8<span>th</span>, 2016</time>
+        
+         | <a href="/blog/2016/11/08/load-testing-tgres/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>So I finally got around to some load testing of <a href="https://github.com/tgres/tgres">Tgres</a>. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is completely unexpcted.</p>
+
+<p>Given that I presently don’t have any spare big iron at my disposal
+and my “servers” are my macbook and an old thinkpad, all I really was
+after is making sure that Tgres is “good enough” whatever that
+means. And I think it is.</p>
+
+<p>I was hoping to gather some concrete numbers and may be even make a
+chart or two, but in the end it all turned out to be so tedious and
+time consuming, running the tests with various setting for hours on,
+that I just gave up for now - after all, “premature optimization is
+the root of all evil”.</p>
+
+<p>I also wanted to see how it stacks up against Graphite
+carbon-cache.py. As in, is it on par, or much better or much worse. My
+expectation was that Graphite could outperform it, because what it
+does is so much simpler (and I was right). First thing I tried to do
+is overwhelm Graphite. I never succeeded in that - I probably could
+have tried harder, but I quickly learned that I don’t know what
+symptoms I’m looking for. I wronte a Go program that blasted UDP data
+points at 10K/sec across 10K different series, and taking it to over
+20K/sec saturated my network before Graphite showed any signs of
+deterioration. There was also no reliable way for me to audit the data
+points - may be some of them got lost, but at 600K+ per minute, I
+don’t know of any practical way of doing it. Not without a lot of
+work, at least.</p>
+
+<p>With Tgres things were much easier. The weakest link is, not
+surpisingly, PostgreSQL. What I learned was that there are two kinds of
+deterioration when it comes to PostgreSQL though. The first one is
+outright, and that one manifests in database requests getting
+progressively slower until Tgres gets stuck with all its channels
+full.</p>
+
+<p>You can make PostgreSQL very significantly faster with a few simple
+tricks. For example the following settings can make it much faster:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">synchronous_commit = off
+</span><span class="line">commit_delay = 100000</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This post isn’t about PostgreSQL, and so I’m not going to get into the
+details of what this does, there is plenty of documentation and blog
+posts on the subject. If you plan on hosting a busy Tgres set up, you
+should probably have the above settings.</p>
+
+<p>The second way PostgreSQL deteriorates is not immediately apparent - it
+is the infamous table bloat. Getting autovacuum to keep up with the ts
+table (which stores all the time series) is tricky, and once you’ve
+ran out of options to tweak, this is probably it - the maximum load
+the database can handle, even if it may seem relatively calm.</p>
+
+<p>Autovacuum has a lot of knobs, but ultimately they all exist to take
+advantage of the variability of load in a database, i.e. you can let
+it get behind during the day and catch up at night when the database
+is not as busy. It doesn’t really work with time series, which are not
+variable by nature - if you’re receiving 5 thousand data points per
+second at noon, you can expect the same rate at 4am. I think the
+setting that worked best for me were:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">autovacuum_max_workers = 10
+</span><span class="line">autovacuum_naptime = 1s
+</span><span class="line">autovacuum_vacuum_threshold = 2000
+</span><span class="line">autovacuum_vacuum_scale_factor = 0.0
+</span><span class="line">autovacuum_vacuum_cost_delay = 0 # disable cost based
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>To the best of my undestanding the above setting disables cost-based
+autovacuum (meaning it doesn’t pause periodically to yield resources
+to the normal db tasks), makes autovacuum kick in after 2K updates
+(which happens in no time), and sleeps 1s in between runs, which means
+it’s running pretty much continuosly.</p>
+
+<p>I was able to sustain a load of ~6K datapoints per second across 6K
+series - anything higher caused my “database server” (which is a 2010
+i7 Thinkpad) autovacuum to get behind.</p>
+
+<p>I also did some testing of how TOAST affects performance. There is no
+setting for turning TOAST on or off, but it can easily be done in
+Tgres by changing the number of data points per row. The default is
+768 which is about 75% of a page. If you for example double it, then
+each row becomes larger than a page and TOAST kicks in. TOAST is
+compressed, which is an advantage, but it is a separate table, which
+is a disadvantage. In the end it seemed like the database detirorated
+quicker with TOAST, but it was rather inconclusive.</p>
+
+<p>In the end the key factor, or the weakest link, was the rate of
+queries per second. I now added a special rate limiting setting
+feature to Tgres (max-flushes-per-second) which trumps all other
+settings and will keep your database happy at the expense of Tgres
+possibly caching a little more points in memory than expected.</p>
+
+<p>I will probably get back to some more load testing in a while, but for
+now this is it.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2435,219 +2572,6 @@ know, a line cannot be defined by a single point.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/03/28/on-time-series/">On Time Series</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-03-28T15:40:00-04:00" pubdate data-updated="true">Mar 28<span>th</span>, 2015</time>
-        
-         | <a href="/blog/2015/03/28/on-time-series/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2 id="is-it-even-a-thing">Is it even a thing?</h2>
-
-<p>Time Series is on its way to becoming a buzzword in the Information
-Technology circles. This has to do with the looming Internet of Things
-which shall cause the Great Reversal of Internet whereby upstream flow
-of data produced by said Things is expected to exceed the downstream
-flow. Much of this data is expected to be of the Time Series kind.</p>
-
-<p>This, of course, is a money-making opportunity of the Big Data
-proportions all over again, and I predict we’re going to see a lot of
-Time Series support of various shapes and forms appearing in all
-manners of (mostly commercial) software.</p>
-
-<p>But is there really such a thing as the problem specifically inherent
-to Time Series data which warrants a specialized solution? I’ve been
-pondering this for some time now, and I am still undecided. This
-here is my attempt at arguing that TS is <em>not</em> a special problem and
-that it can be done by using a database like PostgreSQL.</p>
-
-<h2 id="influx-of-data-and-write-speeds">Influx of data and write speeds</h2>
-
-<p>One frequently cited issue with time series data is that it arrives in
-large volumes at a steady pace which renders buffered writes
-useless. The number of incoming data streams can also be large
-typically causing a disk seek per stream and further complicating the
-write situation. TS data also has a property where often more data is
-written than read because it’s possible for a datapoint to be
-collected and examined only once, if ever. In short, TS is very
-write-heavy.</p>
-
-<p>But is this unique? For example logs have almost identical
-properties. The real question here is whether our tried and true
-databases such as PostgreSQL are ill-equipped to deal with large
-volumes of incoming data requiring an alternative solution.</p>
-
-<p>When considering incoming data I am tempted to imagine every US
-household sending it, which, of course, would require massive
-infrastructure. But this (unrealistic) scenario is not a TS data
-problem, it’s one of scale, the same one from which the Hadoops and
-Cassandras of this world were born. What is really happening here is
-that TS happens to be yet another thing that requires the difficult to
-deal with “big data” infrastructure and reiterates the need for an
-easy-to-setup horizontally scalable database (which PostgreSQL isn’t).</p>
-
-<h2 id="the-backfill-problem">The backfill problem</h2>
-
-<p>This is the problem of having to import vast amounts of historical
-data. For example OpenTSDB goes to great lengths to optimize
-back-filling by structuring it in specific ways and storing compressed
-blobs of data.</p>
-
-<p>But just like the write problem, it’s not unique to TS. It
-is another problem that is becoming more and more pertinent as our
-backlogs of data going back to when we stopped using paper keep
-growing and growing.</p>
-
-<h2 id="downsampling">Downsampling</h2>
-
-<p>Very often TS data is used to generate charts. This is an artifact of
-the human brain being spectacularly good at interpreting a visual
-representation of a relationship between streams of numbers while
-nearly incapable of making sense of data in tabular form. When
-plotting, no matter how much data is being examined, the end result is
-limited to however many pixels are available on the display. Even
-plotting aside, most any use of time series data is in an aggregated
-form.</p>
-
-<p>The process of consolidating datapoints into a smaller number (e.g.
-the pixel width of the chart), sometimes called <em>downsampling</em>, involves
-aggregation around a particular time interval or simply picking every
-Nth datapoint.</p>
-
-<p>As an aside, selecting every Nth row of a table is an interesting SQL
-challenge, in PostgreSQL it looks like this (for every 100th row):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class=""><span class="line"> SELECT time, data FROM
-</span><span class="line">   (SELECT *, row_number() OVER (ORDER BY time) as n FROM data_points) dp
-</span><span class="line">      WHERE dp.n % 100 = 0 ORDER BY time</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Aggregation over a time interval similar to how InfluxDB does it with
-the <code>GROUP BY time(1d)</code> syntax can be easily achieved via the
-<code>date_trunc('day', time)</code>.</p>
-
-<p>Another aspect of downsampling is that since TS data is immutable,
-there is no need to repeatedly recompute the consolidated version. It
-makes more sense to downsample immediately upon the receipt of the
-data and to store it permanently in this form. RRDTool’s Round-Robin
-database is based entirely on this notion. InfluxDB’s continuous
-queries is another way persistent downsampling is addressed.</p>
-
-<p>Again, there is nothing TS-specific here. Storing data in summary form
-is quite common in the data analytics world and a “continuous query”
-is easily implemented via a trigger.</p>
-
-<h2 id="derivatives">Derivatives</h2>
-
-<p>Sometimes the data from various devices exists in the form of a
-counter, which requires the database to derive a rate by comparing
-with a previous datapoint. An example of this is number of bytes sent
-over a network interface. Only the rate of change of this value is
-relevant, not the number itself. The rate of change is the difference
-with the previous value divided over the time interval passed.</p>
-
-<p>Referring to a previous row is also a bit tricky but perfectly doable
-in SQL. It can accomplished by using windowing functions such as
-<code>lag()</code>.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">SELECT time,
-</span><span class="line">  (bytes - lag(bytes, 1) OVER w) / extract(epoch from (time - lag(time, 1) OVER w))::numeric
-</span><span class="line">    AS bytes_per_sec
-</span><span class="line">  FROM data_points
-</span><span class="line">  WINDOW w AS (ORDER BY time)
-</span><span class="line">  ORDER BY time</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h2 id="expiration">Expiration</h2>
-
-<p>It is useful to downsample data to a less granular form as it ages,
-aggregating over an ever larger period of time and possibly purging
-records eventually. For example we might want to store minutely data
-for a week, hourly for 3 months, daily for 3 years and drop all data
-beyond 3 years.</p>
-
-<p>Databases do not expire rows “natively” like Cassandra or Redis, but it
-shouldn’t be too hard to accomplish via some sort of a periodic cron
-job or possibly even just triggers.</p>
-
-<h2 id="heartbeat-and-interval-filling">Heartbeat and Interval Filling</h2>
-
-<p>It is possible for a time series stream to pause, and this can be
-interpreted in different ways: we can attempt to fill in missing data,
-or treat it as unknown. More likely we’d want to start treating it as
-unknown after some period of silence. RRDTool addresses this by
-introducing the notion of a <em>heartbeat</em> and the number of missed beats
-before data is treated as unknown.</p>
-
-<p>Regardless of whether the value is unknown, it is useful to be able to
-fill in a gap (missing rows) in data. In PostgreSQL this can be
-accomplished by a join with a result set from the <code>generate_series()</code>
-function.</p>
-
-<h2 id="data-seclusion">Data Seclusion</h2>
-
-<p>With many specialized Time Series tools the TS data ends up being
-secluded in a separate system not easily accessible from the rest of
-the business data. You cannot join your customer records with data in
-RRDTool or Graphite or InfluxDB, etc.</p>
-
-<h2 id="conclusion">Conclusion</h2>
-
-<p>If there is a problem with using PosgreSQL or some other database for
-Time Series data, it is mainly that of having to use advanced SQL
-syntax and possibly requiring some cookie-cutter method for managing
-Time Series, especially when it is a large number or series and high
-volume.</p>
-
-<p>There is also complexity in horizontally scaling a relational database
-because it involves setting up replication, sharding, methods for
-recovery from failure and balancing the data. But these are not
-TS-specific problems, they are scaling problems.</p>
-
-<p>Having written this up, I’m inclined to think that perhaps there is
-no need for a specialized “Time Series Database”, instead it can be
-accomplished by an application which uses a database for storage and
-abstracts the users from the complexities of SQL and potentially even
-scaling, while still allowing for direct access to the data via the
-rich set of tools that a database like PostgreSQL provides.</p>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2701,6 +2625,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/11/08/load-testing-tgres/">Load testing Tgres</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/09/22/golang-receiver-vs-function/">Golang receiver vs function argument</a>
       </li>
     
@@ -2714,10 +2642,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/">Deploying a Golang app to AWS ECS with Terraform</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Holt-Winters Forecasting for Dummies - Part III</a>
       </li>
     
   </ul>

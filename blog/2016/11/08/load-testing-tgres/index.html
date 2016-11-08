@@ -5,12 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Storm Notes - Grisha Trubetskoy</title>
+  <title>Load testing Tgres - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Some random thoughts on having tinkered with
-Storm over the past few weeks. It took me some time to understand what Storm is, and I am still not &hellip;">
+  <meta name="description" content="So I finally got around to some load testing of Tgres. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +20,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/04/01/storm-notes">
+  <link rel="canonical" href="http://grisha.org/blog/2016/11/08/load-testing-tgres">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -97,7 +98,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
   <header>
     
-      <h1 class="entry-title">Storm Notes</h1>
+      <h1 class="entry-title">Load Testing Tgres</h1>
     
     
       <p class="meta">
@@ -113,7 +114,7 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2016-11-08T14:41:00-05:00" pubdate data-updated="true">Nov 8<span>th</span>, 2016</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -122,68 +123,108 @@ Storm over the past few weeks. It took me some time to understand what Storm is,
   </header>
 
 
-<div class="entry-content"><p>Some random thoughts on having tinkered with
-<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
+<div class="entry-content"><p>So I finally got around to some load testing of <a href="https://github.com/tgres/tgres">Tgres</a>. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is completely unexpcted.</p>
 
-<p>It took me some time to understand what Storm is, and I am still not
-clear I have found a perfect use for it. (This is not
-a criticism of Storm, the point is that the concepts it introduces are
-new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
-understanding of Storm concepts is to watch Nathan Marz’s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>. </p>
+<p>Given that I presently don’t have any spare big iron at my disposal
+and my “servers” are my macbook and an old thinkpad, all I really was
+after is making sure that Tgres is “good enough” whatever that
+means. And I think it is.</p>
 
-<p>In simple terms, Storm is a tool that lets you run code in parallel
-across a cluster of servers. It differs from Map/Reduce in that the
-actual algorithm is entirely up to you, and in essence all that Storm
-provides is the framework that supervises all the moving pieces of your
-application (known as a <em>topology</em>) and provides a uniform way of
-creating, testing locally, sumbitting to a cluster, logging,
-monitoring, as well as primitives for sending data between components
-such as grouping data by using hashing, etc.</p>
+<p>I was hoping to gather some concrete numbers and may be even make a
+chart or two, but in the end it all turned out to be so tedious and
+time consuming, running the tests with various setting for hours on,
+that I just gave up for now - after all, “premature optimization is
+the root of all evil”.</p>
 
-<p>Storm is mainly meant for stream processing. A stream could be
-anything, some of the most obvious examples may be your web logs,
-tables containing user actions such as clicks, transactions,
-purchases, trades, etc. If the data is coming in at a rate where it’s
-challenging to process it on one server, Storm provides a way to scale
-it across a cluster of servers and can handle ridiculous amounts of
-incoming data. The result is a real-time view of summary data that is
-always up to date.</p>
+<p>I also wanted to see how it stacks up against Graphite
+carbon-cache.py. As in, is it on par, or much better or much worse. My
+expectation was that Graphite could outperform it, because what it
+does is so much simpler (and I was right). First thing I tried to do
+is overwhelm Graphite. I never succeeded in that - I probably could
+have tried harder, but I quickly learned that I don’t know what
+symptoms I’m looking for. I wronte a Go program that blasted UDP data
+points at 10K/sec across 10K different series, and taking it to over
+20K/sec saturated my network before Graphite showed any signs of
+deterioration. There was also no reliable way for me to audit the data
+points - may be some of them got lost, but at 600K+ per minute, I
+don’t know of any practical way of doing it. Not without a lot of
+work, at least.</p>
 
-<p>Storm is written in Java and Clojure, which makes the JVM the common
-denominator, so any JVM language should work as “native”. Storm also provides a
-primitive for using pipes to a process which means that you can write
-a component in anything - from a Bash script to C, all it needs to do
-is read stdin and write stdout.</p>
+<p>With Tgres things were much easier. The weakest link is, not
+surpisingly, PostgreSQL. What I learned was that there are two kinds of
+deterioration when it comes to PostgreSQL though. The first one is
+outright, and that one manifests in database requests getting
+progressively slower until Tgres gets stuck with all its channels
+full.</p>
 
-<p>For those who would prefer to try it out using a higher-level
-language, there is an excellent project called
-<a href="https://github.com/colinsurprenant/redstorm">Redstorm</a> which lets you
-write your topology in JRuby. While a Redstorm topology may not be as
-fast as something written in pure Java, the reduced development
-time is well worth any trade offs, and you always have the option of
-perfecting it later by porting your code to something JVM-native when
-your understanding of how it ought to work is solidified in your mind.</p>
+<p>You can make PostgreSQL very significantly faster with a few simple
+tricks. For example the following settings can make it much faster:</p>
 
-<p>If you’re going to go the Redstorm route, a couple of gotchas that I
-came across were:</p>
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">synchronous_commit = off
+</span><span class="line">commit_delay = 100000</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<ul>
-  <li>
-    <p>Storm 0.8.2 and JRuby 1.7.2 disagree on the version of Yaml parsing
-jar (snakeyaml). Don’t know what the solution is if you absolutely must parse
-Yaml other than downgrading to JRuby 1.6.8, otherwise you can just
-use something other than Yaml: JSON or just plain eval().</p>
-  </li>
-  <li>
-    <p>If you’re going to use ActiveRecord (which does work fine), watch
-out for how to properly use it in a multi-threaded environment. You
-might need to wrap some code in synchronize (see <a href="https://github.com/jruby/jruby/wiki/Concurrency-in-jruby">Concurrency in JRuby</a>.
-You will also need make sure your ActiveRecord connections are not
-shared by concurrent threads by using
-<a href="http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/ConnectionPool.html#method-i-with_connection">connection_pool.with_connection</a></p>
-  </li>
-</ul>
+<p>This post isn’t about PostgreSQL, and so I’m not going to get into the
+details of what this does, there is plenty of documentation and blog
+posts on the subject. If you plan on hosting a busy Tgres set up, you
+should probably have the above settings.</p>
 
+<p>The second way PostgreSQL deteriorates is not immediately apparent - it
+is the infamous table bloat. Getting autovacuum to keep up with the ts
+table (which stores all the time series) is tricky, and once you’ve
+ran out of options to tweak, this is probably it - the maximum load
+the database can handle, even if it may seem relatively calm.</p>
+
+<p>Autovacuum has a lot of knobs, but ultimately they all exist to take
+advantage of the variability of load in a database, i.e. you can let
+it get behind during the day and catch up at night when the database
+is not as busy. It doesn’t really work with time series, which are not
+variable by nature - if you’re receiving 5 thousand data points per
+second at noon, you can expect the same rate at 4am. I think the
+setting that worked best for me were:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">autovacuum_max_workers = 10
+</span><span class="line">autovacuum_naptime = 1s
+</span><span class="line">autovacuum_vacuum_threshold = 2000
+</span><span class="line">autovacuum_vacuum_scale_factor = 0.0
+</span><span class="line">autovacuum_vacuum_cost_delay = 0 # disable cost based
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>To the best of my undestanding the above setting disables cost-based
+autovacuum (meaning it doesn’t pause periodically to yield resources
+to the normal db tasks), makes autovacuum kick in after 2K updates
+(which happens in no time), and sleeps 1s in between runs, which means
+it’s running pretty much continuosly.</p>
+
+<p>I was able to sustain a load of ~6K datapoints per second across 6K
+series - anything higher caused my “database server” (which is a 2010
+i7 Thinkpad) autovacuum to get behind.</p>
+
+<p>I also did some testing of how TOAST affects performance. There is no
+setting for turning TOAST on or off, but it can easily be done in
+Tgres by changing the number of data points per row. The default is
+768 which is about 75% of a page. If you for example double it, then
+each row becomes larger than a page and TOAST kicks in. TOAST is
+compressed, which is an advantage, but it is a separate table, which
+is a disadvantage. In the end it seemed like the database detirorated
+quicker with TOAST, but it was rather inconclusive.</p>
+
+<p>In the end the key factor, or the weakest link, was the rate of
+queries per second. I now added a special rate limiting setting
+feature to Tgres (max-flushes-per-second) which trumps all other
+settings and will keep your database happy at the expense of Tgres
+possibly caching a little more points in memory than expected.</p>
+
+<p>I will probably get back to some more load testing in a while, but for
+now this is it.</p>
 </div>
 
 
@@ -206,7 +247,7 @@ shared by concurrent threads by using
   
 
 
-<time datetime="2013-04-01T17:05:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2013</time>
+<time datetime="2016-11-08T14:41:00-05:00" pubdate data-updated="true">Nov 8<span>th</span>, 2016</time>
       
 
 
@@ -214,7 +255,7 @@ shared by concurrent threads by using
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/04/01/storm-notes/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/04/01/storm-notes/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2016/11/08/load-testing-tgres/" data-via="humblehack" data-counturl="http://grisha.org/blog/2016/11/08/load-testing-tgres/" >Tweet</a>
   
   
   
@@ -223,10 +264,8 @@ shared by concurrent threads by using
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/03/27/on-prioritization/" title="Previous Post: on prioritization - important vs urgent">&laquo; on prioritization - important vs urgent</a>
+        <a class="basic-alignment left" href="/blog/2016/09/22/golang-receiver-vs-function/" title="Previous Post: Golang receiver vs function argument">&laquo; Golang receiver vs function argument</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/04/02/linus-on-understanding-pointers/" title="Next Post: Linus on understanding pointers">Linus on understanding pointers &raquo;</a>
       
     </p>
   </footer>
@@ -331,8 +370,8 @@ google_ad_type = "image";
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/04/01/storm-notes/';
-        var disqus_url = 'http://grisha.org/blog/2013/04/01/storm-notes/';
+        var disqus_identifier = 'http://grisha.org/blog/2016/11/08/load-testing-tgres/';
+        var disqus_url = 'http://grisha.org/blog/2016/11/08/load-testing-tgres/';
         var disqus_script = 'embed.js';
       
     (function () {
