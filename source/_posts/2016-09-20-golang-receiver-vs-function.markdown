@@ -11,7 +11,7 @@ and a function _argument_? Consider these two bits of code:
 
 {% codeblock lang:go %}
 func (d *duck) quack() { // receiver
-   // do something
+     // do something
 }
 {% endcodeblock %}
 
@@ -19,7 +19,7 @@ versus
 
 {% codeblock lang:go %}
 func quack(d *duck) { // funciton argument
-  // do something
+    // do something
 }
 {% endcodeblock %}
 
@@ -29,7 +29,7 @@ you use?
 
 In the object-oriented world we were used to objects doing things, and
 in that context `d.quack()` may seem more intuitive or familiar than
-`quack(d)`, because it reads better. After all, one could argue that
+`quack(d)` because it "reads better". After all, one could argue that
 the former is a duck quacking, but the latter reads like you're
 quacking a duck, and what does that even mean? I have learned that you
 should not think this way in the Go universe, and here is why.
@@ -46,30 +46,30 @@ because methods are attached to their types inflexibly, you cannot
 change them, and there is no such thing as a "method variable":
 
 {% codeblock lang:go %}
-type duck struct {}
+type duck struct{}
 
 func (d *duck) quack() {
-   // do something
+     // do something
 }
 
 // the function we are testing:
 func testme(d *duck) {
-  d.quack() // cannot be stubbed
+    d.quack() // cannot be stubbed
 }
 {% endcodeblock %}
 
 However, if you used a function argument, it would be easy:
 
 {% codeblock lang:go %}
-type duck struct {}
+type duck struct{}
 
 var quack = func(d *duck) {
-   // do something
+     // do something
 }
 
 // the function we are testing:
 func foo(d *duck) {
-  quack(d)
+    quack(d)
 }
 {% endcodeblock %}
 
@@ -80,18 +80,18 @@ Alternatively, you can use an interface:
 
 {% codeblock lang:go %}
 type quacker interface {
-  quack()
+    quack()
 }
 
-type duck struct {}
+type duck struct{}
 
 var func (d *duck) quack() { // satisfies quacker
-   // do something
+     // do something
 }
 
 // the function we are testing:
 func foo(d quacker) {
-  d.quack()
+    d.quack()
 }
 {% endcodeblock %}
 

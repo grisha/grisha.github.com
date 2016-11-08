@@ -3,7 +3,7 @@ layout: post
 title: "Simple Solution to Password Reuse"
 date: 2013-05-31 17:12
 comments: true
-categories: 
+categories:
 ---
 
 <p>
@@ -82,7 +82,7 @@ important thing is that the script considers it <span style="color: green; font-
 <p> Make sure this passphrase is impossible to guess by people who
 know you, e.g. don't pick quotes from your favorite song or
 movie. Don't <em>ever</em> write it down or save it on your computer in any way or form!
-<table border=0>
+<table border="0">
 <tr><th>Passphrase: </th><td><input type="password" size="60" name="pw_phrase" id="pw_phrase" style="margin-right: 1em; margin-left: 1em;" onkeyup="pw_strength()" />
 <th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly/></td></tr>
 <tr><th>Verify: </th><td><input type="password" size="60" name="pw_phrase2" id="pw_phrase2" style="margin-right: 1em; margin-left: 1em;" onkeyup="check_pw2_same()" />
@@ -95,7 +95,7 @@ movie. Don't <em>ever</em> write it down or save it on your computer in any way 
 "gmail", etc. This word has to be easy to remember and there is no need for
 it to be unique or hard to guess.</p>
 
-<table border=0>
+<table border="0">
 <tr><th>Keyword</th><th>Password</th></tr>
 <tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly /></td></tr>
 <tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly /></td></tr>
@@ -133,5 +133,3 @@ Some improvements could be made, but the point here is that there is
 no reason to keep encrypted files with your passwords along with
 software to open them around, all that's needed is <em>one</em> strong
 password and a well established and easily available algorithm.
-
-
