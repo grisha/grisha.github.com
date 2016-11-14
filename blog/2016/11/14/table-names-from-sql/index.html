@@ -5,12 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>The Next Smallest Step Problem - Grisha Trubetskoy</title>
+  <title>Table names from SQL - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="“A journey of a thousand miles begins with a single step” Most of my journeys never begin, or cannot continue because of that one
-single step, be it &hellip;">
+  <meta name="description" content="Sometimes it is useful to extract table names from an SQL statement,
+for example if you are trying to figure out dependencies for your Hive
+or &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +20,7 @@ single step, be it &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem">
+  <link rel="canonical" href="http://grisha.org/blog/2016/11/14/table-names-from-sql">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -97,7 +98,7 @@ single step, be it &hellip;">
   
   <header>
     
-      <h1 class="entry-title">The Next Smallest Step Problem</h1>
+      <h1 class="entry-title">Table Names From SQL</h1>
     
     
       <p class="meta">
@@ -113,7 +114,7 @@ single step, be it &hellip;">
   
 
 
-<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+<time datetime="2016-11-14T14:40:00-05:00" pubdate data-updated="true">Nov 14<span>th</span>, 2016</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -122,69 +123,78 @@ single step, be it &hellip;">
   </header>
 
 
-<div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
+<div class="entry-content"><p>Sometimes it is useful to extract table names from an SQL statement,
+for example if you are trying to figure out dependencies for your Hive
+or BigQuery (or whatever) tables.</p>
 
-<p>Most of my journeys never begin, or cannot continue because of that one
-single step, be it first or next. Because it is hard, at times
-excruciatingly so.</p>
+<p>It is actually a lot simpler than it seems and you don’t need to write
+your own SQL parser or find one out there. In SQL table names always
+follow the FROM and JOIN keywords. So all you have to do is split the
+statemement into tokens, and scan the list for any mention of FROM or
+JOIN and grab the next token.</p>
 
-<p>Here I speak of software, but this applies to many other aspects of my
-life just as well.</p>
+<p>Here is a very simplistic Python func that does this using regular
+expressions:</p>
 
-<p>I recon it’s because I do not think in steps. I think of a
-destination.  I imagine the end-result. I can picture it with clarity
-and in great detail. I know where I need to be. But what is the next
-step to get there? And it doesn’t help that where I travel, there are
-no signs.</p>
-
-<p>The problem of deciding what to do next is so common for me that I
-even have a name for it. I call it “The Next Smallest Step”
-problem. Whenever I find myself idling, clicking over to online
-time-wasters, I pause and ask myself “What is the Next Smallest Step?
-What’s the next smallest thing I can do, right now?”</p>
-
-<p>It doesn’t matter how much further this small step moves me. A
-nanometer is better than standing still. It has to be something that
-is simple enough that I can just do. Right now.</p>
-
-<p>I always plan to do big things that take days, weeks or months. But of
-all that, can I pick that one small simple and quick thing that I can
-do now?</p>
-
-<p>Sometimes focusing on the next smallest step is so difficult that I
-pencil this question on a piece of paper, and sometimes I just type it
-on the command line or in the source code. My short version is:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
-</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">tables_in_query</span><span class="p">(</span><span class="n">sql_str</span><span class="p">):</span>
+</span><span class="line">
+</span><span class="line">    <span class="c"># remove the /* */ comments</span>
+</span><span class="line">    <span class="n">q</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">r&quot;/\*[^*]*\*+(?:[^*/][^*]*\*+)*/&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">sql_str</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="c"># remove whole line -- and # comments</span>
+</span><span class="line">    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">q</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&quot;^\s*(--|#)&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)]</span>
+</span><span class="line">
+</span><span class="line">    <span class="c"># remove trailing -- and # comments</span>
+</span><span class="line">    <span class="n">q</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;--|#&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])</span>
+</span><span class="line">
+</span><span class="line">    <span class="c"># split on blanks, parens and semicolons</span>
+</span><span class="line">    <span class="n">tokens</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">r&quot;[\s)(;]+&quot;</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="c"># scan the tokens. if we see a FROM or JOIN, we set the get_next</span>
+</span><span class="line">    <span class="c"># flag, and grab the next one (unless it&#39;s SELECT).</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span class="line">    <span class="n">get_next</span> <span class="o">=</span> <span class="bp">False</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">get_next</span><span class="p">:</span>
+</span><span class="line">            <span class="k">if</span> <span class="n">tok</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="s">&quot;select&quot;</span><span class="p">]:</span>
+</span><span class="line">                <span class="n">result</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+</span><span class="line">            <span class="n">get_next</span> <span class="o">=</span> <span class="bp">False</span>
+</span><span class="line">        <span class="n">get_next</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&quot;from&quot;</span><span class="p">,</span> <span class="s">&quot;join&quot;</span><span class="p">]</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>(that’s right, in CAPS)</p>
-
-<p>This simple question has taken me on some of the most fascinating and
-challenging journeys ever. In restrospect, I think I would not be able
-to travel any of them without repeatedly asking it of myself, over and
-over again.</p>
-
-<p>It has resulted in most productive and gratifying days of work. Some
-of my greatest projects began with this question. In many instances it
-established what I had to do for months ahead (years, even?). All
-beginning with this one small question.</p>
-
-<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
-gone by without any results to show for and many a great opportunity
-lost.</p>
-
-<p>I must also note that some of my next smallest steps took days of
-thinking to figure out. Nothing wrong with that.</p>
-
-<p>And so I thought I’d share this with you, just in case you might find
-it helpful. Whenever you find yourself at an impass and progress
-has stopped, ask yourself:</p>
-
-<p>“What is the Next Smallest Step?”</p>
+<p>This is obviously not perfect, for example in BigQuery there is a
+possibility that what follows <code>SELECT</code> is a UDF name, but I’ll leave
+working around that as an exercise for the user.</p>
 </div>
 
 
@@ -207,21 +217,15 @@ has stopped, ask yourself:</p>
   
 
 
-<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+<time datetime="2016-11-14T14:40:00-05:00" pubdate data-updated="true">Nov 14<span>th</span>, 2016</time>
       
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/time-management/'>time-management</a>
-  
-</span>
 
 
     </p>
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2016/11/14/table-names-from-sql/" data-via="humblehack" data-counturl="http://grisha.org/blog/2016/11/14/table-names-from-sql/" >Tweet</a>
   
   
   
@@ -230,10 +234,8 @@ has stopped, ask yourself:</p>
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/08/02/hacking-on-mod-python-again/" title="Previous Post: Hacking on mod_python (again)">&laquo; Hacking on mod_python (again)</a>
+        <a class="basic-alignment left" href="/blog/2016/11/08/load-testing-tgres/" title="Previous Post: Load testing Tgres">&laquo; Load testing Tgres</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/" title="Next Post: Running a WSGI app on Apache should not be this hard">Running a WSGI app on Apache should not be this hard &raquo;</a>
       
     </p>
   </footer>
@@ -338,8 +340,8 @@ google_ad_type = "image";
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
-        var disqus_url = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
+        var disqus_identifier = 'http://grisha.org/blog/2016/11/14/table-names-from-sql/';
+        var disqus_url = 'http://grisha.org/blog/2016/11/14/table-names-from-sql/';
         var disqus_script = 'embed.js';
       
     (function () {
