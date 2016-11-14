@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-11-14T15:04:00-05:00</updated>
+  <updated>2016-11-14T15:23:26-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Table names from SQL]]></title>
+    <title type="html"><![CDATA[Parsing Table Names from SQL]]></title>
     <link href="http://grisha.org/blog/2016/11/14/table-names-from-sql/"/>
     <updated>2016-11-14T14:40:00-05:00</updated>
     <id>http://grisha.org/blog/2016/11/14/table-names-from-sql</id>
