@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-11-14T15:23:26-05:00</updated>
+  <updated>2016-11-15T07:49:02-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -28,7 +28,7 @@ follow the FROM and JOIN keywords. So all you have to do is split the
 statemement into tokens, and scan the list for any mention of FROM or
 JOIN and grab the next token.</p>
 
-<p>Here is a very simplistic Python func that does this using regular
+<p>Here is a very simplistic Python function that does this using regular
 expressions:</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
@@ -89,7 +89,7 @@ expressions:</p>
 
 <p>This is obviously not perfect, for example in BigQuery there is a
 possibility that what follows <code>SELECT</code> is a UDF name, but I’ll leave
-working around that as an exercise for the user.</p>
+working around that as an exercise for the reader.</p>
 ]]></content>
   </entry>
   
