@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-11-15T07:49:02-05:00</updated>
+  <updated>2016-11-17T23:06:01-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -473,7 +473,7 @@ means “we do not know”.</p>
 which is 75s. We can think of it that the data point (the “swimming
 pool”) just got smaller.  Thus the correct calculation for the 3.0
 point would be 3.0 × 50 ÷ 75 = 2.0 and for the 1.0 point
-2.0 + 1.0 × 50 ÷ 75 = 2.33.</p>
+2.0 + 1.0 × 25 ÷ 75 = 2.33.</p>
 
 <p>Here it is in SVG:</p>
 
