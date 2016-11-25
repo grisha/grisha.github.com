@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: https://grisha.org/sitemap.xml 
+Sitemap: http://grisha.org/sitemap.xml 

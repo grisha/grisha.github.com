@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: time management | Grisha Trubetskoy]]></title>
-  <link href="https://grisha.org/blog/categories/time-management/atom.xml" rel="self"/>
-  <link href="https://grisha.org/"/>
-  <updated>2016-11-25T18:18:22-05:00</updated>
-  <id>https://grisha.org/</id>
+  <link href="http://grisha.org/blog/categories/time-management/atom.xml" rel="self"/>
+  <link href="http://grisha.org/"/>
+  <updated>2016-11-25T18:20:38-05:00</updated>
+  <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[on prioritization - important vs urgent]]></title>
-    <link href="https://grisha.org/blog/2013/03/27/on-prioritization/"/>
+    <link href="http://grisha.org/blog/2013/03/27/on-prioritization/"/>
     <updated>2013-03-27T10:13:00-04:00</updated>
-    <id>https://grisha.org/blog/2013/03/27/on-prioritization</id>
+    <id>http://grisha.org/blog/2013/03/27/on-prioritization</id>
     <content type="html"><![CDATA[<p>Every item on a TODO list can be classified as <em>urgent</em>, <em>important</em>
 or <em>neither</em>. We should act on important items first, urgent second and
 ignore the rest.</p>

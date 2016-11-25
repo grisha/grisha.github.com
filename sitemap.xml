@@ -1,179 +1,179 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
-        <loc>https://grisha.org/blog/2013/03/25/how-does-this-work/</loc>
+        <loc>http://grisha.org/blog/2013/03/25/how-does-this-work/</loc>
         <lastmod>2016-04-06T12:42:22-04:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</loc>
+        <loc>http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/03/27/on-prioritization/</loc>
+        <loc>http://grisha.org/blog/2013/03/27/on-prioritization/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/04/01/storm-notes/</loc>
+        <loc>http://grisha.org/blog/2013/04/01/storm-notes/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/</loc>
+        <loc>http://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/
+            http://grisha.org/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/
         </loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/
+            http://grisha.org/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/
         </loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/05/23/checking-out-cloudera-impala/</loc>
+        <loc>http://grisha.org/blog/2013/05/23/checking-out-cloudera-impala/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/</loc>
+        <loc>http://grisha.org/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/05/31/compiling-impala-from-github/</loc>
+        <loc>http://grisha.org/blog/2013/05/31/compiling-impala-from-github/</loc>
         <lastmod>2016-02-23T12:45:04-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/</loc>
+        <loc>http://grisha.org/blog/2013/05/31/simple-solution-to-password-reuse/</loc>
         <lastmod>2016-11-07T08:20:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/06/06/avro/</loc>
+        <loc>http://grisha.org/blog/2013/06/06/avro/</loc>
         <lastmod>2016-02-23T12:43:39-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/06/11/avro-performance/</loc>
+        <loc>http://grisha.org/blog/2013/06/11/avro-performance/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/06/21/on-converting-json-to-avro/</loc>
+        <loc>http://grisha.org/blog/2013/06/21/on-converting-json-to-avro/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/</loc>
+        <loc>http://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</loc>
+        <loc>http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/
+            http://grisha.org/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/
         </loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/10/10/mod-python-performance/</loc>
+        <loc>http://grisha.org/blog/2013/10/10/mod-python-performance/</loc>
         <lastmod>2016-02-23T12:42:38-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/10/25/mod-python-the-long-story/</loc>
+        <loc>http://grisha.org/blog/2013/10/25/mod-python-the-long-story/</loc>
         <lastmod>2016-02-16T22:06:28-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/</loc>
+        <loc>http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/</loc>
         <lastmod>2016-02-16T22:06:28-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/
+            http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/
         </loc>
         <lastmod>2016-02-16T22:06:28-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2013/11/07/mod-python-performance-revisited/</loc>
+        <loc>http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/</loc>
         <lastmod>2016-02-23T12:41:20-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2014/06/03/graceful-restart-in-golang/</loc>
+        <loc>http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/</loc>
         <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/</loc>
+        <loc>http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/</loc>
         <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2015/03/20/influxdb-data/</loc>
+        <loc>http://grisha.org/blog/2015/03/20/influxdb-data/</loc>
         <lastmod>2016-02-23T12:39:53-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2015/03/28/on-time-series/</loc>
+        <loc>http://grisha.org/blog/2015/03/28/on-time-series/</loc>
         <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2015/05/04/recording-time-series/</loc>
+        <loc>http://grisha.org/blog/2015/05/04/recording-time-series/</loc>
         <lastmod>2016-02-16T22:09:27-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/
+            http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/
         </loc>
         <lastmod>2016-02-23T12:36:15-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/</loc>
+        <loc>http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/</loc>
         <lastmod>2016-02-18T11:34:51-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/
+            http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/
         </loc>
         <lastmod>2016-02-17T20:02:11-05:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/
+            http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/
         </loc>
         <lastmod>2016-07-14T14:26:16-04:00</lastmod>
     </url>
     <url>
         <loc>
-            https://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/
+            http://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/
         </loc>
         <lastmod>2016-05-04T10:46:43-04:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/07/29/state-of-tgres-2016/</loc>
+        <loc>http://grisha.org/blog/2016/07/29/state-of-tgres-2016/</loc>
         <lastmod>2016-08-16T22:40:42-04:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/08/04/data-points/</loc>
+        <loc>http://grisha.org/blog/2016/08/04/data-points/</loc>
         <lastmod>2016-11-17T23:05:54-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/09/22/golang-receiver-vs-function/</loc>
+        <loc>http://grisha.org/blog/2016/09/22/golang-receiver-vs-function/</loc>
         <lastmod>2016-09-22T08:30:16-04:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/11/08/load-testing-tgres/</loc>
+        <loc>http://grisha.org/blog/2016/11/08/load-testing-tgres/</loc>
         <lastmod>2016-11-08T15:47:12-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/2016/11/14/table-names-from-sql/</loc>
+        <loc>http://grisha.org/blog/2016/11/14/table-names-from-sql/</loc>
         <lastmod>2016-11-15T07:48:57-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/blog/archives/</loc>
+        <loc>http://grisha.org/blog/archives/</loc>
         <lastmod>2016-11-17T23:05:54-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/robots.txt</loc>
+        <loc>http://grisha.org/robots.txt</loc>
         <lastmod>2016-02-16T21:45:44-05:00</lastmod>
     </url>
     <url>
-        <loc>https://grisha.org/</loc>
+        <loc>http://grisha.org/</loc>
         <lastmod>2016-11-17T23:05:54-05:00</lastmod>
     </url>
 </urlset>
