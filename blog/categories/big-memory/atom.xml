@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: big memory | Grisha Trubetskoy]]></title>
-  <link href="http://grisha.org/blog/categories/big-memory/atom.xml" rel="self"/>
-  <link href="http://grisha.org/"/>
-  <updated>2016-11-25T17:56:52-05:00</updated>
-  <id>http://grisha.org/</id>
+  <link href="https://grisha.org/blog/categories/big-memory/atom.xml" rel="self"/>
+  <link href="https://grisha.org/"/>
+  <updated>2016-11-25T18:14:21-05:00</updated>
+  <id>https://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[On keeping lots of integers in memory]]></title>
-    <link href="http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/"/>
+    <link href="https://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/"/>
     <updated>2013-03-25T22:09:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory</id>
+    <id>https://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory</id>
     <content type="html"><![CDATA[<p>Once upon a time (over a year ago) I found myself needing to store large numbers of
 integers in memory. The goal was to store a graph of all our
 purchasers and items purchased, so that we could quickly identify

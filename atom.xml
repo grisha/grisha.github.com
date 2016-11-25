@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Grisha Trubetskoy]]></title>
-  <link href="http://grisha.org/atom.xml" rel="self"/>
-  <link href="http://grisha.org/"/>
-  <updated>2016-11-25T17:56:52-05:00</updated>
-  <id>http://grisha.org/</id>
+  <link href="https://grisha.org/atom.xml" rel="self"/>
+  <link href="https://grisha.org/"/>
+  <updated>2016-11-25T18:14:21-05:00</updated>
+  <id>https://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Parsing Table Names from SQL]]></title>
-    <link href="http://grisha.org/blog/2016/11/14/table-names-from-sql/"/>
+    <link href="https://grisha.org/blog/2016/11/14/table-names-from-sql/"/>
     <updated>2016-11-14T14:40:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/11/14/table-names-from-sql</id>
+    <id>https://grisha.org/blog/2016/11/14/table-names-from-sql</id>
     <content type="html"><![CDATA[<p>Sometimes it is useful to extract table names from an SQL statement,
 for example if you are trying to figure out dependencies for your Hive
 or BigQuery (or whatever) tables.</p>
@@ -95,9 +95,9 @@ working around that as an exercise for the reader.</p>
   
   <entry>
     <title type="html"><![CDATA[Load testing Tgres]]></title>
-    <link href="http://grisha.org/blog/2016/11/08/load-testing-tgres/"/>
+    <link href="https://grisha.org/blog/2016/11/08/load-testing-tgres/"/>
     <updated>2016-11-08T14:41:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/11/08/load-testing-tgres</id>
+    <id>https://grisha.org/blog/2016/11/08/load-testing-tgres</id>
     <content type="html"><![CDATA[<p>So I finally got around to some load testing of <a href="https://github.com/tgres/tgres">Tgres</a>. Load testing is
 mysterious, it never goes the way you think it would, and what you
 learn is completely unexpcted.</p>
@@ -205,9 +205,9 @@ now this is it.</p>
   
   <entry>
     <title type="html"><![CDATA[Golang receiver vs function argument]]></title>
-    <link href="http://grisha.org/blog/2016/09/22/golang-receiver-vs-function/"/>
+    <link href="https://grisha.org/blog/2016/09/22/golang-receiver-vs-function/"/>
     <updated>2016-09-22T08:15:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/09/22/golang-receiver-vs-function</id>
+    <id>https://grisha.org/blog/2016/09/22/golang-receiver-vs-function</id>
     <content type="html"><![CDATA[<p>What is the difference between a Go <em>receiver</em> (as in “method receiver”)
 and a function <em>argument</em>? Consider these two bits of code:</p>
 
@@ -346,9 +346,9 @@ rather than <code>d.quack()</code>.</p>
   
   <entry>
     <title type="html"><![CDATA[How Data Points Build Up]]></title>
-    <link href="http://grisha.org/blog/2016/08/04/data-points/"/>
+    <link href="https://grisha.org/blog/2016/08/04/data-points/"/>
     <updated>2016-08-04T10:35:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/08/04/data-points</id>
+    <id>https://grisha.org/blog/2016/08/04/data-points</id>
     <content type="html"><![CDATA[<p>This silly SVG animation (animation not my strong suit) demonstrates
 what happens when multiple Tgres data points arrive within the same
 step (i.e. smallest time interval for this series, also known as PDP,
@@ -494,9 +494,9 @@ in the past.</p>
   
   <entry>
     <title type="html"><![CDATA[Introducing Tgres - A Time Series DB on top of PostgreSQL]]></title>
-    <link href="http://grisha.org/blog/2016/07/29/state-of-tgres-2016/"/>
+    <link href="https://grisha.org/blog/2016/07/29/state-of-tgres-2016/"/>
     <updated>2016-07-29T10:12:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/07/29/state-of-tgres-2016</id>
+    <id>https://grisha.org/blog/2016/07/29/state-of-tgres-2016</id>
     <content type="html"><![CDATA[<p><a href="http://github.com/tgres/tgres">Tgres</a> is a metrics collection and storage server, aka a time series
 database. I’m not very comfortable with referring to it as a
 <em>database</em>, because at least in case of Tgres, the database is
@@ -837,9 +837,9 @@ real-life use/testing/feedback would be great as well.</p>
   
   <entry>
     <title type="html"><![CDATA[Deploying a Golang app to AWS ECS with Terraform]]></title>
-    <link href="http://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/"/>
+    <link href="https://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/"/>
     <updated>2016-04-19T10:53:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform</id>
+    <id>https://grisha.org/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform</id>
     <content type="html"><![CDATA[<p>I’ve put together a basic example of a “Hello World” Go program which
 runs in Amazon AWS Elastic Compute Service (ECS), which allows running
 applications in Docker containers and has the ability to scale on
@@ -870,11 +870,11 @@ useful:</p>
   
   <entry>
     <title type="html"><![CDATA[Holt-Winters Forecasting for Dummies - Part III]]></title>
-    <link href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/"/>
+    <link href="https://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/"/>
     <updated>2016-02-17T10:39:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii</id>
-    <content type="html"><![CDATA[<p>If you haven’t read <a href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a> and
-<a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+    <id>https://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii</id>
+    <content type="html"><![CDATA[<p>If you haven’t read <a href="https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a> and
+<a href="https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
 you probably should, or the following will be hard to make sense of.</p>
 
 <p>In Part I we’ve learned how to forceast one point, in Part II we’ve
@@ -964,7 +964,7 @@ tiny series (okay, not as tiny):</p>
 
 <p>This is what it looks like:</p>
 
-<p><img src="http://grisha.org/images/hw04.png" /></p>
+<p><img src="https://grisha.org/images/hw04.png" /></p>
 
 <p>You can see that this series is seasonal, there are clearly visible 6
 seasons. Although perhaps not easily apparent from the picture, the
@@ -1112,7 +1112,7 @@ forecasted.:</p>
 series, followed by the last 24 points from the result of the
 <code>triple_exponential_smoothing()</code> call:</p>
 
-<p><img src="http://grisha.org/images/hw05.png" /></p>
+<p><img src="https://grisha.org/images/hw05.png" /></p>
 
 <h3 id="a-note-on---and-">A Note on α, β and γ</h3>
 
@@ -1156,10 +1156,10 @@ formula for the seasonal component (I don’t know which is better):</p>
   
   <entry>
     <title type="html"><![CDATA[Holt-Winters Forecasting for Dummies - Part II]]></title>
-    <link href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/"/>
+    <link href="https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/"/>
     <updated>2016-02-16T13:05:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii</id>
-    <content type="html"><![CDATA[<p>If you haven’t read <a href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
+    <id>https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii</id>
+    <content type="html"><![CDATA[<p>If you haven’t read <a href="https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
 you probably should, or the following will be hard to make sense of.</p>
 
 <p>All the forecasting methods we covered so far, including single
@@ -1306,7 +1306,7 @@ but two data points. In Python:</p>
 <p>And here is a picture of double exponential smoothing in action (the
 green dotted line).</p>
 
-<p><img src="http://grisha.org/images/hw03.png" /></p>
+<p><img src="https://grisha.org/images/hw03.png" /></p>
 
 <h2 id="quick-review">Quick Review</h2>
 
@@ -1315,18 +1315,18 @@ level and a trend, and we have learned how to appliy exponential
 smoothing to each of them to be able to forecast not one, but two
 points.</p>
 
-<p>In <a href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
+<p>In <a href="https://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
 we’ll finally talk about triple exponential smoothing.</p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[Holt-Winters Forecasting for Dummies (or Developers) - Part I]]></title>
-    <link href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/"/>
+    <link href="https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/"/>
     <updated>2016-01-29T15:36:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting</id>
-    <content type="html"><![CDATA[<p>This three part write up [<a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
-<a href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
+    <id>https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting</id>
+    <content type="html"><![CDATA[<p>This three part write up [<a href="https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+<a href="https://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
 is my attempt at a down-to-earth explanation (and Python code) of the
 Holt-Winters method for those of us who while hypothetically might be
 quite good at math, still try to avoid it at every opportunity. I had
@@ -1342,7 +1342,7 @@ algorithms that can be used to forecast data points in a series,
 provided that the series is “seasonal”, i.e. repetitive over some
 period.</p>
 
-<p><img src="http://grisha.org/images/hw00.png" /></p>
+<p><img src="https://grisha.org/images/hw00.png" /></p>
 
 <h1 id="a-little-history">A little history</h1>
 
@@ -1640,7 +1640,7 @@ to 1. To demonstrate why, let’s say we pick weights <code>[0.9, 0.8, 0.7,
 <p>Here is a picture that demonstrates our tiny series and all of the above
 forecasts (except for naive).</p>
 
-<p><img src="http://grisha.org/images/hw01.png" /></p>
+<p><img src="https://grisha.org/images/hw01.png" /></p>
 
 <p>It’s important to understand that which of the above methods is better
 very much depends on the nature of the series. The order in which I
@@ -1747,7 +1747,7 @@ point.</p>
 <p>The figure below shows exponentially smoothed version of our series
 with $\alpha$ of 0.9 (red) and $\alpha$ of 0.1 (orange).</p>
 
-<p><img src="http://grisha.org/images/hw02.png" /></p>
+<p><img src="https://grisha.org/images/hw02.png" /></p>
 
 <p>Looking at the above picture it is apparent that the $\alpha$ value of 0.9
 follows the observed values much closer than 0.1. This isn’t going to
@@ -1766,16 +1766,16 @@ weighted moving average and, finally, single exponential smoothing.</p>
 remarkably, they can only forecast a <em>single</em> point. That’s correct,
 just one.</p>
 
-<p>In <a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
+<p>In <a href="https://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
 one point.</p>
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[Storing Time Series in PostgreSQL efficiently]]></title>
-    <link href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/"/>
+    <link href="https://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/"/>
     <updated>2015-09-23T22:01:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently</id>
+    <id>https://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently</id>
     <content type="html"><![CDATA[<p>With the latest advances in PostgreSQL (and other db’s), a relational
 database begins to look like a very viable TS storage platform. In
 this write up I attempt to show how to store TS in PostgreSQL.</p>
@@ -2014,9 +2014,9 @@ working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
   
   <entry>
     <title type="html"><![CDATA[Time Series Accuracy - Graphite vs RRDTool]]></title>
-    <link href="http://grisha.org/blog/2015/05/04/recording-time-series/"/>
+    <link href="https://grisha.org/blog/2015/05/04/recording-time-series/"/>
     <updated>2015-05-04T17:40:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/05/04/recording-time-series</id>
+    <id>https://grisha.org/blog/2015/05/04/recording-time-series</id>
     <content type="html"><![CDATA[<p>Back in my ISP days, we used data stored in RRDs to bill our
 customers. I wouldn’t try this with Graphite. In this write up I try
 to explain why it is so by comparing the method of recording time series
@@ -2281,9 +2281,9 @@ know, a line cannot be defined by a single point.</p>
   
   <entry>
     <title type="html"><![CDATA[On Time Series]]></title>
-    <link href="http://grisha.org/blog/2015/03/28/on-time-series/"/>
+    <link href="https://grisha.org/blog/2015/03/28/on-time-series/"/>
     <updated>2015-03-28T15:40:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/03/28/on-time-series</id>
+    <id>https://grisha.org/blog/2015/03/28/on-time-series</id>
     <content type="html"><![CDATA[<h2 id="is-it-even-a-thing">Is it even a thing?</h2>
 
 <p>Time Series is on its way to becoming a buzzword in the Information
@@ -2465,9 +2465,9 @@ rich set of tools that a database like PostgreSQL provides.</p>
   
   <entry>
     <title type="html"><![CDATA[How InfluxDB Stores Data]]></title>
-    <link href="http://grisha.org/blog/2015/03/20/influxdb-data/"/>
+    <link href="https://grisha.org/blog/2015/03/20/influxdb-data/"/>
     <updated>2015-03-20T15:52:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/03/20/influxdb-data</id>
+    <id>https://grisha.org/blog/2015/03/20/influxdb-data</id>
     <content type="html"><![CDATA[<p>A nice, reliable, horizontally scalable database that is designed
 specifically to tackle the problem of Time Series data (and does not
 require you to stand up a Hadoop cluster) is very much missing from the
@@ -2663,9 +2663,9 @@ coming soon.</p>
   
   <entry>
     <title type="html"><![CDATA[Ruby, HiveServer2 and Kerberos]]></title>
-    <link href="http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/"/>
+    <link href="https://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos/"/>
     <updated>2014-08-19T08:03:00-04:00</updated>
-    <id>http://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos</id>
+    <id>https://grisha.org/blog/2014/08/19/ruby_hiveserver2_and_kerberos</id>
     <content type="html"><![CDATA[<p>Recently I found myself needing to connect to HiveServer2 with
 Kerberos authentication enabled from a Ruby app. As it turned out
 <a href="https://github.com/forward3d/rbhive">rbhive gem</a> we were using did not have
@@ -2876,9 +2876,9 @@ whatever we want over this connection:</p>
   
   <entry>
     <title type="html"><![CDATA[Graceful restart in Golang]]></title>
-    <link href="http://grisha.org/blog/2014/06/03/graceful-restart-in-golang/"/>
+    <link href="https://grisha.org/blog/2014/06/03/graceful-restart-in-golang/"/>
     <updated>2014-06-03T12:49:00-04:00</updated>
-    <id>http://grisha.org/blog/2014/06/03/graceful-restart-in-golang</id>
+    <id>https://grisha.org/blog/2014/06/03/graceful-restart-in-golang</id>
     <content type="html"><![CDATA[<p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
 turned what is described in this article into a nice Go package called
 <a href="https://github.com/fvbock/endless">endless</a>.</p>
@@ -3203,9 +3203,9 @@ better to create your server as follows:</p>
   
   <entry>
     <title type="html"><![CDATA[mod_python performance part 2: high(er) concurrency]]></title>
-    <link href="http://grisha.org/blog/2013/11/07/mod-python-performance-revisited/"/>
+    <link href="https://grisha.org/blog/2013/11/07/mod-python-performance-revisited/"/>
     <updated>2013-11-07T17:51:00-05:00</updated>
-    <id>http://grisha.org/blog/2013/11/07/mod-python-performance-revisited</id>
+    <id>https://grisha.org/blog/2013/11/07/mod-python-performance-revisited</id>
     <content type="html"><![CDATA[<h3 id="tldr">Tl;dr</h3>
 
 <p>As is evident from the table below, mod_python <a href="https://github.com/grisha/mod_python/tree/3.5.x">3.5</a>
@@ -3512,9 +3512,9 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
   
   <entry>
     <title type="html"><![CDATA[Separate Request and Response or a single Request object?]]></title>
-    <link href="http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/"/>
+    <link href="https://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/"/>
     <updated>2013-10-30T13:18:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object</id>
+    <id>https://grisha.org/blog/2013/10/30/separate-request-and-response-or-a-single-request-object</id>
     <content type="html"><![CDATA[<p>Are you in favor of a single request object, or two separate objects:
 request and response?  Could it be that the two options are not
 contradictory or even mutually exclusive?</p>
@@ -3612,9 +3612,9 @@ mentioned SSL/TLS.</p>
   
   <entry>
     <title type="html"><![CDATA[My thoughts on WSGI]]></title>
-    <link href="http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/"/>
+    <link href="https://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi/"/>
     <updated>2013-10-26T11:24:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi</id>
+    <id>https://grisha.org/blog/2013/10/26/my-thoughts-on-wsgi</id>
     <content type="html"><![CDATA[<p>I’m not very fond of it. Here is why.</p>
 
 <h2 id="cgi-origins">CGI Origins</h2>
@@ -3786,9 +3786,9 @@ first proposed the name WSGI he was under the same misperception as I.</p>
   
   <entry>
     <title type="html"><![CDATA[mod_python: the long story]]></title>
-    <link href="http://grisha.org/blog/2013/10/25/mod-python-the-long-story/"/>
+    <link href="https://grisha.org/blog/2013/10/25/mod-python-the-long-story/"/>
     <updated>2013-10-25T20:05:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/10/25/mod-python-the-long-story</id>
+    <id>https://grisha.org/blog/2013/10/25/mod-python-the-long-story</id>
     <content type="html"><![CDATA[<p>This story started back in 1996. I was in my early twenties, working
 as a programmer at a small company specializing in on-line reporting of
 certain pharmaceutical data.</p>
@@ -3995,9 +3995,9 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
   
   <entry>
     <title type="html"><![CDATA[mod_python performance and why it matters not.]]></title>
-    <link href="http://grisha.org/blog/2013/10/10/mod-python-performance/"/>
+    <link href="https://grisha.org/blog/2013/10/10/mod-python-performance/"/>
     <updated>2013-10-10T13:04:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/10/10/mod-python-performance</id>
+    <id>https://grisha.org/blog/2013/10/10/mod-python-performance</id>
     <content type="html"><![CDATA[<p><em>TL;DR: mod_python is faster than you think.</em></p>
 
 <p>Tonight I thought I’d spend some time looking into how the new
