@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-11-25T18:20:38-05:00</updated>
+  <updated>2016-12-16T09:22:46-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -1164,8 +1164,8 @@ you probably should, or the following will be hard to make sense of.</p>
 
 <p>All the forecasting methods we covered so far, including single
 exponential smoothing, were only good at predicting a single
-point. We can do better than that, but first we need to agree
-on a couple of more terms.</p>
+point. We can do better than that, but first we need to be introduced to
+a couple of new terms.</p>
 
 <h2 id="more-terminology">More terminology</h2>
 
