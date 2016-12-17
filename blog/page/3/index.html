@@ -9,15 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="If I have a Django app in /home/grisha/mysite, then all I should
-need to do to run it under Apache is: 1
-2
-3
-4
-5
-6
-7
-$ mod_python create /home/grisha &hellip;">
+  <meta name="description" content="TL;DR: mod_python is faster than you think. Tonight I thought I’d spend some time looking into how the new
+mod_python
+fares against other frameworks &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -101,6 +95,310 @@ $ mod_python create /home/grisha &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/10/mod-python-performance/">Mod_python Performance and Why It Matters Not.</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-10T13:04:00-04:00" pubdate data-updated="true">Oct 10<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/10/mod-python-performance/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><em>TL;DR: mod_python is faster than you think.</em></p>
+
+<p>Tonight I thought I’d spend some time looking into how the new
+<a href="http://www.modpython.org/">mod_python</a>
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+<em>why it really does not matter</em>.</p>
+
+<p>I am particularly interested in the following:</p>
+
+<ul>
+  <li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
+  <li>a mod_python wsgi app, because WSGI is so popular these days.</li>
+  <li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
+  <li>uWSGI, because it claims to be super fast.</li>
+  <li>Apache serving a static file (as a point of reference).</li>
+</ul>
+
+<h1 id="the-test">The Test</h1>
+
+<p>I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM
+allocated to it. Granted this configuration can’t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.</p>
+
+<p>Real-life performance is very much affected by issues related to
+concurrency and load. I don’t have the resources or tools to
+comprehensively test such scenarios, and so I’m just using concurrency
+of 1 and seeing how fast each of the afore-listed set ups can process
+small requests.</p>
+
+<p>I’m using mod_python 3.4.1 (pre-release), revision
+<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
+compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
+3.4, for uWSGI I use 1.9.17.1.</p>
+
+<p>The Apache configuration is pretty minimal (It could probably trimmed
+even more, but this is good enough):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
+</span><span class="line">LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
+</span><span class="line">LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
+</span><span class="line">LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
+</span><span class="line">LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
+</span><span class="line">LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
+</span><span class="line">LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
+</span><span class="line">
+</span><span class="line">ServerRoot /home/grisha/mp_test
+</span><span class="line">PidFile logs/httpd.pid
+</span><span class="line">ServerName 127.0.0.1
+</span><span class="line">Listen 8888
+</span><span class="line">MaxRequestsPerChild 1000000
+</span><span class="line">
+</span><span class="line">&lt;Location /&gt;
+</span><span class="line">      SetHandler mod_python
+</span><span class="line">      PythonHandler mp
+</span><span class="line">      PythonPath "sys.path+['/home/grisha/mp_test/htdocs']"
+</span><span class="line">&lt;/Location&gt;</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
+mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
+section, so this makes it a little bit faster.</p>
+
+<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
+above looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">mod_python</span> <span class="kn">import</span> <span class="n">apache</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Hello World!&#39;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">apache</span><span class="o">.</span><span class="n">OK</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>As the benchmark tool, I’m using the good old
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>ab -n 10  http://localhost:8888/
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For each test in this article I run 500 requests first as a “warm up”,
+then another 500K for the actual measurement.</p>
+
+<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">&lt;Location /&gt;
+</span><span class="line">    PythonHandler mod_python.wsgi
+</span><span class="line">    PythonPath <span class="s2">&quot;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&quot;</span>
+</span><span class="line">    PythonOption mod_python.wsgi.application mp_wsgi
+</span><span class="line">&lt;/Location&gt;
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And the <code>mp_wsgi.py</code> file looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+</span><span class="line">    <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;200 OK&#39;</span>
+</span><span class="line">    <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Hello World!&#39;</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">response_headers</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;Content-type&#39;</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">),</span>
+</span><span class="line">                        <span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)))]</span>
+</span><span class="line">    <span class="n">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">response_headers</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">LoadModule</span> <span class="n">wsgi_module</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">mod_wsgi</span><span class="o">.</span><span class="n">so</span>
+</span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For uWSGI (I am not an expert), I first used the following command:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
+</span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
+</span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Which yielded a pretty dismal result, so I tried using a unix socket
+<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
+the front end as described
+<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
+make uWSGI come out on top (even if proxied uWSGI is an orange among
+the apples).</p>
+
+<h3 id="the-results-requests-per-second-fastest-at-the-top">The results, requests per second, fastest at the top:</h3>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">|</span> <span class="n">uWSGI</span><span class="o">/</span><span class="n">nginx</span>         <span class="o">|</span> <span class="mi">2391</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">handler</span>  <span class="o">|</span> <span class="mi">2332</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">static</span> <span class="nb">file</span>         <span class="o">|</span> <span class="mi">2312</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_wsgi</span>            <span class="o">|</span> <span class="mi">2143</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">wsgi</span>     <span class="o">|</span> <span class="mi">1937</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">uWSGI</span> <span class="o">--</span><span class="n">http</span>        <span class="o">|</span> <span class="mi">1779</span> <span class="o">|</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>What’s interesting and unexpected at first is that uWSGI and the
+mod_python handler perform better than sending a static file, which I
+expected to be the fastest. On a second thought though it does make
+sense, once you consider that no (on average pretty expensive)
+filesystem operations are performed to serve the request.</p>
+
+<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
+expected, because the mod_python version is mostly Python, vs
+mod_wsgi’s C version.</p>
+
+<p>I think that with a little work mod_python wsgi handler could perform
+on par with uWSGI, though I’m not sure the effort would be worth
+it. Because as we all know,
+<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
+
+<h1 id="why-it-doesnt-really-matter">Why It Doesn’t Really Matter</h1>
+
+<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
+because after all, what matters more than speed?</p>
+
+<p>But let’s imagine a more real world scenario, because it’s not likely
+that all your application does is send <code>"Hello World!".</code></p>
+
+<p>To illustrate the point a little better I created a very simple Django
+app, which too sends <code>"Hello World!"</code>, only it does it using a template:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="s">&#39;World&#39;</span><span class="p">})</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Using the mod_python wsgi handler (the slowest), we can process 455
+req/s, using uWSGI (the fastest) 474. This means that by moving this
+“application” from mod_pyhton to uWSGI we would improve performance by
+a measley 5%.</p>
+
+<p>Now let’s add some database action to our so-called “application”. For
+every request I’m going to pull my user record from the Django
+auth_users table:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">User</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">grisha</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s">&#39;grisha&#39;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">grisha</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]})</span> <span class="c"># world was 5 characters</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
+req/s in uWSGI, and the difference between the two has shrunk to just
+over 3%.</p>
+
+<p>Mind you, our “application” still has less than 10 lines of code. In a
+real-world situation the difference in performance is more likely to
+amount to less than a tenth of a percent.</p>
+
+<p>Bottom line: it’s foolish to pick your web server based on speed
+alone. Factors such as your comfort level with using it, features,
+documentation, security, etc., are far more important than how fast it
+can crank out “Hello world!”.</p>
+
+<p>Last, but not least, mod_python 3.4.1 (used in this article) is
+ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1380,229 +1678,6 @@ pretty cool for some 300 lines of code, n’est-ce pas?</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/23/checking-out-cloudera-impala/">Checking Out Cloudera Impala</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-23T12:43:00-04:00" pubdate data-updated="true">May 23<span>rd</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/23/checking-out-cloudera-impala/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I’ve decided to check out
-<a href="http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/">Impala</a>
-last week and here’s some notes on how that went.</p>
-
-<h2 id="first-thoughts">First thoughts</h2>
-
-<p>I was very impressed with how easy it was to install, even considering
-our unusual set up (see below). In my simple ad-hoc tests Impala
-performed orders of magnitude faster than Hive. So far it seems solid
-down to the little details, like the shell prompt with a fully
-functional libreadline and column headers nicely formatted.</p>
-
-<h2 id="installing">Installing</h2>
-
-<p>The first problem I encountered was that we use Cloudera
-<a href="http://www.cloudera.com/content/cloudera-content/cloudera-docs/CDHTarballs/3.25.2013/CDH4-Downloadable-Tarballs/CDH4-Downloadable-Tarballs.html">tarballs</a>
-in our set up, but Impala is only available as a package (RPM in our
-case). I tried compiling it from
-<a href="https://github.com/cloudera/impala">source</a>, but it’s not a trivial
-compile - it requires <a href="http://llvm.org/">LLVM</a> (which is way cool,
-BTW) and has a bunch of dependencies, it didn’t work out-of-the-box
-for me so I’ve decided to take an alternative route (I will definitely get it compiled some weekend soon). </p>
-
-<p>Retreiving contents of an RPM is trivial (because it’s really a cpio
-archive), and then I’d just have to “make it work”.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-server-1.0-1.p0.819.el6.x86_64.rpm
-</span><span class="line">$ mkdir impala
-</span><span class="line">$ cd impala
-</span><span class="line">$ rpm2cpio ../impala-server-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I noticed that <code>usr/bin/impalad</code> is a shell script, and it appears to
-rely on a few environment vars for configuration, so I created a shell
-script that sets them which looks approximately like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/usr/java/default
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_LOG_DIR</span><span class="o">=</span> <span class="c"># your log dir</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_PORT</span><span class="o">=</span>24000
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_HOST</span><span class="o">=</span> <span class="c"># probably namenode host or whatever</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_BACKEND_PORT</span><span class="o">=</span>22000
-</span><span class="line">
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_HOME</span><span class="o">=</span> <span class="c"># full path to usr/lib/impala from the RPM, e.g. /home/grisha/impala/usr/lib/impala</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_CONF_DIR</span><span class="o">=</span> <span class="c"># config dir, e.g. /home/grisha/impala/etc/impala&quot;</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_BIN</span><span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/sbin-retail
-</span><span class="line"><span class="nb">export </span><span class="nv">LIBHDFS_OPTS</span><span class="o">=</span>-Djava.library.path<span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/lib
-</span><span class="line"><span class="nb">export </span><span class="nv">MYSQL_CONNECTOR_JAR</span><span class="o">=</span> <span class="c"># full path a mysql-connect jar</span>
-</span><span class="line">
-</span><span class="line"><span class="nb">export </span><span class="nv">HIVE_HOME</span><span class="o">=</span> <span class="c"># your hive home - note: every impala nodes needs it, just config, not the whole Hive install</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">HIVE_CONF_DIR</span><span class="o">=</span> <span class="c"># this seems redundant, my guess HIVE_HOME is enough, but whatever</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">HADOOP_CONF_DIR</span><span class="o">=</span> <span class="c"># path the hadoop config, the dir that has hdfs-site.xml, etc.</span>
-</span><span class="line">
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="o">=</span><span class="s2">&quot; -log_dir=${IMPALA_LOG_DIR} -state_store_port=${IMPALA_STATE_STORE_PORT}&quot;</span>
-</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_SERVER_ARGS</span><span class="o">=</span><span class="s2">&quot; \                                                                                                                                                                                  -log_dir=${IMPALA_LOG_DIR} \                                                                                                                                                                              -state_store_port=${IMPALA_STATE_STORE_PORT} \                                                                                                                                                            -use_statestore \                                                                                                                                                                                         -state_store_host=${IMPALA_STATE_STORE_HOST} \                                                                                                                                                            -be_port=${IMPALA_BACKEND_PORT}&quot;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>With the above environment vars set, starting Impala should amount to
-the following (you probably want to run those in separate windows, also note that
-the state store needs to be started first):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>./usr/bin/statestored <span class="k">${</span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="k">}</span> <span class="c"># do this on IMPALA_STATE_STORE_HOST only</span>
-</span><span class="line"><span class="nv">$ </span>./usr/bin/impalad <span class="k">${</span><span class="nv">IMPALA_SERVER_ARGS</span><span class="k">}</span> <span class="c"># do this on every node</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The only problem that I encountered was that Impala needed
-short-circuit access enabled, so I had to add the following to the hdfs-site.xml:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-</pre></td><td class="code"><pre><code class="xml"><span class="line"> <span class="nt">&lt;property&gt;</span>
-</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.client.read.shortcircuit<span class="nt">&lt;/name&gt;</span>
-</span><span class="line">   <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
-</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
-</span><span class="line"> <span class="nt">&lt;property&gt;</span>
-</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.domain.socket.path<span class="nt">&lt;/name&gt;</span>
-</span><span class="line"><span class="c">&lt;!-- adjust this to your set up: --&gt;</span>
-</span><span class="line">   <span class="nt">&lt;value&gt;</span>/var/run/dfs_domain_socket_PORT.sock<span class="nt">&lt;/value&gt;</span>
-</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
-</span><span class="line"> <span class="nt">&lt;property&gt;</span>
-</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.client.file-block-storage-locations.timeout<span class="nt">&lt;/name&gt;</span>
-</span><span class="line">   <span class="nt">&lt;value&gt;</span>3000<span class="nt">&lt;/value&gt;</span>
-</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
-</span><span class="line"> <span class="nt">&lt;property&gt;</span>
-</span><span class="line"><span class="c">&lt;!-- adjust this too: --&gt;</span>
-</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.block.local-path-access.user<span class="nt">&lt;/name&gt;</span>
-</span><span class="line">   <span class="nt">&lt;value&gt;</span><span class="c">&lt;!-- user name --&gt;</span><span class="nt">&lt;/value&gt;</span>
-</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Once the above works, we need <code>impala-shell</code> to test it. Again, I pulled it out of the RPM:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="xml"><span class="line">$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-shell-1.0-1.p0.819.el6.x86_64.rpm
-</span><span class="line">$ mkdir shell ; cd shell
-</span><span class="line">$ rpm2cpio ../impala-shell-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I was then able to start the shell and connect. You can connect to any Impala node (read the docs):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-</pre></td><td class="code"><pre><code class="xml"><span class="line">$ ./usr/bin/impala-shell
-</span><span class="line">[localhost:21000] &gt; connect some_node;
-</span><span class="line">Connected to some_node:21000
-</span><span class="line">Server version: impalad version 1.0 RELEASE (build d1bf0d1dac339af3692ffa17a5e3fdae0aed751f)
-</span><span class="line">[some_node:21000] &gt; select count(*) from your_favorite_table;
-</span><span class="line">Query: select count(*) from your_favorite_table
-</span><span class="line">Query finished, fetching results ...
-</span><span class="line">+-----------+
-</span><span class="line">| count(*)  |
-</span><span class="line">+-----------+
-</span><span class="line">| 302052158 |
-</span><span class="line">+-----------+
-</span><span class="line">Returned 1 row(s) in 2.35s
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Ta-da! The above query takes a good few minutes in Hive, BTW.</p>
-
-<h2 id="other-notes">Other Notes</h2>
-
-<ul>
-  <li>Impala does not support custom SerDe’s so it won’t work if you’re relying on JSON. It does support Avro.</li>
-  <li>There is no support for UDF’s, so our <a href="https://github.com/livingsocial/HiveSwarm">HiveSwarm</a> is of no use.</li>
-  <li>INSERT OVERWRITE works, which is good.</li>
-  <li>LZO support works too.</li>
-  <li><em>Security Warning</em>: Everything Impala does will appear in HDFS as
-the user under which Impala is running. Be careful with this if
-you’re relying on HDFS permissions to prevent an accidental “INSERT
-OVERWRITE”, as you might inadvertently give your users superuser
-privs on HDFS via Hue, for example. (Oh did I mention Hue completely
-supports Impala too?). From what I can tell there is no way to set a
-username, this is a bit of a show-stopper for us, actually.</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; Older</a>
@@ -1658,6 +1733,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">Storing Time Series in PostgreSQL (Continued)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/11/14/table-names-from-sql/">Parsing Table Names from SQL</a>
       </li>
     
@@ -1671,10 +1750,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2016/08/04/data-points/">How Data Points Build Up</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/07/29/state-of-tgres-2016/">Introducing Tgres - A Time Series DB on top of PostgreSQL</a>
       </li>
     
   </ul>

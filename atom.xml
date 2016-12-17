@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-16T09:22:46-05:00</updated>
+  <updated>2016-12-17T13:02:58-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,275 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Storing Time Series in PostgreSQL (Continued)]]></title>
+    <link href="http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/"/>
+    <updated>2016-12-16T19:35:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii</id>
+    <content type="html"><![CDATA[<p>I have <a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previously written</a> how
+time series can be stored in PostgreSQL efficiently using <a href="https://www.postgresql.org/docs/current/static/arrays.html">arrays</a>.</p>
+
+<p>As a continuation of that article, I shall attempt to describe in detail the inner workings of an
+<a href="https://en.wikipedia.org/wiki/View_(SQL)">SQL view</a> that <a href="https://github.com/tgres/tgres">Tgres</a> uses to
+make an array of numbers appear as a regular table
+(<a href="https://github.com/tgres/tgres/blob/bc718e3999650b7aab934517179ea47632530d28/serde/postgres.go#L235-L242">link to code</a>).</p>
+
+<p>In short, I will explain how incomprehensible data like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">rra_id</span> <span class="o">|</span> <span class="n">n</span> <span class="o">|</span>           <span class="n">dp</span>
+</span><span class="line"><span class="c1">--------+---+------------------------</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">0</span> <span class="o">|</span> <span class="err">{</span><span class="mi">64</span><span class="p">,</span><span class="mi">67</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">71</span><span class="p">,</span><span class="mi">72</span><span class="p">,</span><span class="mi">69</span><span class="p">,</span><span class="mi">67</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">1</span> <span class="o">|</span> <span class="err">{</span><span class="mi">65</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">58</span><span class="p">,</span><span class="mi">59</span><span class="p">,</span><span class="mi">62</span><span class="p">,</span><span class="mi">68</span><span class="p">,</span><span class="mi">70</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2</span> <span class="o">|</span> <span class="err">{</span><span class="mi">71</span><span class="p">,</span><span class="mi">72</span><span class="p">,</span><span class="mi">77</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">71</span><span class="p">,</span><span class="mi">73</span><span class="p">,</span><span class="mi">75</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">3</span> <span class="o">|</span> <span class="err">{</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">69</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>… can be transformed in an SQL view to appear as so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">tv</span> <span class="k">order</span> <span class="k">by</span> <span class="n">t</span><span class="p">;</span>
+</span><span class="line"> <span class="n">rra_id</span> <span class="o">|</span>           <span class="n">t</span>            <span class="o">|</span> <span class="n">r</span>
+</span><span class="line"><span class="c1">--------+------------------------+----</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">06</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">64</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">07</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">67</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">08</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">70</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">09</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">71</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This write up will make a lot more sense if you read the
+<a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previous post</a> first.
+To recap, Tgres stores series in an array broken up over multiple
+table rows each containing an array representing a segment of the
+series. The series array is a round-robin structure, which means
+that it occupies a fixed amount of space and we do not need to worry
+about expiring data points, the round-robin nature of our array
+takes care of it by overwriting old data with new as we write.</p>
+
+<p>An additional benefit of such a fixed interval round-robin structure
+is that we do not need to store timestamps for every data point. If we
+know the timestamp of the latest entry along with the size and step,
+we can extrapolate the timestamp of any point in the series.</p>
+
+<p>Tgres creates an SQL view which takes care of this extrapolation and
+makes this data easy to query. Tgres actually uses this view as its
+only source of time series information when reading from the database
+thus delegating all the processing to the database server, where it is
+close to the data and most efficient.</p>
+
+<p>If you would like to follow along on the Postgres command line, feel
+free to create and populate the tables with the following SQL, which
+is nearly identical to the schema used by Tgres:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rra</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+</span><span class="line">  <span class="n">step_s</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">steps_per_row</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="k">size</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">width</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">latest</span> <span class="n">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">ts</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">rra_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rra</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="s1">&#39;2008-04-02 00:00:00-00&#39;</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And finally create the view:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">tv</span> <span class="k">AS</span>
+</span><span class="line">  <span class="k">SELECT</span> <span class="n">rra</span><span class="p">.</span><span class="n">id</span> <span class="n">rra_id</span><span class="p">,</span>
+</span><span class="line">         <span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">           <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">           <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">,</span>
+</span><span class="line">         <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span>
+</span><span class="line">    <span class="k">FROM</span> <span class="n">rra</span>
+</span><span class="line">   <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">ts</span> <span class="n">ts</span> <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="n">rra_id</span> <span class="o">=</span> <span class="n">rra</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now give it a whirl with a <code>SELECT * FROM tv ORDER BY t</code>. Impressive? So how does it work?</p>
+
+<p>First let’s go over the columns of the rra table.</p>
+
+<ul>
+  <li><code>step_s</code>: the minimal unit of time expressed in seconds (60 or 1 minute in the above data).</li>
+  <li><code>steps_per_row</code>: the number of the <code>step_s</code> intervals in one slot of our time series.
+ In our example it is 1440, which is the number of minutes in a day, thus making our time series
+ resolution <em>one day</em>.</li>
+  <li><code>size</code>: number of slots in the series. Ours is 28, i.e. four weeks.</li>
+  <li><code>width</code>: size of a segment which will be stored in a single row, which in our case
+ is 7 (one week).</li>
+  <li><code>latest</code>: the timestamp of the last data point in the series.</li>
+</ul>
+
+<p>Next, let’s look at the <code>UNNEST</code> keyword in the SQL of the view. <code>UNNEST</code> takes an array and turns it into row, e.g.:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">SELECT</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span> <span class="k">FROM</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">r</span>
+</span><span class="line"><span class="c1">----</span>
+</span><span class="line"> <span class="mi">64</span>
+</span><span class="line"> <span class="mi">67</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><code>UNNEST</code> works in conjunction with the <code>generate_subscripts</code>
+PostgreSQL function which generates index values:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">SELECT</span> <span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="n">i</span><span class="p">,</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span> <span class="k">FROM</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">i</span> <span class="o">|</span> <span class="n">r</span>
+</span><span class="line"><span class="c1">---+----</span>
+</span><span class="line"> <span class="mi">1</span> <span class="o">|</span> <span class="mi">64</span>
+</span><span class="line"> <span class="mi">2</span> <span class="o">|</span> <span class="mi">67</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let us now zoom in on the very long expression in the view, here it is again:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">  <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>A perhaps not immediately apparent trick to how all this works is that all
+our series are aligned
+on the <a href="https://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a>.
+This means that at UNIX time 0, any series’ slot index is 0. From then on it
+increments sequentially until the series size is reached, at which point
+it wraps-around to 0 (thus “round-robin”). Armed with this information we
+can calculate the index for any point in time.</p>
+
+<p>The formula for calculating the index <code>i</code> for a given time <code>t</code> is:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">i</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="n">step</span> <span class="o">%</span> <span class="n">size</span><span class="o">.</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We need time to be expressed as a UNIX time which is done
+with <code>EXTRACT(EPOCH FROM rra.latest)::BIGINT</code>. Now you should recognize
+the above formula in the larger
+expression</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">*</span><span class="mi">1000</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>where <code>rra.step_s * rra.steps_per_row</code> is the size of our series in seconds.</p>
+
+<p>Next, we need to compute the <em>distance</em> between the current slot and the
+last slot (for which we know the timestamp). I.e. if the last slot is <code>i</code> and the slot we need the
+timestamp for is <code>j</code>, the distance between them is <code>i-j</code>, but with a
+caveat: it is possible for <code>j</code> to be greater than <code>i</code> if the series
+wraps around, in which case the distance is the sum of the distance from
+<code>j</code> to the end of the series and the distance from the beginning to
+<code>i</code>. If you ponder over it with a pencil and paper long enough, you
+will arrive at the following formula for distance between two slots
+<code>i</code> and <code>j</code> in a wrap-around array:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">distance</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="n">j</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">%</span> <span class="n">size</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Another thing to consider is that we’re splitting our series across
+multiple rows, thus the actual index of any point is the subscript
+into the current segment plus the index of the segment itself (the <code>n</code>
+column) multiplied by the <code>wdith</code> of the segment: <code>generate_subscripts(dp,1) + n * width</code>.</p>
+
+<p>Which pieced together in SQL now looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Astute readers should notice an unexplained <code>+ 1</code>. This is because
+PostgreSQL arrays are 1-based.</p>
+
+<p>Now we need to convert the distance expressed in array slots into
+a time interval, which we do by multiplying it by
+<code>INTERVAL '1 SECOND' * rra.step_s * rra.steps_per_row</code>.</p>
+
+<p>And finally, we need to subtract the above time interval from the
+latest stamp which yields (ta-da!) the timestamp of the current slot:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">  <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>That’s it! And even though this may look complicated, from the
+computational view point it is very efficient, and PostgreSQL can
+handle it easily.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Parsing Table Names from SQL]]></title>
@@ -2008,7 +2277,7 @@ actual data.</p>
 <p>This article omits a lot of detail such as having resolution finer
 than one day, but it does describe the general idea. For an actual
 implementation of this you might want to check out a project I’ve been
-working on: <a href="https://github.com/grisha/timeriver">timeriver</a></p>
+working on: <a href="https://github.com/tgres/tgres">tgres</a></p>
 ]]></content>
   </entry>
   
@@ -3990,281 +4259,6 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
 <a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
 <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 </p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[mod_python performance and why it matters not.]]></title>
-    <link href="http://grisha.org/blog/2013/10/10/mod-python-performance/"/>
-    <updated>2013-10-10T13:04:00-04:00</updated>
-    <id>http://grisha.org/blog/2013/10/10/mod-python-performance</id>
-    <content type="html"><![CDATA[<p><em>TL;DR: mod_python is faster than you think.</em></p>
-
-<p>Tonight I thought I’d spend some time looking into how the new
-<a href="http://www.modpython.org/">mod_python</a>
-fares against other frameworks of similar purpose. In this article I
-am going to show the results of my findings, and then I will explain
-<em>why it really does not matter</em>.</p>
-
-<p>I am particularly interested in the following:</p>
-
-<ul>
-  <li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
-  <li>a mod_python wsgi app, because WSGI is so popular these days.</li>
-  <li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
-  <li>uWSGI, because it claims to be super fast.</li>
-  <li>Apache serving a static file (as a point of reference).</li>
-</ul>
-
-<h1 id="the-test">The Test</h1>
-
-<p>I am testing this on a CentOS instance running inside VirtualBox on an
-early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM
-allocated to it. Granted this configuration can’t possibly be very
-performant [if there is such a word], but it should be enough to
-compare.</p>
-
-<p>Real-life performance is very much affected by issues related to
-concurrency and load. I don’t have the resources or tools to
-comprehensively test such scenarios, and so I’m just using concurrency
-of 1 and seeing how fast each of the afore-listed set ups can process
-small requests.</p>
-
-<p>I’m using mod_python 3.4.1 (pre-release), revision
-<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
-compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
-3.4, for uWSGI I use 1.9.17.1.</p>
-
-<p>The Apache configuration is pretty minimal (It could probably trimmed
-even more, but this is good enough):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
-</span><span class="line">LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
-</span><span class="line">LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
-</span><span class="line">LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
-</span><span class="line">LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
-</span><span class="line">LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
-</span><span class="line">LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
-</span><span class="line">
-</span><span class="line">ServerRoot /home/grisha/mp_test
-</span><span class="line">PidFile logs/httpd.pid
-</span><span class="line">ServerName 127.0.0.1
-</span><span class="line">Listen 8888
-</span><span class="line">MaxRequestsPerChild 1000000
-</span><span class="line">
-</span><span class="line">&lt;Location /&gt;
-</span><span class="line">      SetHandler mod_python
-</span><span class="line">      PythonHandler mp
-</span><span class="line">      PythonPath "sys.path+['/home/grisha/mp_test/htdocs']"
-</span><span class="line">&lt;/Location&gt;</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
-mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
-section, so this makes it a little bit faster.</p>
-
-<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
-above looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">mod_python</span> <span class="kn">import</span> <span class="n">apache</span>
-</span><span class="line">
-</span><span class="line"><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
-</span><span class="line">
-</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
-</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Hello World!&#39;</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">return</span> <span class="n">apache</span><span class="o">.</span><span class="n">OK</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>As the benchmark tool, I’m using the good old
-<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>ab -n 10  http://localhost:8888/
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For each test in this article I run 500 requests first as a “warm up”,
-then another 500K for the actual measurement.</p>
-
-<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">&lt;Location /&gt;
-</span><span class="line">    PythonHandler mod_python.wsgi
-</span><span class="line">    PythonPath <span class="s2">&quot;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&quot;</span>
-</span><span class="line">    PythonOption mod_python.wsgi.application mp_wsgi
-</span><span class="line">&lt;/Location&gt;
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And the <code>mp_wsgi.py</code> file looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
-</span><span class="line">    <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;200 OK&#39;</span>
-</span><span class="line">    <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Hello World!&#39;</span>
-</span><span class="line">
-</span><span class="line">    <span class="n">response_headers</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;Content-type&#39;</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">),</span>
-</span><span class="line">                        <span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)))]</span>
-</span><span class="line">    <span class="n">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">response_headers</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">LoadModule</span> <span class="n">wsgi_module</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">mod_wsgi</span><span class="o">.</span><span class="n">so</span>
-</span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For uWSGI (I am not an expert), I first used the following command:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
-</span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
-</span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Which yielded a pretty dismal result, so I tried using a unix socket
-<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
-the front end as described
-<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
-make uWSGI come out on top (even if proxied uWSGI is an orange among
-the apples).</p>
-
-<h3 id="the-results-requests-per-second-fastest-at-the-top">The results, requests per second, fastest at the top:</h3>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">|</span> <span class="n">uWSGI</span><span class="o">/</span><span class="n">nginx</span>         <span class="o">|</span> <span class="mi">2391</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">handler</span>  <span class="o">|</span> <span class="mi">2332</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">static</span> <span class="nb">file</span>         <span class="o">|</span> <span class="mi">2312</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_wsgi</span>            <span class="o">|</span> <span class="mi">2143</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">wsgi</span>     <span class="o">|</span> <span class="mi">1937</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">uWSGI</span> <span class="o">--</span><span class="n">http</span>        <span class="o">|</span> <span class="mi">1779</span> <span class="o">|</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>What’s interesting and unexpected at first is that uWSGI and the
-mod_python handler perform better than sending a static file, which I
-expected to be the fastest. On a second thought though it does make
-sense, once you consider that no (on average pretty expensive)
-filesystem operations are performed to serve the request.</p>
-
-<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
-expected, because the mod_python version is mostly Python, vs
-mod_wsgi’s C version.</p>
-
-<p>I think that with a little work mod_python wsgi handler could perform
-on par with uWSGI, though I’m not sure the effort would be worth
-it. Because as we all know,
-<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
-
-<h1 id="why-it-doesnt-really-matter">Why It Doesn’t Really Matter</h1>
-
-<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
-because after all, what matters more than speed?</p>
-
-<p>But let’s imagine a more real world scenario, because it’s not likely
-that all your application does is send <code>"Hello World!".</code></p>
-
-<p>To illustrate the point a little better I created a very simple Django
-app, which too sends <code>"Hello World!"</code>, only it does it using a template:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="s">&#39;World&#39;</span><span class="p">})</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Using the mod_python wsgi handler (the slowest), we can process 455
-req/s, using uWSGI (the fastest) 474. This means that by moving this
-“application” from mod_pyhton to uWSGI we would improve performance by
-a measley 5%.</p>
-
-<p>Now let’s add some database action to our so-called “application”. For
-every request I’m going to pull my user record from the Django
-auth_users table:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">User</span>
-</span><span class="line">
-</span><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-</span><span class="line">    <span class="n">grisha</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s">&#39;grisha&#39;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">grisha</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]})</span> <span class="c"># world was 5 characters</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
-req/s in uWSGI, and the difference between the two has shrunk to just
-over 3%.</p>
-
-<p>Mind you, our “application” still has less than 10 lines of code. In a
-real-world situation the difference in performance is more likely to
-amount to less than a tenth of a percent.</p>
-
-<p>Bottom line: it’s foolish to pick your web server based on speed
-alone. Factors such as your comfort level with using it, features,
-documentation, security, etc., are far more important than how fast it
-can crank out “Hello world!”.</p>
-
-<p>Last, but not least, mod_python 3.4.1 (used in this article) is
-ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
 ]]></content>
   </entry>
   
