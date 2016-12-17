@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Table names from SQL"
+title: "Parsing Table Names from SQL"
 date: 2016-11-14 14:40
 comments: true
 categories:
@@ -16,7 +16,7 @@ follow the FROM and JOIN keywords. So all you have to do is split the
 statemement into tokens, and scan the list for any mention of FROM or
 JOIN and grab the next token.
 
-Here is a very simplistic Python func that does this using regular
+Here is a very simplistic Python function that does this using regular
 expressions:
 
 {% codeblock lang:python %}
@@ -51,4 +51,4 @@ def tables_in_query(sql_str):
 
 This is obviously not perfect, for example in BigQuery there is a
 possibility that what follows `SELECT` is a UDF name, but I'll leave
-working around that as an exercise for the user.
+working around that as an exercise for the reader.

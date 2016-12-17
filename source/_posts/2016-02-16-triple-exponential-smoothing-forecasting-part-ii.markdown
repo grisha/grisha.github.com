@@ -11,8 +11,8 @@ you probably should, or the following will be hard to make sense of.
 
 All the forecasting methods we covered so far, including single
 exponential smoothing, were only good at predicting a single
-point. We can do better than that, but first we need to agree
-on a couple of more terms.
+point. We can do better than that, but first we need to be introduced to
+a couple of new terms.
 
 ## More terminology
 

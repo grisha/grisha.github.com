@@ -76,7 +76,7 @@ Therefore, we must only consider the known part of the data point,
 which is 75s. We can think of it that the data point (the "swimming
 pool") just got smaller.  Thus the correct calculation for the 3.0
 point would be 3.0 &times; 50 &divide; 75 = 2.0 and for the 1.0 point
-2.0 + 1.0 &times; 50 &divide; 75 = 2.33.
+2.0 + 1.0 &times; 25 &divide; 75 = 2.33.
 
 Here it is in SVG:
 

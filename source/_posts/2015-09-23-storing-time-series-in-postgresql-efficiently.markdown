@@ -206,4 +206,4 @@ The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).
 This article omits a lot of detail such as having resolution finer
 than one day, but it does describe the general idea. For an actual
 implementation of this you might want to check out a project I've been
-working on: [timeriver](https://github.com/grisha/timeriver)
+working on: [tgres](https://github.com/tgres/tgres)
