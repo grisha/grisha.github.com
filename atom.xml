@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-17T13:02:58-05:00</updated>
+  <updated>2016-12-17T13:09:53-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -70,12 +70,12 @@ To recap, Tgres stores series in an array broken up over multiple
 table rows each containing an array representing a segment of the
 series. The series array is a round-robin structure, which means
 that it occupies a fixed amount of space and we do not need to worry
-about expiring data points, the round-robin nature of our array
-takes care of it by overwriting old data with new as we write.</p>
+about expiring data points: the round-robin nature of the array
+takes care of it by overwriting old data with new on assignment.</p>
 
 <p>An additional benefit of such a fixed interval round-robin structure
 is that we do not need to store timestamps for every data point. If we
-know the timestamp of the latest entry along with the size and step,
+know the timestamp of the latest entry along with the series step and size,
 we can extrapolate the timestamp of any point in the series.</p>
 
 <p>Tgres creates an SQL view which takes care of this extrapolation and
@@ -279,6 +279,10 @@ latest stamp which yields (ta-da!) the timestamp of the current slot:</p>
 <p>That’s it! And even though this may look complicated, from the
 computational view point it is very efficient, and PostgreSQL can
 handle it easily.</p>
+
+<p>As an exercise, try setting <code>latest</code> to various timestamps and observe
+how it affects the output of the view and see if you can explain how
+and why it happens.</p>
 ]]></content>
   </entry>
   
