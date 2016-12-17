@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-17T13:09:53-05:00</updated>
+  <updated>2016-12-17T13:13:48-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -2051,7 +2051,8 @@ one point.</p>
     <id>http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently</id>
     <content type="html"><![CDATA[<p>With the latest advances in PostgreSQL (and other db’s), a relational
 database begins to look like a very viable TS storage platform. In
-this write up I attempt to show how to store TS in PostgreSQL.</p>
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a <a href="http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
 
 <p>A TS is a series of [timestamp, measurement] pairs, where measurement
 is typically a floating point number. These pairs (aka “data points”)
