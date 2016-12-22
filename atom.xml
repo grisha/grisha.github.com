@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-22T09:13:36-05:00</updated>
+  <updated>2016-12-22T09:46:41-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -121,6 +121,9 @@ Graphite server and start listening for requests:</p>
 and should show you a chart like this:</p>
 
 <p><img src="http://grisha.org/images/simple-tgres00.png" /></p>
+
+<p>Note that you can use all kinds of Graphite functions at this point -
+it all “just works”.</p>
 
 <p>Enjoy!</p>
 ]]></content>
