@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="You can use Tgres components in your code without PostgreSQL, and in
-just a few lines of code instrument your program with a time
-series. This &hellip;">
+  <meta name="description" content="Did you know you can use Tgres components
+in your code without PostgreSQL, and in
+just a dozen lines of code instrument your program with a time &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -126,8 +126,9 @@ series. This &hellip;">
   </header>
 
 
-  <div class="entry-content"><p>You can use Tgres components in your code without PostgreSQL, and in
-just a few lines of code instrument your program with a time
+  <div class="entry-content"><p>Did you know you can use <a href="https://github.com/tgres/tgres">Tgres</a> components
+in your code without PostgreSQL, and in
+just a dozen lines of code instrument your program with a time
 series. This example shows a complete server emulating Graphite API
 which you can use with Grafana (or any other tool).</p>
 
@@ -136,16 +137,17 @@ which you can use with Grafana (or any other tool).</p>
 <p>In this example we will be using three package like so (in addition to
 a few standard ones, I’m skipping them here for brevity):</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">import (
-</span><span class="line">    "github.com/tgres/tgres/dsl"
-</span><span class="line">    h "github.com/tgres/tgres/http"
-</span><span class="line">    "github.com/tgres/tgres/rrd"
-</span><span class="line">)</span></code></pre></td></tr></table></div></figure></notextile></div>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">import</span> <span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
+</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>First, lets create a Data Source. This will create a Data Source
 containing one Round Robin Archive with a 10 second resolution
