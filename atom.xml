@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-22T09:08:30-05:00</updated>
+  <updated>2016-12-22T09:13:36-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -22,7 +22,7 @@
 in your code without PostgreSQL, and in
 just a dozen lines of code instrument your program with a time
 series. This example shows a complete server emulating Graphite API
-which you can use with Grafana (or any other tool).</p>
+which you can use with <a href="http://grafana.org/">Grafana</a> (or any other tool).</p>
 
 <p>In this example we will be using three Tgres packages like so (in addition to
 a few standard ones, I’m skipping them here for brevity - complete source code <a href="https://gist.github.com/grisha/9561e7837cff1340b218054f36430187">gist</a>):</p>
