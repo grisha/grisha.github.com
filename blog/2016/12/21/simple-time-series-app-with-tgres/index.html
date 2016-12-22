@@ -144,8 +144,8 @@ a few standard ones, I’m skipping them here for brevity):</p>
 </span><span class="line"><span class="p">)</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>First, lets create a Data Source. This will create a Data Source
-containing one Round Robin Archive with a 10 second resolution
+<p>First we need a <a href="https://godoc.org/github.com/tgres/tgres/rrd#DataSource">Data Source</a>.
+This will create a Data Source containing one Round Robin Archive with a 10 second resolution
 spanning 1000 seconds.</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
@@ -198,8 +198,8 @@ function:</p>
 </span><span class="line"><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>We will also need to create a ReadCache, the structure which knows how
-to search dot-separated series names a la Graphite.</p>
+<p>We will also need to create a <a href="https://godoc.org/github.com/tgres/tgres/dsl#ReadCache">ReadCache</a>,
+the structure which knows how to search dot-separated series names a la Graphite.</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 </pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">rcache</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewReadCacheFromMap</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DataSourcer</span><span class="p">{</span><span class="s">&quot;foo.bar&quot;</span><span class="p">:</span> <span class="nx">ds</span><span class="p">})</span>
