@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-23T10:24:12-05:00</updated>
+  <updated>2016-12-24T10:19:10-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -28,8 +28,8 @@ like that. And you can make charts from it. And that’s about it, alas.</p>
 
 <p>The word <em>time</em> suggests that is has something to do with time. At
 first it seems reasonable, I bite. The word <em>series</em> is a little more
-peculiar. A mathematician would argue that a series is a <em>sum</em> of a
-sequence.  Most people though think “series” and “sequence” are the
+peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
+Most people though think “series” and “sequence” are the
 same thing, and that’s fine. But it’s a clue that mathematicians
 couldn’t have come up with this term, because they would have called
 it “time sequence” most likely.</p>

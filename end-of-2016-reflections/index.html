@@ -5,13 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Why is there no Formal Definition of Time Series? - Grisha Trubetskoy</title>
+  <title>end of 2016 reflections - Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="If you’re reading this, chances are you may have searched for
-definition of “Time Series”. And, like me, you were probably
-disappointed by what you’ &hellip;">
+  <meta name="description" content="End of 2016 Reflections Dec 24th, 2016 Centralization of the Internet This year more than ever before it felt like there is one social
+network, one &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +19,7 @@ disappointed by what you’ &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2016/12/23/time-series-what-is-it">
+  <link rel="canonical" href="http://grisha.org/end-of-2016-reflections">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -94,15 +93,65 @@ disappointed by what you’ &hellip;">
   <div id="main">
     <div id="content">
       <div>
-<article class="hentry" role="article">
+<article role="article">
   
   <header>
-    
-      <h1 class="entry-title">Why Is There No Formal Definition of Time Series?</h1>
-    
-    
+    <h1 class="entry-title">End of 2016 Reflections</h1>
+    <p class="meta">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-12-24T09:42:00-05:00" pubdate data-updated="true">Dec 24<span>th</span>, 2016</time></p>
+  </header>
+  
+  <h2 id="centralization-of-the-internet">Centralization of the Internet</h2>
+
+<p>This year more than ever before it felt like there is one social
+network, one search engine, one cloud provider. Everyone agrees it’s
+not good. But why does this happen and is it inevitable?</p>
+
+<p>It happens becuase as a society we are not willing to put in the work
+of crafting protocols and building a distributed network. This is
+because sofware is hard to use, putting up a web application is
+nightmarishly hard, wordpress is so much easier. There is no RFC for a
+social networking protocol, and running mail and web servers is hard.</p>
+
+<p>It should be easy. And it’s doable. I’m pessimistic that anyone would
+actually take on the work though…</p>
+
+<h2 id="golang">Golang</h2>
+
+<p>These days you can get anything and everything done with Go and may be
+a little Python.</p>
+
+<h2 id="section">1917</h2>
+
+<p>A century after the revolution in Russia which altered the course of
+history on this planet it will be interesting to see how much of it is
+remembered.</p>
+
+<h2 id="too-many-programmers-and-yet-not-enough-ot-them">Too many “programmers” and yet not enough ot them.</h2>
+
+<p>Good smart people are harder to find than ever. Yet just about
+everyone I know is in computers somehow. I think we’re headed for
+something similar to 2001, when lots of self proclaimed “IT
+specialists” lost their jobs because business realized they cost too
+much and produce too little. People in “big data” and “data sciense”
+are particularly vulnerable to this.</p>
+
+  
+    <footer>
       <p class="meta">
         
+        
 
 
 
@@ -114,115 +163,21 @@ disappointed by what you’ &hellip;">
   
 
 
-<time datetime="2016-12-23T09:13:00-05:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2016</time>
-        
-         | <a href="#disqus_thread">Comments</a>
+<time datetime="2016-12-24T09:42:00-05:00" pubdate data-updated="true">Dec 24<span>th</span>, 2016</time>
         
       </p>
-    
-  </header>
-
-
-<div class="entry-content"><p>If you’re reading this, chances are you may have searched for
-definition of “Time Series”. And, like me, you were probably
-disappointed by what you’ve found.</p>
-
-<p>The most popular “definition” I come across amongst our fellow
-programmer folk is that it’s “data points with timestamps”. Or something
-like that. And you can make charts from it. And that’s about it, alas.</p>
-
-<p>The word <em>time</em> suggests that is has something to do with time. At
-first it seems reasonable, I bite. The word <em>series</em> is a little more
-peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
-Most people though think “series” and “sequence” are the
-same thing, and that’s fine. But it’s a clue that mathematicians
-couldn’t have come up with this term, because they would have called
-it “time sequence” most likely.</p>
-
-<p>Lets get back to the time aspect of it. Why do data points need
-timestamps? Or do they? Isn’t it the time <em>interval</em> between points
-that is most essential, rather than the absolute time? And if the data
-points are spaced equally (which conforms to the most common definiton
-of time series), then what purpose would <em>any</em> time-related
-information attached to a data point serve?</p>
-
-<p>To understand this better, picture a time chart. Of anything -
-temperature, price of bitcoin over a week, whatever. Now think - does
-the absolute time of every point provide any useful information to
-you? Does the essential meaning of the chart change depending on
-whether it shows the price of bitcoin in the year 2016 or 2098 or
-10923?</p>
-
-<p>Doesn’t it seem like “time” in “time series” is a bit of a red
-herring?</p>
-
-<p>Here is another example. Let’s say I decide to travel from
-San-Francisco to New York taking measurements of elevation above the
-sea level at every mile. I then plot that sequence on a chart where
-x-axis is distance traveled and y-axis is elevation. You would agree
-that this chart is not a “time series” by any stretch, right? But then
-if I renamed x-axis to “time traveled” (let’s assume I moved at
-constant speed), the chart wouldn’t change at all, but now it’s okay
-to call it “time series”?</p>
-
-<p>So it’s no surprise that there is no formal definition of “time
-series”.  In the end a “time series” is just a <em>sequence</em>. There are
-no timestamps required and there is nothing at all special regarding a
-dimension being time as opposed to any other unit, which is why there
-is no mathematical definition of “time series”. Time series is a
-colloquial term etymological origins of which are not known to me, but
-it’s not a thing from a scientific perspective, I’m afraid.</p>
-
-<p>Next time you hear “time series” just substitute it with “sequence” and
-see how much sense that makes. For example a “time series database” is
-a “sequence database”, i.e. database optimized for sequences. Aren’t
-all relational databases optimized for sequences?</p>
-
-<p>Something to think about over the holidays…</p>
-</div>
-
-
-  <footer>
-    <p class="meta">
       
+        <div class="sharing">
   
-
-<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
-
-      
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-12-23T09:13:00-05:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2016</time>
-      
-
-
-    </p>
-    
-      <div class="sharing">
-  
-  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2016/12/23/time-series-what-is-it/" data-via="humblehack" data-counturl="http://grisha.org/blog/2016/12/23/time-series-what-is-it/" >Tweet</a>
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/end-of-2016-reflections/index.html" data-via="humblehack" data-counturl="http://grisha.org/end-of-2016-reflections/index.html" >Tweet</a>
   
   
   
 </div>
 
-    
-    <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2016/12/21/simple-time-series-app-with-tgres/" title="Previous Post: Simple Time Series App with Tgres">&laquo; Simple Time Series App with Tgres</a>
-      
-      
-    </p>
-  </footer>
+    </footer>
+  
 </article>
 
   <section>
@@ -324,8 +279,8 @@ google_ad_type = "image";
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2016/12/23/time-series-what-is-it/';
-        var disqus_url = 'http://grisha.org/blog/2016/12/23/time-series-what-is-it/';
+        var disqus_identifier = 'http://grisha.org/end-of-2016-reflections/index.html';
+        var disqus_url = 'http://grisha.org/end-of-2016-reflections/index.html';
         var disqus_script = 'embed.js';
       
     (function () {
