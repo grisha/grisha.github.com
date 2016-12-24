@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-24T10:20:47-05:00</updated>
+  <updated>2016-12-24T10:27:33-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -74,6 +74,11 @@ a “sequence database”, i.e. database optimized for sequences. Aren’t
 all relational databases optimized for sequences?</p>
 
 <p>Something to think about over the holidays…</p>
+
+<p>Edit: Someone brought up the subject of <a href="https://en.wikipedia.org/wiki/Unevenly_spaced_time_series"><em>unevenly-spaced time series</em></a>.
+All series are evenly spaced given proper resolution. An
+unevenly-spaced time series with timestamps accurate to 1 millisecond
+is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
 ]]></content>
   </entry>
   
