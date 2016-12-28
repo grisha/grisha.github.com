@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-28T17:42:32-05:00</updated>
+  <updated>2016-12-28T17:45:06-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -161,7 +161,7 @@ we should be able to see the chart update in real time.</p>
 
 <p>In my experience instrumenting my apps with simple counters like this
 and having them available directly from the app without having to send
-them to some statd server somewhere has been extremely useful in
+them to a separate statsd server somewhere has been extremely useful in
 helping understand performance and other issues.</p>
 ]]></content>
   </entry>
