@@ -8,7 +8,8 @@ categories:
 
 With the latest advances in PostgreSQL (and other db's), a relational
 database begins to look like a very viable TS storage platform. In
-this write up I attempt to show how to store TS in PostgreSQL.
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a [part 2](/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/) of this article.)
 
 A TS is a series of [timestamp, measurement] pairs, where measurement
 is typically a floating point number. These pairs (aka "data points")
