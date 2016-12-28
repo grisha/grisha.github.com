@@ -299,11 +299,11 @@ function:</p>
 </span><span class="line"><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>We will also need to create a <a href="https://godoc.org/github.com/tgres/tgres/dsl#ReadCache">ReadCache</a>,
+<p>We will also need to create a <a href="https://godoc.org/github.com/tgres/tgres/dsl#NamedDSFetcher">NamedDSFetcher</a>,
 the structure which knows how to search dot-separated series names a la Graphite.</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">rcache</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewReadCacheFromMap</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DataSourcer</span><span class="p">{</span><span class="s">&quot;foo.bar&quot;</span><span class="p">:</span> <span class="nx">ds</span><span class="p">})</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcherMap</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DataSourcer</span><span class="p">{</span><span class="s">&quot;foo.bar&quot;</span><span class="p">:</span> <span class="nx">ds</span><span class="p">})</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Finally, we need to create two http handlers which will mimic a
@@ -315,8 +315,8 @@ Graphite server and start listening for requests:</p>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
 <span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">rcache</span><span class="p">))</span>
-</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">rcache</span><span class="p">))</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
+</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
 </span><span class="line">
 </span><span class="line"><span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
 </span><span class="line"><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
