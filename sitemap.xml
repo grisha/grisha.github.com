@@ -170,15 +170,19 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres/</loc>
-        <lastmod>2016-12-28T16:20:00-05:00</lastmod>
+        <lastmod>2016-12-28T17:40:01-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2016/12/23/time-series-what-is-it/</loc>
         <lastmod>2016-12-24T10:27:29-05:00</lastmod>
     </url>
     <url>
+        <loc>http://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/</loc>
+        <lastmod>2016-12-28T17:39:17-05:00</lastmod>
+    </url>
+    <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2016-12-28T16:20:00-05:00</lastmod>
+        <lastmod>2016-12-28T17:40:01-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -186,6 +190,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2016-12-28T16:20:00-05:00</lastmod>
+        <lastmod>2016-12-28T17:40:01-05:00</lastmod>
     </url>
 </urlset>
