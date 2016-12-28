@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-28T17:41:36-05:00</updated>
+  <updated>2016-12-28T17:42:32-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -96,7 +96,7 @@ our series.</p>
 
 <p>Now let’s create a goroutine which creates data points as fast as it
 can, the difference from the previous blog post is that we are using
-QueueGaue(), which is a <em>paced metric</em>, meaning that it flushes to the
+QueueGauge(), which is a <em>paced metric</em>, meaning that it flushes to the
 time series only periodically (once per second by default) so as to
 not overwhelm the I/O and or network (even though in this case it doesn’t
 really matter since we’re using a memory-based SerDe anyway).</p>
