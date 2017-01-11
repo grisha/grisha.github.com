@@ -222,7 +222,7 @@ really matter since we’re using a memory-based SerDe anyway).</p>
 </span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
 </span><span class="line">        <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
 </span><span class="line">        <span class="k">for</span> <span class="nx">t</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">();</span> <span class="nx">t</span><span class="p">.</span><span class="nx">Before</span><span class="p">(</span><span class="nx">end</span><span class="p">);</span> <span class="nx">t</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="s">&quot;foo.bar&quot;</span><span class="p">,</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
+</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="nx">serde</span><span class="p">.</span><span class="nx">Ident</span><span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="s">&quot;foo.bar&quot;</span><span class="p">},</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
 </span><span class="line">            <span class="nx">n</span><span class="o">++</span>
 </span><span class="line">        <span class="p">}</span>
 </span><span class="line">    <span class="p">}()</span>
@@ -401,7 +401,7 @@ google_ad_type = "image";
   </div>
   <footer role="contentinfo"><p>
   <img src="https://www.ispol.com/grisha_org.gif" height="1" width="1">
-  Copyright &copy; 2016 - Gregory Trubetskoy -
+  Copyright &copy; 2017 - Gregory Trubetskoy -
   <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
 </p>
 

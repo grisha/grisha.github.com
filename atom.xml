@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2016-12-28T17:45:06-05:00</updated>
+  <updated>2017-01-11T11:33:02-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -117,7 +117,7 @@ really matter since we’re using a memory-based SerDe anyway).</p>
 </span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
 </span><span class="line">        <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
 </span><span class="line">        <span class="k">for</span> <span class="nx">t</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">();</span> <span class="nx">t</span><span class="p">.</span><span class="nx">Before</span><span class="p">(</span><span class="nx">end</span><span class="p">);</span> <span class="nx">t</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="s">&quot;foo.bar&quot;</span><span class="p">,</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
+</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="nx">serde</span><span class="p">.</span><span class="nx">Ident</span><span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="s">&quot;foo.bar&quot;</span><span class="p">},</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
 </span><span class="line">            <span class="nx">n</span><span class="o">++</span>
 </span><span class="line">        <span class="p">}</span>
 </span><span class="line">    <span class="p">}()</span>
