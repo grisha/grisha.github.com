@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-01-11T11:33:02-05:00</updated>
+  <updated>2017-01-14T11:26:13-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -564,7 +564,7 @@ the above formula in the larger
 expression</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">*</span><span class="mi">1000</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">)</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">)</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>where <code>rra.step_s * rra.steps_per_row</code> is the size of our series in seconds.</p>
