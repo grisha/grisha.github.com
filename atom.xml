@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-08T14:27:31-05:00</updated>
+  <updated>2017-02-14T10:43:02-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Storing Time Seris in PostgreSQL - Optimize for Write]]></title>
+    <title type="html"><![CDATA[Storing Time Series in PostgreSQL - Optimize for Write]]></title>
     <link href="http://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/"/>
     <updated>2017-01-21T09:33:00-05:00</updated>
     <id>http://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write</id>
@@ -556,7 +556,9 @@ it all “just works”.</p>
     <link href="http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/"/>
     <updated>2016-12-16T19:35:00-05:00</updated>
     <id>http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii</id>
-    <content type="html"><![CDATA[<p>I have <a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previously written</a> how
+    <content type="html"><![CDATA[<p>Edit: there is now a <a href="http://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write">part iii</a> in this series of articles.</p>
+
+<p>I have <a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previously written</a> how
 time series can be stored in PostgreSQL efficiently using <a href="https://www.postgresql.org/docs/current/static/arrays.html">arrays</a>.</p>
 
 <p>As a continuation of that article, I shall attempt to describe in detail the inner workings of an
