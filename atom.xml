@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-14T10:43:02-05:00</updated>
+  <updated>2017-02-20T09:31:27-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -1227,8 +1227,7 @@ points and we are left with 1.0 as the final value.</p>
 speed of a car in meters per second (more like a bycicle, I guess),
 its weighted average speed for the duration of this step of 2.25
 meters per second would mean that in the 100s it would have traveled
-exactly 225 meters. As one of the smart readers pointed out in the comments
-to this post, this boils down the <a href="https://en.wikipedia.org/wiki/Fundamental_theorem_of_calculus">Fundamental Theorem of Calculus</a>.</p>
+exactly 225 meters.</p>
 
 <h3 id="nans-or-unknowns">NaNs or “Unknowns”</h3>
 

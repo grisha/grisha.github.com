@@ -150,7 +150,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2016/08/04/data-points/</loc>
-        <lastmod>2016-11-17T23:05:54-05:00</lastmod>
+        <lastmod>2017-02-20T09:31:18-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2016/09/22/golang-receiver-vs-function/</loc>
@@ -188,7 +188,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2017-02-14T10:42:56-05:00</lastmod>
+        <lastmod>2017-02-20T09:31:18-05:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -196,6 +196,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2017-02-14T10:42:56-05:00</lastmod>
+        <lastmod>2017-02-20T09:31:18-05:00</lastmod>
     </url>
 </urlset>
