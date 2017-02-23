@@ -157,14 +157,13 @@ a littel sweat, but it has.</p>
 which is an 8 core 15 GB instance, using 100GB EBS storage (which, if
 I understood it correctly, comes with 300 IOPS, please comment if I’m
 wrong). The “c4” instances are supposed to be some of the highest
-speed CPU AWS has to offer, and in retrospect it might have been
-overkill. Compare this with the instance used in the Graphite test, an
-i2.4xlarge, which is much larger with 16 cores and 122GB or RAM, as
-well as 4 directly attached SSDs.</p>
+speed CPU AWS has to offer, but compare this with the instance used in
+the Graphite test, an i2.4xlarge (16 CPU/ 122GB), it had half the CPU
+cores and nearly one tenth of the RAM.</p>
 
-<p>First, here is the obligatory screenshoot, then my observations and
-lessons learned in the process, as well as a screenshots depicting
-even better performance.</p>
+<p>Before I go any further, here is the obligatory screenshoot, then my
+observations and lessons learned in the process, as well as a
+screenshot depicting even better performance.</p>
 
 <p><img src="/images/tgres_aws1.png" /></p>
 
