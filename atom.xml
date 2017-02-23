@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T18:01:25-05:00</updated>
+  <updated>2017-02-23T18:04:10-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -38,11 +38,8 @@ Tgres to use the
 I’ve run some tests on AWS, and the results were pleasntly surprizing.</p>
 
 <p>I was quite impressed by Jason Dixon’s <a href="http://obfuscurity.com/2016/08/Benchmarking-Carbon-and-Whisper-on-AWS">blog post</a>
-describing his AWS Graphite test, and was hoping we can get to at least half the
-performance. Such a level of performance in my opinion was enough of a hit people
-would be willing to take if they wanted the magic and power of the
-database to be at their disposal. (I know I would settle for
-even less.) But it appears the combination of Go, Postgres and some
+describing his AWS Graphite test, and was hoping to get to at least half the
+level of performance. But it appears the combination of Go, Postgres and some
 clever data structuring has been able to beat it, not without breaking
 a littel sweat, but it has.</p>
 
