@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T17:47:58-05:00</updated>
+  <updated>2017-02-23T17:49:08-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -177,8 +177,8 @@ curiousity, I tried to push it to its limit.</p>
 
 <p>At 400 series, you can see clear signs of deterioration. You can see
 how vcache isn’t flushed fast enough leaving gaps at the end of
-series. If we stop the data blast, it does eventually catch up though
-without problems, so long as there is memory for the cache.</p>
+series. If we stop the data blast, it does eventually catch up,
+so long as there is memory for the cache.</p>
 
 <p><img src="http://grisha.org/images/tgres_aws1_det.png" /></p>
 
