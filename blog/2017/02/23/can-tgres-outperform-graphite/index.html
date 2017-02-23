@@ -306,15 +306,15 @@ so long as there is memory for the cache.</p>
 
 <h3 id="segment-width">Segment Width</h3>
 
-<p>There is still one easy card we have to play here. Segment width by
-default is 200, because a width higher than that causes rows to exceed
-a page and trigger
+<p>There is still one easy performance card we can play here. Segment
+width is how many data points are stored in one row, it is also the
+limit on how many points we can transfer in a single SQL operation.
+Segment width by default is 200, because a width higher than that
+causes rows to exceed a page and trigger
 <a href="https://www.postgresql.org/docs/current/static/storage-toast.html">TOAST</a>.
-TOAST can be good or bad. It means data is stored in a separate table
+TOAST can be good or bad because means data is stored in a separate table
 (not so good), but it also means it’s compressed, which may be an I/O
-win. Since width is how many data points are stored in one row, it is
-also the limit on how many points we can transfer in a single SQL
-operation.</p>
+win.</p>
 
 <h4 id="so-what-would-happen-if-we-set-the-segment-width-to-1000">So what would happen if we set the segment width to 1000?</h4>
 
@@ -322,7 +322,8 @@ operation.</p>
 number of series to 500K, note the whopping 52,602 data points being
 written to the database per second! You can see we’re pushing it to
 the limit because the receiver queue is beginning to grow. I <em>really</em>
-wanted to get the rate up to 150K/sec, but it didn’t want to go there.</p>
+wanted to get the rate up to 150K/sec, but it just didn’t want to go
+there.</p>
 
 <p><img src="/images/tgres_aws1_1k.png" /></p>
 
