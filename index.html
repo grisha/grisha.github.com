@@ -165,7 +165,7 @@ overkill. Compare this with the instance used in the Graphite test, an
 i2.4xlarge, which is much larger with 16 cores and 122GB or RAM, as
 well as 4 directly attached SSDs.</p>
 
-<p>First, here is the obligatory screenshoot, then my observation and
+<p>First, here is the obligatory screenshoot, then my observations and
 lessons learned in the process, as well as more screenshots depicting
 even better performance.</p>
 
@@ -175,10 +175,10 @@ even better performance.</p>
 with the config detailed at the bottom of the post.</p>
 
 <p>Postgres was whatever <code>yum install postgresql95-server</code> brings your
-way, with the <code>data</code> moved to the EBS volume formatted using ext4 (not
-that I think it matters). The Posgres config was modified to allow a
-100ms commit delay and to make autovacuum extra agressive. I did not
-increase any memory buffers and left everything else as
+way, with the <code>data</code> directory moved to the EBS volume formatted using
+ext4 (not that I think it matters). The Postgres config was modified to
+allow a 100ms commit delay and to make autovacuum extra agressive. I
+did not increase any memory buffers and left everything else as
 is. Specifically, these were the changes:</p>
 
 <div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
@@ -248,8 +248,9 @@ percent throughout the test.</p>
 
 <p>In the end, though more research is warranted, it may just turn out
 that contrary to every expectation PostgreSQL was <em>not</em> the limiting
-factor here. The <code>postmaster</code> processes stays at below 150MB RSS,
-which is absolutely remarkable.</p>
+factor here. The <code>postmaster</code> processes stayed below 170MB RSS, which
+is absolutely remarkable, and Grafana refreshes were very quick even
+at peak loads.</p>
 
 <h4 id="memory-consumption">Memory consumption</h4>
 
