@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T17:52:22-05:00</updated>
+  <updated>2017-02-23T17:54:12-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -57,7 +57,7 @@ i2.4xlarge, which is much larger with 16 cores and 122GB or RAM, as
 well as 4 directly attached SSDs.</p>
 
 <p>First, here is the obligatory screenshoot, then my observations and
-lessons learned in the process, as well as more screenshots depicting
+lessons learned in the process, as well as a screenshots depicting
 even better performance.</p>
 
 <p><img src="http://grisha.org/images/tgres_aws1.png" /></p>
