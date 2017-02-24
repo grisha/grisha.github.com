@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T18:08:55-05:00</updated>
+  <updated>2017-02-23T19:08:18-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -37,7 +37,7 @@ just seemed too great.</p>
 <p>Well, I think I’ve managed to prove myself wrong. After re-wroking
 Tgres to use the
 <a href="http://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">write-optimized layout</a>,
-I’ve run some tests on AWS, and the results were pleasntly surprizing.</p>
+I’ve run some tests on AWS, and the results were surprising.</p>
 
 <p>I was quite impressed by Jason Dixon’s <a href="http://obfuscurity.com/2016/08/Benchmarking-Carbon-and-Whisper-on-AWS">blog post</a>
 describing his AWS Graphite test, and was hoping to get to at least half the
