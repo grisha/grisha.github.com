@@ -325,6 +325,14 @@ there.</p>
 
 <p><img src="/images/tgres_aws1_1k.png" /></p>
 
+<h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4094">And what would happen if we set the segment width to 4094?</h4>
+
+<p>Interestingly, the memory footprint is smaller, and the vcache is
+leaner, but the incoming queue still skyrockets at just about
+120K/sec over 500K series.</p>
+
+<p><img src="/images/tgres_aws1_1k.png" /></p>
+
 <h2 id="conclusion">Conclusion</h2>
 
 <p>There is plenty of places in Tgres code that could still be
