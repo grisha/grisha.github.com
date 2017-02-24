@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-24T10:44:35-05:00</updated>
+  <updated>2017-02-24T12:19:05-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Can Tgres Outperform? More Load Testing.]]></title>
+    <title type="html"><![CDATA[Could Tgres Ourperform Graphite? PostgreSQL vs Whisper on AWS.]]></title>
     <link href="http://grisha.org/blog/2017/02/23/can-tgres-outperform-graphite/"/>
     <updated>2017-02-23T09:49:00-05:00</updated>
     <id>http://grisha.org/blog/2017/02/23/can-tgres-outperform-graphite</id>
