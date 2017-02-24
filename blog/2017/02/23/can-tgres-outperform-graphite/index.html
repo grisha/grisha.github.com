@@ -327,9 +327,11 @@ there.</p>
 
 <h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4096">And what would happen if we set the segment width to 4096?</h4>
 
-<p>Interestingly, the memory footprint is smaller, and the vcache is
-leaner, but the overall picture is about the same and the incoming
-queue still skyrockets at just about 120K/sec over 500K series.</p>
+<p>Interestingly, the memory footprint is a tad larger while the vcache
+is leaner, the number of data points flushed per second is about same,
+though in fewer SQL statements, and the overall picture is about the
+same and the incoming queue still skyrockets at just about 120K/sec
+over 500K series.</p>
 
 <p><img src="/images/tgres_aws1_4k.png" /></p>
 
