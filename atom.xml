@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T20:00:33-05:00</updated>
+  <updated>2017-02-23T20:15:25-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -224,7 +224,7 @@ there.</p>
 <p>Interestingly, the memory footprint is a tad larger while the vcache
 is leaner, the number of data points flushed per second is about same,
 though in fewer SQL statements, and the overall picture is about the
-same and the incoming queue still skyrockets at just about 120K/sec
+same and the incoming queue still skyrockets at just about 100K/sec
 over 500K series.</p>
 
 <p><img src="http://grisha.org/images/tgres_aws1_4k.png" /></p>
@@ -369,6 +369,22 @@ approximately like this:</p>
 <span class="line-number">21</span>
 <span class="line-number">22</span>
 <span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+<span class="line-number">38</span>
+<span class="line-number">39</span>
 </pre></td><td class="code"><pre><code class="sh"><span class="line">sudo mke2fs /dev/sdh
 </span><span class="line">sudo mkdir /ebs
 </span><span class="line">sudo mount /dev/sdh /ebs
@@ -392,6 +408,22 @@ approximately like this:</p>
 </span><span class="line"><span class="c"># END postgres config</span>
 </span><span class="line">
 </span><span class="line">sudo service postgresql95 restart
+</span><span class="line">
+</span><span class="line"><span class="c"># create PG database</span>
+</span><span class="line">
+</span><span class="line">sudo su - postgres
+</span><span class="line">createuser -s ec2-user   <span class="c"># note -s is superuser - not necessary for tgres but just in case</span>
+</span><span class="line">createdb tgres
+</span><span class="line"><span class="nb">exit</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># Tgres (requires Go - I used 1.8)</span>
+</span><span class="line"><span class="c"># (or you can just scp it from some machine where you already have go environment)</span>
+</span><span class="line">mkdir golang
+</span><span class="line"><span class="nb">export </span><span class="nv">GOPATH</span><span class="o">=</span>~/golang/
+</span><span class="line">go get github.com/tgres/tgres
+</span><span class="line"><span class="nb">cd</span> /home/ec2-user/golang/src/github.com/tgres/tgres
+</span><span class="line">go build
+</span><span class="line">cp etc/tgres.conf.sample etc/tgres.conf
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>The <code>tgres.conf</code> file looked like this:</p>
