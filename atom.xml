@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-24T15:33:33-05:00</updated>
+  <updated>2017-02-24T15:37:48-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -122,8 +122,8 @@ sure).</p>
 <h4 id="pg-table-bloat">PG Table Bloat</h4>
 
 <p>Table bloat is a phenomenon affecting Postgres in write-intensive
-situations because of its adherence to the MVCC. It basically means
-that pages on disk are being updated faster than the autovacuum
+situations because of its adherence to the <a href="https://en.wikipedia.org/wiki/Multiversion_concurrency_control">MVCC</a>.
+It basically means that pages on disk are being updated faster than the autovacuum
 process can keep up with them and the table starts growing out of
 control.</p>
 
