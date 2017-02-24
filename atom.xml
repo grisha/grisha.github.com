@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-24T10:27:18-05:00</updated>
+  <updated>2017-02-24T10:42:32-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -452,11 +452,15 @@ approximately like this:</p>
 <span class="line-number">22</span>
 <span class="line-number">23</span>
 <span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
 </pre></td><td class="code"><pre><code class="sh"><span class="line">min-step                <span class="o">=</span> <span class="s2">&quot;10s&quot;</span>
 </span><span class="line">
 </span><span class="line">pid-file <span class="o">=</span>                 <span class="s2">&quot;tgres.pid&quot;</span>
 </span><span class="line">log-file <span class="o">=</span>                 <span class="s2">&quot;log/tgres.log&quot;</span>
 </span><span class="line">log-cycle-interval <span class="o">=</span>       <span class="s2">&quot;24h&quot;</span>
+</span><span class="line">
+</span><span class="line">max-flushes-per-second      <span class="o">=</span> 1000000 <span class="c"># NB - Code ignored this setting at the moment</span>
 </span><span class="line">
 </span><span class="line">http-listen-spec            <span class="o">=</span> <span class="s2">&quot;0.0.0.0:8888&quot;</span>
 </span><span class="line">graphite-line-listen-spec   <span class="o">=</span> <span class="s2">&quot;0.0.0.0:2003&quot;</span>
