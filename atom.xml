@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-23T19:56:03-05:00</updated>
+  <updated>2017-02-23T19:58:03-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -219,11 +219,11 @@ there.</p>
 
 <p><img src="http://grisha.org/images/tgres_aws1_1k.png" /></p>
 
-<h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4094">And what would happen if we set the segment width to 4094?</h4>
+<h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4096">And what would happen if we set the segment width to 4096?</h4>
 
 <p>Interestingly, the memory footprint is smaller, and the vcache is
-leaner, but the incoming queue still skyrockets at just about
-120K/sec over 500K series.</p>
+leaner, but the overall picture is about the same and the incoming
+queue still skyrockets at just about 120K/sec over 500K series.</p>
 
 <p><img src="http://grisha.org/images/tgres_aws1_1k.png" /></p>
 
