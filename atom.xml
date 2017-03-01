@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-02-28T21:49:26-05:00</updated>
+  <updated>2017-02-28T21:53:51-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -20,7 +20,7 @@
     <id>http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up</id>
     <content type="html"><![CDATA[<p>To follow up on the <a href="http://grisha.org/blog/2017/02/23/can-tgres-outperform-graphite/">previous post</a>,
 after a bunch
-of tweaking, here is Tgres receiving over 150,000 data points per
+of tweaking, here is Tgres (<a href="https://github.com/tgres/tgres/commit/90924e4afa4ac8bef61caf46c3439794983660ec">commit</a>) receiving over 150,000 data points per
 second across 500,000 time series without any signs of the queue size
 or any other resource blowing up.</p>
 
