@@ -208,7 +208,7 @@ simple goroutine seemed like the right answer.</p>
 
 <p>Determining when we are “at capacity” is tricky. I’ve mostly looked at
 two factors (aside from the obvious - running out of memory/disk,
-becoming unresponsive, etc). I monitored for two things: queue size
+becoming unresponsive, etc): receiver queue size
 and Postgres <a href="https://www.keithf4.com/checking-for-postgresql-bloat/">table bloat</a>.</p>
 
 <h4 id="queue-size">Queue size</h4>
