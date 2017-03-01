@@ -133,7 +133,7 @@ of tweaking, here is Tgres (<a href="https://github.com/tgres/tgres/commit/90924
 second across 500,000 time series without any signs of the queue size
 or any other resource blowing up.</p>
 
-<p>This is on a i2.2xlarge EC2 instance (8 cores, 64GB).</p>
+<p>This is both Tgres and Postgres running on a i2.2xlarge EC2 instance (8 cores, 64GB, SSD).</p>
 
 <p><img src="/images/tgres_aws1_150k.png" /></p>
 
@@ -363,7 +363,7 @@ limit on how many points we can transfer in a single SQL operation.
 Segment width by default is 200, because a width higher than that
 causes rows to exceed a page and trigger
 <a href="https://www.postgresql.org/docs/current/static/storage-toast.html">TOAST</a>.
-TOAST can be good or bad because means data is stored in a separate table
+TOAST can be good or bad because it means data is stored in a separate table
 (not so good), but it also means it’s compressed, which may be an I/O
 win.</p>
 

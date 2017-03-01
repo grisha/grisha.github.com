@@ -310,7 +310,7 @@ limit on how many points we can transfer in a single SQL operation.
 Segment width by default is 200, because a width higher than that
 causes rows to exceed a page and trigger
 <a href="https://www.postgresql.org/docs/current/static/storage-toast.html">TOAST</a>.
-TOAST can be good or bad because means data is stored in a separate table
+TOAST can be good or bad because it means data is stored in a separate table
 (not so good), but it also means it’s compressed, which may be an I/O
 win.</p>
 
