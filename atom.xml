@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-03-01T12:28:40-05:00</updated>
+  <updated>2017-03-21T12:26:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -39,7 +39,9 @@ the first version of Tgres.</p>
     <link href="http://grisha.org/blog/2017/02/23/can-tgres-outperform-graphite/"/>
     <updated>2017-02-23T09:49:00-05:00</updated>
     <id>http://grisha.org/blog/2017/02/23/can-tgres-outperform-graphite</id>
-    <content type="html"><![CDATA[<h2 id="tldr">TL;DR</h2>
+    <content type="html"><![CDATA[<p>Note: there is an <a href="http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/">update</a> to this post.</p>
+
+<h2 id="tldr">TL;DR</h2>
 
 <p>On a 8 CPU / 16 GB EC2 instance,
 <a href="https://github.com/tgres/tgres">Tgres</a> can process 150,000 data
