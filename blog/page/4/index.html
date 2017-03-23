@@ -9,8 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="As you embark on converting vast quantities of JSON to Avro, you soon
-discover that things are not as simple as they seem. Here is how it might &hellip;">
+  <meta name="description" content="Nearly eight years after my last commit
+to Mod_python I’ve decided to spend some time hacking on it again. Five years without active development and &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -94,6 +94,99 @@ discover that things are not as simple as they seem. Here is how it might &helli
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/02/hacking-on-mod-python-again/">Hacking on Mod_python (Again)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-02T16:19:00-04:00" pubdate data-updated="true">Aug 2<span>nd</span>, 2013</time>
+        
+         | <a href="/blog/2013/08/02/hacking-on-mod-python-again/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
+to <a href="http://www.modpython.org/">Mod_python</a> I’ve decided to spend some time hacking on it again.</p>
+
+<p>Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.</p>
+
+<p>We live in this new
+<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
+Apache Httpd no longer has the market dominance it once enjoyed, while
+the latest Python web frameworks run without requiring or recommending
+Mod_python. My hunch, however, is that given a thorough dusting it
+could be quite useful (perhaps more than ever) and applied in very
+interesting ways to solve the new problems. I also think the Python
+language is at a very important inflection point. Pyhton 3 is now
+mature, and is slowly but steadily becoming the preferred language of
+many interesting communities such as data science, for example.</p>
+
+<p>The current status of Mod_python as an Apache project is that it’s
+in the <a href="http://attic.apache.org/">attic</a>. This means that the
+<a href="http://www.apache.org/">ASF</a> isn’t providing much in the way of
+infrastructure support any longer, nor will you see an “official” ASF
+release any time soon. (If ever - Mod_python would have to re-enter as
+an <a href="http://incubator.apache.org/">incubator</a> project and at this point
+it is entirely premature to even consider such an option).</p>
+
+<p>For now the main goal is to re-establish the community, and as part of
+that I will have to sort out how to do issue tracking, discussion
+groups, etc. At this point the only thing I’ve decided is that the
+main repository will live on
+<a href="https://github.com/grisha/mod_python">github</a>.</p>
+
+<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
+development goal is to bring it up to compatibility with Python 2.7
+and Apache Httpd 2.4 (I’m nearly there already), then potentially move
+on to Python 3 support. I have rolled back a few commits (most notably
+the new importer) because I did not understand them. There are still a
+few changes in Apache 2.4 that need to be addressed, but they seem
+relatively minor at this point. Authentication has been changed
+significantly in 2.4, though mod_python never had much coverage in that
+area.</p>
+
+<p>Let’s see where this takes us? And if you like this, feel free to
+star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1526,174 +1619,6 @@ ways, sometimes with a Java traceback.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/02/linus-on-understanding-pointers/">Linus on Understanding Pointers</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-02T10:52:00-04:00" pubdate data-updated="true">Apr 2<span>nd</span>, 2013</time>
-        
-         | <a href="/blog/2013/04/02/linus-on-understanding-pointers/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>A while back <a href="http://en.wikipedia.org/wiki/Linus_Torvalds">Linus Torvalds</a> <a href="http://meta.slashdot.org/story/12/10/11/0030249/linus-torvalds-answers-your-questions">answered questions on Slashdot</a>.</p>
-
-<p>One of the answers was on the subject of understanding of pointers:</p>
-
-<blockquote>
-  <p><small>At the opposite end of the spectrum, I actually wish more people
-understood the really core low-level kind of coding. Not big, complex
-stuff like the lockless name lookup, but simply good use of
-pointers-to-pointers etc. For example, I’ve seen too many people who
-delete a singly-linked list entry by keeping track of the “prev”
-entry, and then to delete the entry, doing something like</small></p>
-</blockquote>
-
-<blockquote>
-  <p><small>if (prev)<br />
-  prev-&gt;next = entry-&gt;next;<br />
-else<br />
-  list_head = entry-&gt;next;<br />
-</small></p>
-</blockquote>
-
-<blockquote>
-  <p><small>and whenever I see code like that, I just go “This person doesn’t
-understand pointers”. And it’s sadly quite common.</small></p>
-</blockquote>
-
-<blockquote>
-  <p><small>People who understand pointers just use a “pointer to the entry
-pointer”, and initialize that with the address of the list_head. And
-then as they traverse the list, they can remove the entry without
-using any conditionals, by just doing a “*pp = entry-&gt;next”</small></p>
-</blockquote>
-
-<p>There were a few comments, but none explained what he really
-meant. So here it is.</p>
-
-<p>Imagine you have a linked list defined as:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">list_entry</span> <span class="p">{</span>
-</span><span class="line">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-</span><span class="line">    <span class="k">struct</span> <span class="n">list_entry</span> <span class="o">*</span><span class="n">next</span><span class="p">;</span>
-</span><span class="line"><span class="p">}</span> <span class="n">list_entry</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>You need to iterate over it from the begining to end and remove a
-specific element whose value equals the value of <code>to_remove</code>. The more
-obvious way to do this would be:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span> <span class="cm">/* assuming head exists and is the first entry of the list */</span>
-</span><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-</span><span class="line">
-</span><span class="line"><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>     <span class="cm">/* this is the one to remove */</span>
-</span><span class="line">        <span class="k">if</span> <span class="p">(</span><span class="n">prev</span><span class="p">)</span>
-</span><span class="line">           <span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span> <span class="cm">/* remove the entry */</span>
-</span><span class="line">        <span class="k">else</span>
-</span><span class="line">            <span class="n">head</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>      <span class="cm">/* special case - first entry */</span>
-</span><span class="line">
-</span><span class="line">    <span class="cm">/* move on to the next entry */</span>
-</span><span class="line">    <span class="n">prev</span> <span class="o">=</span> <span class="n">entry</span><span class="p">;</span>
-</span><span class="line">    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>What we are doing above is iterating over the list until <code>entry</code> is
-NULL, which means we’ve reached the end of the list (line 4). When we
-come across an entry we want removed (line 5), we assign the value of
-current <code>next</code> pointer to the previous one, thus eliminating the
-current element (line 7).</p>
-
-<p>There is a special case above - at the beginning of the iteration
-there is no previous entry (<code>prev</code> is NULL), and so to remove the
-first entry in the list you have to modify <code>head</code> itself (line 9).</p>
-
-<p>What Linus was saying is that the above code could be simplified by
-making the previous element a <em>pointer to a pointer</em> rather than just a
-pointer. The code then looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="c"><span class="line"><span class="n">list_entry</span> <span class="o">**</span><span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span> <span class="cm">/* pointer to a pointer */</span>
-</span><span class="line"><span class="n">list_entry</span> <span class="o">*</span><span class="n">entry</span> <span class="o">=</span> <span class="n">head</span><span class="p">;</span>
-</span><span class="line">
-</span><span class="line"><span class="k">while</span> <span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">    <span class="k">if</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">==</span> <span class="n">to_remove</span><span class="p">)</span>
-</span><span class="line">        <span class="o">*</span><span class="n">pp</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class="line">
-</span><span class="line">    <span class="n">pp</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class="line">    <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The above code is very similar to the previous variant, but notice how
-we no longer need to watch for the special case of the first element
-of the list, since <code>pp</code> is not NULL at the beginning. Simple and
-clever.</p>
-
-<p>Also, someone in that thread commented that the reason this is better
-is because <code>*pp = entry-&gt;next</code> is <em>atomic</em>.  It is most certainly NOT
-atomic. The above expression contains two dereference operators (<code>*</code>
-and <code>-&gt;</code>) and one assignment, and neither of those three things is
-atomic. This is a common misconception, but alas pretty much <em>nothing</em>
-in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
-operators)!</p>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -1749,6 +1674,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series with Go and PostgreSQL</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/02/28/tgres-load-testing-follow-up/">Tgres Load Testing Follow Up</a>
       </li>
     
@@ -1762,10 +1691,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/">Simple Tgres Part II - A High Rate Counter</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016/12/23/time-series-what-is-it/">Why is there no Formal Definition of Time Series?</a>
       </li>
     
   </ul>
