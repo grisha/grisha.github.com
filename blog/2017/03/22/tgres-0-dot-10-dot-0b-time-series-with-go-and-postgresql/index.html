@@ -219,6 +219,13 @@ other language as just another database table. For example in Rails it
 might be as trivial as <code>class Tv &lt; ActiveRecord::Base; end</code> et voilà,
 you have the data points as a model.</p>
 
+<p>It should also be mentioned that Tgres requires no PostgreSQL
+extensions. This is because optimizing by implementing a custom
+extension which circumvents the PostgreSQL natural way of handling
+data means we are solving the storage problem again. PostgreSQL
+storage is not broken to begin with, no customization is necessary to
+handle time series.</p>
+
 <p>In addition to being a standalone program, Tgres packages aim to be useful on their own
 as part of any other Go program. For example it is very easy to equip a Go application with Graphite
 capabilities by providing it access to a database and using the
