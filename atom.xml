@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-03-23T16:28:59-04:00</updated>
+  <updated>2017-03-30T13:59:23-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -35,6 +35,8 @@ in a way that is compatible with tools such as <a href="https://grafana.com/">Gr
 drop-in Graphite/Statsd replacement, though I’d rather avoid direct
 comparison, because the key feature of Tgres is that data is stored in
 PostgreSQL.</p>
+
+<p><a href="http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/"><img src="http://grisha.org/images/tgres_load_head_01.png" /></a></p>
 
 <h3 id="why-postgresql">Why PostgreSQL?</h3>
 
