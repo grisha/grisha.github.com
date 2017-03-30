@@ -6,9 +6,10 @@ comments: true
 categories:
 ---
 
+Edit: there is now a [part iii](/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write) in this series of articles.
+
 I have [previously written](/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/) how
 time series can be stored in PostgreSQL efficiently using [arrays](https://www.postgresql.org/docs/current/static/arrays.html).
-
 
 As a continuation of that article, I shall attempt to describe in detail the inner workings of an
 [SQL view](https://en.wikipedia.org/wiki/View_(SQL)) that [Tgres](https://github.com/tgres/tgres) uses to
@@ -158,10 +159,9 @@ i = t/step % size.
 
 We need time to be expressed as a UNIX time which is done
 with `EXTRACT(EPOCH FROM rra.latest)::BIGINT`. Now you should recognize
-the above formula in the larger
-expression
+the above formula in the more verbose expression
 {% codeblock lang:sql %}
-MOD(EXTRACT(EPOCH FROM rra.latest)::BIGINT*1000/(rra.step_s * rra.steps_per_row)
+MOD(EXTRACT(EPOCH FROM rra.latest)::BIGINT/(rra.step_s * rra.steps_per_row), size)
 {% endcodeblock %}
 where `rra.step_s * rra.steps_per_row` is the size of our series in seconds.
 

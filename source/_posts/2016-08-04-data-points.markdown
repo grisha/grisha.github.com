@@ -45,8 +45,7 @@ Why is it done this way? Because this is how rates add up. If this was
 speed of a car in meters per second (more like a bycicle, I guess),
 its weighted average speed for the duration of this step of 2.25
 meters per second would mean that in the 100s it would have traveled
-exactly 225 meters. As one of the smart readers pointed out in the comments
-to this post, this boils down the [Fundamental Theorem of Calculus](https://en.wikipedia.org/wiki/Fundamental_theorem_of_calculus).
+exactly 225 meters.
 
 ### NaNs or "Unknowns"
 

@@ -6,6 +6,8 @@ comments: true
 categories:
 ---
 
+Edit: There is an [update](/blog/2017/02/23/can-tgres-outperform-graphite/) to this story.
+
 So I finally got around to some load testing of [Tgres](https://github.com/tgres/tgres). Load testing is
 mysterious, it never goes the way you think it would, and what you
 learn is completely unexpcted.

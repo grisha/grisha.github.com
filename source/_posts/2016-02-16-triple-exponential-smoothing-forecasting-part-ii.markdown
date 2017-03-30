@@ -93,7 +93,7 @@ $$
 \begin{align}
 & \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
 & b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
-& \hat{y}_x = \ell_x + b_x & \mbox{forecast}\\
+& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
 \end{align}
 $$
 

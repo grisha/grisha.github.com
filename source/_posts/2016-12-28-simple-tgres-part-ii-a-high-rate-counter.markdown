@@ -52,10 +52,10 @@ func main() {
 
 Now let's create a goroutine which creates data points as fast as it
 can, the difference from the previous blog post is that we are using
-QueueGaue(), which is a _paced metric_, meaning that it flushes to the
+QueueGauge(), which is a _paced metric_, meaning that it flushes to the
 time series only periodically (once per second by default) so as to
 not overwhelm the I/O and or network (even though in this case it doesn't
-really matter since we're using a memory-based SerDe anyway)..
+really matter since we're using a memory-based SerDe anyway).
 
 {% codeblock lang:go %}
     start := time.Now()
@@ -64,7 +64,7 @@ really matter since we're using a memory-based SerDe anyway)..
     go func() {
         n := 0
         for t := time.Now(); t.Before(end); t = time.Now() {
-            rcvr.QueueGauge("foo.bar", float64(n)/(t.Sub(start)).Seconds())
+            rcvr.QueueGauge(serde.Ident{"name":"foo.bar"}, float64(n)/(t.Sub(start)).Seconds())
             n++
         }
     }()
@@ -99,5 +99,5 @@ So my macbook can crank these out at about 2.5 million per second.
 
 In my experience instrumenting my apps with simple counters like this
 and having them available directly from the app without having to send
-them to some statd server somewhere has been extremely useful in
+them to a separate statsd server somewhere has been extremely useful in
 helping understand performance and other issues.

@@ -46,7 +46,7 @@ but with enough tinkering around I was able to make something work,
 and lo and behold it was quite noticeably faster.
 
 And so a few days later I held a presentation in the big conference
-room regarding this new tool we’ve started using called Python which
+room regarding this new tool we’ve started using something called Python which
 can crunch yall’s numbers an order of magnitude faster than the
 Microsoft product we’ve been using. And oh, by the way, I quickly
 hacked something together last night - let’s do a live demo, look how
