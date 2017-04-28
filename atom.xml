@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-04-28T12:10:05-04:00</updated>
+  <updated>2017-04-28T12:22:33-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -104,7 +104,7 @@ has. Thus far the only possible solution known is to run multiple
 instances of the app as separate processes.</p>
 
 <p>This is typically done with help of additional software such as
-Unicorn/gUnicorn with every process listening on its own port and
+Unicorn/Gunicorn with every process listening on its own port and
 running behind some kind of a connection balancer such as Nginx and/or
 Haproxy. Alternatively it can be accomplished via Apache and its
 modules (such as mod_python or mod_wsgi), either way it’s
