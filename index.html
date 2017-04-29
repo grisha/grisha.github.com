@@ -835,7 +835,7 @@ into the client side of the app, but only by a few lines.</p>
 <p>Also noteworthy is how the handler is defined. If this idiom is not
 familiar, it’s worth spending a few minutes (or a day) to internalize
 it completely as it is very common in Go. <code>indexHandler()</code> is not a
-handler, it <em>returns</em> a handler function. It this done this way so
+handler, it <em>returns</em> a handler function. It is done this way so
 that we can pass in a <code>*model.Model</code> via closure, since an HTTP
 handler function definition is fixed and a model pointer is not one of
 the parameters.</p>
