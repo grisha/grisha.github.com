@@ -717,9 +717,10 @@ elaborate, of course:</p>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>Here we’re taking advantage of sqlx to run the query and construct a
-slice with its results with a simple call to <code>Select()</code>. Without sqlx
-we would have to iterate over the result rows, processing each with
-<code>Scan</code>, which would be considerably more verbose.</p>
+slice from results with a simple call to <code>Select()</code> (NB:
+<code>p.sqlSelectPeople</code> is a <code>*sqlx.Stmt</code>). Without sqlx we would have to
+iterate over the result rows, processing each with <code>Scan</code>, which would
+be considerably more verbose.</p>
 
 <p>Beware of a very subtle “gotcha” here. <code>people</code> could also be defined
 as <code>var people []*model.Person</code> and the method would work just the
