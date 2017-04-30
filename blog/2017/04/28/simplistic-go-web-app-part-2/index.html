@@ -716,7 +716,10 @@ elaborate, of course:</p>
 </span><span class="line">    <span class="k">return</span> <span class="nx">people</span><span class="p">,</span> <span class="kc">nil</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>That’s it for <code>db</code>.</p>
+<p>Here we’re taking advantage of sqlx to run the query and construct a
+slice with its results with a simple call to <code>Select()</code>. Without sqlx
+we would have to iterate over the result rows, processing each with
+<code>Scan</code>, which would be considerably more verbose.</p>
 
 <p>Beware of a very subtle “gotcha” here. <code>people</code> could also be defined
 as <code>var people []*model.Person</code> and the method would work just the
@@ -725,6 +728,8 @@ return <code>nil</code>, not an empty slice. If the result of this method is
 later encoded as JSON, the former would become <code>null</code> and the latter
 <code>[]</code>. This could cause problems if the client side doesn’t know how to
 treat <code>null</code>.</p>
+
+<p>That’s it for <code>db</code>.</p>
 
 <h3 id="package-ui">package ui</h3>
 
