@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-01T14:53:04-04:00</updated>
+  <updated>2017-05-01T14:55:41-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,8 @@
     <link href="http://grisha.org/blog/2017/05/01/go-web-app-part-3/"/>
     <updated>2017-05-01T12:22:00-04:00</updated>
     <id>http://grisha.org/blog/2017/05/01/go-web-app-part-3</id>
-    <content type="html"><![CDATA[<p>This is part 3. See <a href="http://grisha.org/blog/2017/04/27/simplistic-go-web-app/">part 1</a> and <a href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/">part 2</a>.</p>
+    <content type="html"><![CDATA[<p>This is part 3. See <a href="http://grisha.org/blog/2017/04/27/simplistic-go-web-app/">part 1</a>
+and <a href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/">part 2</a>.</p>
 
 <p>The previous two posts got us to a point where we had a Go app which
 was able to serve a tiny bit of HTML. This post will talk about the
