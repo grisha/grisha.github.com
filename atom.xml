@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-04-30T18:34:18-04:00</updated>
+  <updated>2017-05-01T14:53:04-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,11 +14,421 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Building a Go Web App - Part 3]]></title>
+    <link href="http://grisha.org/blog/2017/05/01/go-web-app-part-3/"/>
+    <updated>2017-05-01T12:22:00-04:00</updated>
+    <id>http://grisha.org/blog/2017/05/01/go-web-app-part-3</id>
+    <content type="html"><![CDATA[<p>This is part 3. See <a href="http://grisha.org/blog/2017/04/27/simplistic-go-web-app/">part 1</a> and <a href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/">part 2</a>.</p>
+
+<p>The previous two posts got us to a point where we had a Go app which
+was able to serve a tiny bit of HTML. This post will talk about the
+client side, which, alas, is mostly JavaScript, not Go.</p>
+
+<h3 id="javascript-in-2017">JavaScript in 2017</h3>
+
+<p>This is what gave me the most grief. I don’t really know how to
+categorize the mess that present day JavaScript is, nor do I really
+know what to attribute it to, and trying to rationalize it would make
+for a great, but entirely different blog post. So I’m just going to
+accept this as the reality we cannot change and move on to how to best
+work with it.</p>
+
+<h3 id="variants-of-js">Variants of JS</h3>
+
+<p>The most common variant of JS these days is known as ES2015 (aka ES6 or
+ECMAScript 6th Edition), and it is <em>mostly</em> supported by the more or
+less latest browsers. The latest released spec of JavaScript is ES7
+(aka ES2016), but since the browsers are sill catching up with ES6, it
+looks like ES7 is never really going to be adopted as such, because
+most likely the next coming ES8 which might be released in 2017 will
+supersede it before the browsers are ready.</p>
+
+<p>Curiously, there appears to be no simple way to construct an
+environment fully specific to a particular ECMAScript version. There
+is not even a way to revert to an older fully supported version ES5 or
+ES4, and thus it is not really possible to test your script for
+compliance. The best you can do is to test it on the browsers you have
+access to and hope for the best.</p>
+
+<p>Because of the ever changing and vastly varying support for the
+language across platforms and browsers, <em>transpilation</em> has emerged as
+a common idiom to address this. Transpilation mostly amounts to
+JavaScript code being converted to JavaScript that complies with a
+specific ES version or a particular environment. For example <code>import
+Bar from 'foo';</code> might become <code>var Bar = require('foo');</code>. And so if a
+particular feature is not supported, it can be made available with the
+help of the right plug-in or transpiler. I suspect that the
+transpilation proliferation phenomenon has led to additional problems,
+such as the input expected by a transpiler assuming existence of a
+feature that is no longer supported, same with output. Often this
+might be remedied by additional plugins, and it can be very difficult
+to sort out. On more than one occasion I spent a lot of time trying to
+get something to work only to find out later that my entire approach
+has been obsoleted by a new and better solution now built-in to some
+other tool.</p>
+
+<h3 id="js-frameworks">JS Frameworks</h3>
+
+<p>There also seems to be a lot of disagreement on which JS framework is
+best. It is even more confusing because the same framework can be so
+radically different from one version to the next I wonder why they
+didn’t just change the name.</p>
+
+<p>I have no idea which is best, and I only had the patience to try a
+couple. About a year ago I spent a bunch of time tinkering with
+AngularJS, and this time, for a change, I tinkered with React. For me,
+I think React makes more sense, and so this is what this example app
+is using, for better or worse.</p>
+
+<h3 id="react-and-jsx">React and JSX</h3>
+
+<p>If you don’t know what React is, here’s my (technically incorrect)
+explanation: it’s HTML embedded in JavaScript. We’re all so
+brainwashed into JavaScript being embedded in HTML as the natural
+order of things, that inverting this relationship does not even occur
+as a possibility. For the fundamental simplicity of this revolutionary (sic)
+concept I think React is quite brilliant.</p>
+
+<p>A react “Hello World!” looks approximately like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="javascript"><span class="line"><span class="kr">class</span> <span class="nx">Hello</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="kd">let</span> <span class="nx">who</span> <span class="o">=</span> <span class="s2">&quot;World&quot;</span><span class="p">;</span>
+</span><span class="line">    <span class="k">return</span> <span class="p">(</span>
+</span><span class="line">      <span class="o">&lt;</span><span class="nx">h1</span><span class="o">&gt;</span> <span class="nx">Hello</span> <span class="p">{</span><span class="nx">who</span><span class="p">}</span><span class="o">!</span> <span class="o">&lt;</span><span class="err">/h1&gt;</span>
+</span><span class="line">    <span class="p">);</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Notice how the HTML just begins without any escape or
+delimiter. Surprisingly, the opening “&lt;” works quite reliably as the
+marker signifying beginning of HTML. Once inside HTML, the opening
+curly brace indicates that we’re back to JavaScript temporarily, and
+this is how variable values are interpolated inside HTML. That’s pretty
+much all you need to know to “get” React.</p>
+
+<p>Technically, the above file format is known as <code>JSX</code>, while React is
+the library which provides the classes used to construct React objects
+such as <code>React.Component</code> above. JSX is transpiled into regular
+JavaScript by a tool known as Babel, and in fact JSX is not even
+required, a React component can be written in plain JavaScript, and
+there is a school of thought whereby React is used without JSX. I
+personally find the JSX-less approach a little too noisy, and I also
+like that Babel allows you to use a more modern dialect of JS (though
+not having to deal with a transpiler is definitely a win).</p>
+
+<h3 id="minimal-working-example">Minimal Working Example</h3>
+
+<p>First, we need three pieces of external JavaScript. They are (1) React
+and ReactDOM, (2) Babel in-browser transpiler and (3) a little lib
+called Axios which useful for making JSON HTTP requests. I get them
+out of Cloudflare CDN, there are probably other ways. To do this, we
+need to augment our <code>indexHTML</code> variable to look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">const</span> <span class="p">(</span>
+</span><span class="line">	<span class="nx">cdnReact</span>           <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react.min.js&quot;</span>
+</span><span class="line">	<span class="nx">cdnReactDom</span>        <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react-dom.min.js&quot;</span>
+</span><span class="line">	<span class="nx">cdnBabelStandalone</span> <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.24.0/babel.min.js&quot;</span>
+</span><span class="line">    <span class="nx">cdnAxios</span>           <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.1/axios.min.js&quot;</span>
+</span><span class="line"><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">const</span> <span class="nx">indexHTML</span> <span class="p">=</span> <span class="s">`</span>
+</span><span class="line"><span class="s">&lt;!DOCTYPE HTML&gt;</span>
+</span><span class="line"><span class="s">&lt;html&gt;</span>
+</span><span class="line"><span class="s">  &lt;head&gt;</span>
+</span><span class="line"><span class="s">    &lt;meta charset=&quot;utf-8&quot;&gt;</span>
+</span><span class="line"><span class="s">    &lt;title&gt;Simple Go Web App&lt;/title&gt;</span>
+</span><span class="line"><span class="s">  &lt;/head&gt;</span>
+</span><span class="line"><span class="s">  &lt;body&gt;</span>
+</span><span class="line"><span class="s">    &lt;div id=&#39;root&#39;&gt;&lt;/div&gt;</span>
+</span><span class="line"><span class="s">    &lt;script src=&quot;`</span> <span class="o">+</span> <span class="nx">cdnReact</span> <span class="o">+</span> <span class="s">`&quot;&gt;&lt;/script&gt;</span>
+</span><span class="line"><span class="s">    &lt;script src=&quot;`</span> <span class="o">+</span> <span class="nx">cdnReactDom</span> <span class="o">+</span> <span class="s">`&quot;&gt;&lt;/script&gt;</span>
+</span><span class="line"><span class="s">    &lt;script src=&quot;`</span> <span class="o">+</span> <span class="nx">cdnBabelStandalone</span> <span class="o">+</span> <span class="s">`&quot;&gt;&lt;/script&gt;</span>
+</span><span class="line"><span class="s">    &lt;script src=&quot;`</span> <span class="o">+</span> <span class="nx">cdnAxios</span> <span class="o">+</span> <span class="s">`&quot;&gt;&lt;/script&gt;</span>
+</span><span class="line"><span class="s">    &lt;script src=&quot;/js/app.jsx&quot; type=&quot;text/babel&quot;&gt;&lt;/script&gt;</span>
+</span><span class="line"><span class="s">  &lt;/body&gt;</span>
+</span><span class="line"><span class="s">&lt;/html&gt;</span>
+</span><span class="line"><span class="s">`</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>At the very end it now loads <code>"/js/app.jsx"</code> which we need to
+accommodate as well. Back in the part 1 we created a UI config variable
+called <code>cfg.Assets</code> using <code>http.Dir()</code>. We now need to wrap it in
+a handler which serves files, and Go conveniently provides one:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&quot;/js/&quot;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nx">FileServer</span><span class="p">(</span><span class="nx">cfg</span><span class="p">.</span><span class="nx">Assets</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>With the above, all the files in <code>"assets/js"</code> become available under
+<code>"/js/"</code>.</p>
+
+<p>Finally we need to create the <code>assets/js/app.jsx</code> file itself:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">class</span> <span class="nx">Hello</span> <span class="nx">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">let</span> <span class="nx">who</span> <span class="p">=</span> <span class="s">&quot;World&quot;</span><span class="p">;</span>
+</span><span class="line">    <span class="k">return</span> <span class="p">(</span>
+</span><span class="line">      <span class="p">&lt;</span><span class="nx">h1</span><span class="p">&gt;</span> <span class="nx">Hello</span> <span class="p">{</span><span class="nx">who</span><span class="p">}!</span> <span class="p">&lt;</span><span class="o">/</span><span class="nx">h1</span><span class="p">&gt;</span>
+</span><span class="line">    <span class="p">);</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">ReactDOM</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span> <span class="p">&lt;</span><span class="nx">Hello</span><span class="o">/</span><span class="p">&gt;,</span> <span class="nx">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s">&quot;#root&quot;</span><span class="p">));</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The only difference from the previous listing is the very last line,
+which is what makes the app actually render itself.</p>
+
+<p>If we now hit the index page from a (JS-capable) browser, we should see a “Hello
+World”.</p>
+
+<p>What happened was that the browser loaded “app.jsx” as it was
+instructed, but since “jsx” is not a file type it is familiar with, it
+simply ignored it. When Babel got its chance to run, it scanned our
+document for any script tags referencing “text/babel” as its type, and
+re-requested those pages (which makes them show up twice in developer
+tools, but the second request ought to served entirely from cache). It
+then transpiled it to valid JavaScript and executed it, which in turn
+caused React to actually render the “Hello World”.</p>
+
+<h3 id="listing-people">Listing People</h3>
+
+<p>We need to first go back to the server side and create a handler that
+lists people. In order for that to happen, we need an http handler,
+which might look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">peopleHandler</span><span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">model</span><span class="p">.</span><span class="nx">Model</span><span class="p">)</span> <span class="nx">http</span><span class="p">.</span><span class="nx">Handler</span> <span class="p">{</span>
+</span><span class="line">	<span class="k">return</span> <span class="nx">http</span><span class="p">.</span><span class="nx">HandlerFunc</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">		<span class="nx">people</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">People</span><span class="p">()</span>
+</span><span class="line">		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class="line">			<span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;This is an error&quot;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nx">StatusBadRequest</span><span class="p">)</span>
+</span><span class="line">			<span class="k">return</span>
+</span><span class="line">		<span class="p">}</span>
+</span><span class="line">
+</span><span class="line">		<span class="nx">js</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">people</span><span class="p">)</span>
+</span><span class="line">		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span><span class="line">			<span class="nx">http</span><span class="p">.</span><span class="nx">Error</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&quot;This is an error&quot;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nx">StatusBadRequest</span><span class="p">)</span>
+</span><span class="line">			<span class="k">return</span>
+</span><span class="line">		<span class="p">}</span>
+</span><span class="line">
+</span><span class="line">		<span class="nx">fmt</span><span class="p">.</span><span class="nx">Fprintf</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">js</span><span class="p">))</span>
+</span><span class="line">	<span class="p">})</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And we need to register it:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&quot;/people&quot;</span><span class="p">,</span> <span class="nx">peopleHandler</span><span class="p">(</span><span class="nx">m</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now if we hit <code>"/people"</code>, we should get a <code>"[]"</code> in response. If we
+insert a record into our people table with something along the lines
+of:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">people</span> <span class="p">(</span><span class="k">first</span><span class="p">,</span> <span class="k">last</span><span class="p">)</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;John&#39;</span><span class="p">,</span> <span class="s1">&#39;Doe&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The response should change to <code>[{"Id":1,"First":"John","Last":"Doe"}]</code>.</p>
+
+<p>Finally we need to hook up our React/JSX code to make it all
+render.</p>
+
+<p>For this we are going to create a <code>PersonItem</code> component, and
+another one called <code>PeopleList</code> which will use <code>PersonItem</code>.</p>
+
+<p>A <code>PersonItem</code> only needs to know how to render itself as a table row:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+</pre></td><td class="code"><pre><code class="javascript"><span class="line"><span class="kr">class</span> <span class="nx">PersonItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">return</span> <span class="p">(</span>
+</span><span class="line">      <span class="o">&lt;</span><span class="nx">tr</span><span class="o">&gt;</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="nx">td</span><span class="o">&gt;</span> <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span>    <span class="o">&lt;</span><span class="err">/td&gt;</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="nx">td</span><span class="o">&gt;</span> <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">first</span><span class="p">}</span> <span class="o">&lt;</span><span class="err">/td&gt;</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="nx">td</span><span class="o">&gt;</span> <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">last</span><span class="p">}</span>  <span class="o">&lt;</span><span class="err">/td&gt;</span>
+</span><span class="line">      <span class="o">&lt;</span><span class="err">/tr&gt;</span>
+</span><span class="line">    <span class="p">);</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>A <code>PeopleList</code> is slightly more complicated:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+</pre></td><td class="code"><pre><code class="javascript"><span class="line"><span class="kr">class</span> <span class="nx">PeopleList</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+</span><span class="line">  <span class="nx">constructor</span><span class="p">(</span><span class="nx">props</span><span class="p">)</span> <span class="p">{</span>
+</span><span class="line">    <span class="kr">super</span><span class="p">(</span><span class="nx">props</span><span class="p">);</span>
+</span><span class="line">    <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">people</span><span class="o">:</span> <span class="p">[]</span> <span class="p">};</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">  <span class="nx">componentDidMount</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="k">this</span><span class="p">.</span><span class="nx">serverRequest</span> <span class="o">=</span>
+</span><span class="line">      <span class="nx">axios</span>
+</span><span class="line">        <span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">&quot;/people&quot;</span><span class="p">)</span>
+</span><span class="line">        <span class="p">.</span><span class="nx">then</span><span class="p">((</span><span class="nx">result</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class="line">           <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span> <span class="nx">people</span><span class="o">:</span> <span class="nx">result</span><span class="p">.</span><span class="nx">data</span> <span class="p">});</span>
+</span><span class="line">        <span class="p">});</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line">
+</span><span class="line">  <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">    <span class="kr">const</span> <span class="nx">people</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">people</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">person</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span><span class="line">      <span class="k">return</span> <span class="p">(</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="nx">PersonItem</span> <span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">i</span><span class="p">}</span> <span class="nx">id</span><span class="o">=</span><span class="p">{</span><span class="nx">person</span><span class="p">.</span><span class="nx">Id</span><span class="p">}</span> <span class="nx">first</span><span class="o">=</span><span class="p">{</span><span class="nx">person</span><span class="p">.</span><span class="nx">First</span><span class="p">}</span> <span class="nx">last</span><span class="o">=</span><span class="p">{</span><span class="nx">person</span><span class="p">.</span><span class="nx">Last</span><span class="p">}</span> <span class="o">/&gt;</span>
+</span><span class="line">      <span class="p">);</span>
+</span><span class="line">    <span class="p">});</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="p">(</span>
+</span><span class="line">      <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="nx">table</span><span class="o">&gt;&lt;</span><span class="nx">tbody</span><span class="o">&gt;</span>
+</span><span class="line">          <span class="o">&lt;</span><span class="nx">tr</span><span class="o">&gt;&lt;</span><span class="nx">th</span><span class="o">&gt;</span><span class="nx">Id</span><span class="o">&lt;</span><span class="err">/th&gt;&lt;th&gt;First&lt;/th&gt;&lt;th&gt;Last&lt;/th&gt;&lt;/tr&gt;</span>
+</span><span class="line">          <span class="p">{</span><span class="nx">people</span><span class="p">}</span>
+</span><span class="line">        <span class="o">&lt;</span><span class="err">/tbody&gt;&lt;/table&gt;</span>
+</span><span class="line">
+</span><span class="line">      <span class="o">&lt;</span><span class="err">/div&gt;</span>
+</span><span class="line">    <span class="p">);</span>
+</span><span class="line">  <span class="p">}</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>It has a constructor which initializes a <code>this.state</code> variable. It
+also declared a <code>componentDidMount()</code> method, which React will call
+when the component is about to be rendered, making it the (or one of)
+correct place to fetch the data from the server. It fetches the data
+via an Axios call, and saves the result in
+<code>this.state.people</code>. Finally, <code>render()</code> iterates over the contents of
+<code>this.state.people</code> creating an instance of <code>PersonItem</code> for each.</p>
+
+<p>That’s it, our app now responds with a (rather ugly) table listing
+people from our database.</p>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>In essence, this is all you need to know to make fully functional Web
+App in Go. This app has a number of shortcomings, which I will
+hopefully address later. For example in-browser transpilation is not
+ideal, though it might be fine for a low volume internal app where
+page load time is not important, so we might want to have a way to
+pre-transpile it ahead of time. Also our JSX is confined to a single
+file, this might get hard to manage for any serious size app where
+there are lots of components. The app has no navigation. There is no
+styling. There are probably things I’m forgetting about…</p>
+
+<p>Enjoy!</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[Building a Go Web App - Part 2]]></title>
     <link href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/"/>
     <updated>2017-04-28T15:59:00-04:00</updated>
     <id>http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2</id>
-    <content type="html"><![CDATA[<p>This is a continuation of <a href="http://grisha.org/blog/2017/04/27/simplistic-go-web-app/">part 1</a>.</p>
+    <content type="html"><![CDATA[<p>This is a continuation of <a href="http://grisha.org/blog/2017/04/27/simplistic-go-web-app/">part 1</a>.
+(There is also <a href="http://grisha.org/blog/2017/05/01/go-web-app-part-3/">part 3</a>).</p>
 
 <p>So our app is going to have two major parts to it: client and
 server. (What year is this?). The server side is going to be in Go,
@@ -747,6 +1157,8 @@ people we will need it.</p>
 <p>Above is essentially all the knowledge required to build a basic Go
 web app, at least the Go side of it. Next week I’ll get into the
 client side and we will complete the people listing code.</p>
+
+<p>Continue to <a href="http://grisha.org/blog/2017/05/01/go-web-app-part-3/">part 3</a>.</p>
 ]]></content>
   </entry>
   
@@ -756,7 +1168,7 @@ client side and we will complete the people listing code.</p>
     <updated>2017-04-27T21:00:00-04:00</updated>
     <id>http://grisha.org/blog/2017/04/27/simplistic-go-web-app</id>
     <content type="html"><![CDATA[<p>Update: <a href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/">part 2</a> is
-here, enjoy.</p>
+here, enjoy. And <a href="http://grisha.org/blog/2017/05/01/go-web-app-part-3/">part 3</a>.</p>
 
 <p>A few weeks ago I started building yet another web-based app, in Go.
 I’ve decided to use this opportunity to start from scratch and build
@@ -4334,248 +4746,6 @@ just one.</p>
 
 <p>In <a href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
 one point.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Storing Time Series in PostgreSQL efficiently]]></title>
-    <link href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/"/>
-    <updated>2015-09-23T22:01:00-04:00</updated>
-    <id>http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently</id>
-    <content type="html"><![CDATA[<p>With the latest advances in PostgreSQL (and other db’s), a relational
-database begins to look like a very viable TS storage platform. In
-this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
-there is a <a href="http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
-
-<p>A TS is a series of [timestamp, measurement] pairs, where measurement
-is typically a floating point number. These pairs (aka “data points”)
-usually arrive at a high and steady rate. As time goes on, detailed
-data usually becomes less interesting and is often consolidated into
-larger time intervals until ultimately it is expired.</p>
-
-<h2 id="the-obvious-approach">The obvious approach</h2>
-
-<p>The “naive” approach is a three-column table, like so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(Let’s gloss over some details such as an index on the time column and
-choice of data type for time and value as it’s not relevant to this
-discussion.)</p>
-
-<p>One problem with this is the inefficiency of appending data. An insert
-requires a look up of the new id, locking and (usually) blocks until
-the data is synced to disk. Given the TS’s “firehose” nature, the
-database can quite quickly get overwhelmed.</p>
-
-<p>This approach also does not address consolidation and eventual
-expiration of older data points.</p>
-
-<h2 id="round-robin-database">Round-robin database</h2>
-
-<p>A better alternative is something called a <em>round-robin database</em>.  An
-RRD is a circular structure with a separately stored pointer denoting
-the last element and its timestamp.</p>
-
-<p>A everyday life example of an RRD is a week. Imagine a structure of 7
-slots, one for each day of the week. If you know today’s date and day
-of the week, you can easily infer the date for each slot. For example
-if today is Tuesday, April 1, 2008, then the Monday slot refers to
-March 31st, Sunday to March 30th and (most notably) Wednesday to March
-26.</p>
-
-<p>Here’s what a 7-day RRD of average temperature might look as of
-Tuesday, April 1:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class="line">                    <span class="o">^</span>
-</span><span class="line">                    <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class="line">                         <span class="o">^</span>
-</span><span class="line">                         <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Note how little has changed, and that the update required no
-allocation of space: all we did to record 92F on Wednesday is
-overwrite one value. Even more remarkably, the previous value
-automatically “expired” when we overwrote it, thus solving the
-eventual expiration problem without any additional operations.</p>
-
-<p>RRD’s are also very space-efficient. In the above example we specified
-the date of every slot for clarity. In an actual implementation only
-the date of the last slot needs to be stored, thus the RRD can be kept
-as a sequence of 7 numbers plus the position of the last entry and
-it’s timestamp. In Python syntax it’d look like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
-
-<p>Here is a naive approach to having a round-robin table. Carrying on
-with our 7 day RRD example, it might look like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
-</span><span class="line"><span class="o">---------+--------</span>
-</span><span class="line">     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
-</span><span class="line">     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
-</span><span class="line">     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
-</span><span class="line">     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
-</span><span class="line">     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
-</span><span class="line">     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
-</span><span class="line">     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Somewhere separately we’d also need to record that the last entry is
-week_day 3 (Tuesday) and it’s 2008-04-01. Come April 2, we could
-record the temperature using:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>This might be okay for a 7-slot RRD, but a more typical TS might have
-a slot per minute going back 90 days, which would require 129600
-rows. For recording data points one at a time it might be fast enough,
-but to copy the whole RRD would require 129600 UPDATE statements which
-is not very efficient.</p>
-
-<p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
-
-<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
-
-<p>An array would allow us to store the whole series in a single
-row. Sticking with the 7-day RRD example, our table would be created
-as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-</span><span class="line">                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class="line">                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(Nevemind that there is no id column for now)</p>
-
-<p>We could populate the whole RRD in a single statement:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>…or record 92F for Wednesday as so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(In PostgreSQL arrays are 1-based, not 0-based like in most
-programming languages)</p>
-
-<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
-
-<p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
-make sense to keep chunks in which our RRD is written to disk in line
-with page size, or at least smaller than one page. (PostgreSQL provides
-configuration parameters for how much of a page is used, etc, but this
-is way beyond the scope of this article).</p>
-
-<p>Having the series split into chunks also paves the way for some kind
-of a caching layer, we could have a server which waits for one row
-worth of data points to accumulate, then flushes then all at once.</p>
-
-<p>For simplicity, let’s take the above example and expand the RRD to 4
-weeks, while keeping 1 week per row. In our table definition we need
-provide a way for keeping the order of every row of the TS with a
-column named n, and while we’re at it, we might as well introduce a
-notion of an id, so as to be able to store multiple TS in the same
-table.</p>
-
-<p>Let’s start with two tables, one called rrd where we would store the
-last position and date, and another called ts which would store the
-actual data.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
-</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
-</span><span class="line">  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class="line">  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span><span class="line">
-</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
-</span><span class="line">  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>We could then populate the TS with fictitious data like so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
-</span><span class="line">
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>To update the data for April 2, we would:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
-
-<p>This article omits a lot of detail such as having resolution finer
-than one day, but it does describe the general idea. For an actual
-implementation of this you might want to check out a project I’ve been
-working on: <a href="https://github.com/tgres/tgres">tgres</a></p>
 ]]></content>
   </entry>
   
