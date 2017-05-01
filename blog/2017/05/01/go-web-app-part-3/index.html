@@ -269,7 +269,7 @@ need to augment our <code>indexHTML</code> variable to look like this:</p>
 </span><span class="line">	<span class="nx">cdnReact</span>           <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react.min.js&quot;</span>
 </span><span class="line">	<span class="nx">cdnReactDom</span>        <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react-dom.min.js&quot;</span>
 </span><span class="line">	<span class="nx">cdnBabelStandalone</span> <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.24.0/babel.min.js&quot;</span>
-</span><span class="line">    <span class="nx">cdnAxios</span>           <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.1/axios.min.js&quot;</span>
+</span><span class="line">	<span class="nx">cdnAxios</span>           <span class="p">=</span> <span class="s">&quot;https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.1/axios.min.js&quot;</span>
 </span><span class="line"><span class="p">)</span>
 </span><span class="line">
 </span><span class="line"><span class="kd">const</span> <span class="nx">indexHTML</span> <span class="p">=</span> <span class="s">`</span>
@@ -292,7 +292,7 @@ need to augment our <code>indexHTML</code> variable to look like this:</p>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>At the very end it now loads <code>"/js/app.jsx"</code> which we need to
-accommodate as well. Back in the part 1 we created a UI config variable
+accommodate as well. Back in part 1 we created a UI config variable
 called <code>cfg.Assets</code> using <code>http.Dir()</code>. We now need to wrap it in
 a handler which serves files, and Go conveniently provides one:</p>
 
@@ -526,6 +526,8 @@ there are lots of components. The app has no navigation. There is no
 styling. There are probably things I’m forgetting about…</p>
 
 <p>Enjoy!</p>
+
+<p>P.S. Complete code is <a href="https://github.com/grisha/gowebapp">here</a></p>
 </div>
 
 
