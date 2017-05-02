@@ -1839,93 +1839,6 @@ an app with roughly the following requirements:</p>
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2017/04/01/existence/">Existential Question</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2017-04-01T00:00:00-04:00" pubdate data-updated="true">Apr 1<span>st</span>, 2017</time>
-        
-         | <a href="/blog/2017/04/01/existence/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>On a completely different subject, I find it remarkable how easily,
-we, as a society, can throw around assertions of existence or
-inexistence. As purveyors of goods entirely of conceptual nature us
-programmers ought to be particularly attuned to the subtleties
-involved.</p>
-
-<p>Think of a recently demolished building. Does it still exist? As a
-building, not really, yet all of its atoms are still around (possibly
-as energy). Both before and after demolition all that the building was
-made of existed physically, but what we refer to as a “building” is a
-particular physical configuration, which was no longer due to the
-demolition.</p>
-
-<p>Does <a href="https://en.wikipedia.org/wiki/Tom_Sawyer">Tom Sawyer</a> exist?
-Wikipedia obviously thinks so, and most readers would recognize the
-name as that of a widely known fictional character. As a <em>concept</em>,
-Tom Sawer undeniably exists. Yet no particle has ever comprised
-him. In other words <em>physically</em> he does not exist. And if all the
-beings capable of conceptualizing Tom ceased to exist, would he follow
-their fate, or would he still be?</p>
-
-<p>Okay, Tom Sawyer being imaginary is one thing, but how about
-<a href="https://en.wikipedia.org/wiki/Mathematics">mathematics</a>?  Does math
-exist?  Could we state that math does not exist? That would sound
-crazy, though we could state that <em>physically</em> math does not
-exist. Unlike Tom Sawyer, however, we can’t claim mathematics to have
-been imagined by us. The ratio of a circle’s circumference to its
-diameter had existed as a <a href="https://en.wikipedia.org/wiki/Pi">constant</a>
-before any intelligent life and will continue to exist long after
-we’re gone. Yet the statement that Pi <em>physically</em> does not exist
-somehow sounds slightly odd to my ear, after all Pi is fundamental to
-the laws of nature to which all things physical conform. One key
-subtelty here is whether existence implies recognition: before we
-understood algebra or geometry they didn’t exist, but now, after
-millenia of scientific exploration and discovery they do? Or have they
-always existed, irrespective of anyone’s understanding?</p>
-
-<p>And finally, what about the being whose existence is most contested:
-<a href="https://en.wikipedia.org/wiki/God">God</a>. Does God exist? As a concept
-God quite certainly exists. Regardless of whether you belive that God
-exists, you do recognize the concept. Physically though,
-it is not likely that God exists, after all, if you had god-like
-abilities and created your own universe including the mere concept of
-existence, it probably wouldn’t apply to you and you wouldn’t actually
-be in it? And so if physically God does not exist, is God in the same
-category as Pi? Has God never existed, always existed, only existed
-when recognized, existed irrespective of our understanding or neither
-of the above?</p>
-
-<p>Think carefully next time you use the word “is”…</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
       <h1 class="entry-title"><a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series With Go and PostgreSQL</a></h1>
     
     
@@ -3195,6 +3108,104 @@ helping understand performance and other issues.</p>
 
     </article>
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/23/time-series-what-is-it/">Why Is There No Formal Definition of Time Series?</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-12-23T09:13:00-05:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2016</time>
+        
+         | <a href="/blog/2016/12/23/time-series-what-is-it/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>If you’re reading this, chances are you may have searched for
+definition of “Time Series”. And, like me, you were probably
+disappointed by what you’ve found.</p>
+
+<p>The most popular “definition” I come across amongst our fellow
+programmer folk is that it’s “data points with timestamps”. Or something
+like that. And you can make charts from it. And that’s about it, alas.</p>
+
+<p>The word <em>time</em> suggests that is has something to do with time. At
+first it seems reasonable, I bite. The word <em>series</em> is a little more
+peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
+Most people though think “series” and “sequence” are the
+same thing, and that’s fine. But it’s a clue that <em>time series</em> is
+not a scientific term, because it would have been called
+<em>time sequence</em> most likely.</p>
+
+<p>Lets get back to the time aspect of it. Why do data points need
+timestamps? Or do they? Isn’t it the time <em>interval</em> between points
+that is most essential, rather than the absolute time? And if the data
+points are spaced equally (which conforms to the most common definiton
+of time series), then what purpose would <em>any</em> time-related
+information attached to a data point serve?</p>
+
+<p>To understand this better, picture a time chart. Of anything -
+temperature, price of bitcoin over a week, whatever. Now think - does
+the absolute time of every point provide any useful information to
+you? Does the essential meaning of the chart change depending on
+whether it shows the price of bitcoin in the year 2016 or 2098 or
+10923?</p>
+
+<p>Doesn’t it seem like “time” in “time series” is a bit of a red
+herring?</p>
+
+<p>Here is another example. Let’s say I decide to travel from
+San-Francisco to New York taking measurements of elevation above the
+sea level at every mile. I then plot that sequence on a chart where
+x-axis is distance traveled and y-axis is elevation. You would agree
+that this chart is not a “time series” by any stretch, right? But then
+if I renamed x-axis to “time traveled” (let’s assume I moved at
+constant speed), the chart wouldn’t change at all, but now it’s okay
+to call it “time series”?</p>
+
+<p>So it’s no surprise that there is no formal definition of “time
+series”.  In the end a “time series” is just a <em>sequence</em>. There are
+no timestamps required and there is nothing at all special regarding a
+dimension being time as opposed to any other unit, which is why there
+is no mathematical definition of “time series”. Time series is a
+colloquial term etymological origins of which are not known to me, but
+it’s not a thing from a scientific perspective, I’m afraid.</p>
+
+<p>Next time you hear “time series” just substitute it with “sequence” and
+see how much sense that makes. For example a “time series database” is
+a “sequence database”, i.e. database optimized for sequences. Aren’t
+all relational databases optimized for sequences?</p>
+
+<p>Something to think about over the holidays…</p>
+
+<p>Edit: Someone brought up the subject of <a href="https://en.wikipedia.org/wiki/Unevenly_spaced_time_series"><em>unevenly-spaced time series</em></a>.
+All series are evenly spaced given proper resolution. An
+unevenly-spaced time series with timestamps accurate to 1 millisecond
+is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -3264,7 +3275,7 @@ google_ad_type = "image";
       </li>
     
       <li class="post">
-        <a href="/blog/2017/04/01/existence/">Existential Question</a>
+        <a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series with Go and PostgreSQL</a>
       </li>
     
   </ul>

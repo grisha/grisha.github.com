@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-02T11:10:31-04:00</updated>
+  <updated>2017-05-02T11:13:45-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -1630,64 +1630,6 @@ an app with roughly the following requirements:</p>
 </ul>
 
 <p><a href="http://grisha.org/blog/2017/04/28/simplistic-go-web-app-part-2/">part 2</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Existential Question]]></title>
-    <link href="http://grisha.org/blog/2017/04/01/existence/"/>
-    <updated>2017-04-01T00:00:00-04:00</updated>
-    <id>http://grisha.org/blog/2017/04/01/existence</id>
-    <content type="html"><![CDATA[<p>On a completely different subject, I find it remarkable how easily,
-we, as a society, can throw around assertions of existence or
-inexistence. As purveyors of goods entirely of conceptual nature us
-programmers ought to be particularly attuned to the subtleties
-involved.</p>
-
-<p>Think of a recently demolished building. Does it still exist? As a
-building, not really, yet all of its atoms are still around (possibly
-as energy). Both before and after demolition all that the building was
-made of existed physically, but what we refer to as a “building” is a
-particular physical configuration, which was no longer due to the
-demolition.</p>
-
-<p>Does <a href="https://en.wikipedia.org/wiki/Tom_Sawyer">Tom Sawyer</a> exist?
-Wikipedia obviously thinks so, and most readers would recognize the
-name as that of a widely known fictional character. As a <em>concept</em>,
-Tom Sawer undeniably exists. Yet no particle has ever comprised
-him. In other words <em>physically</em> he does not exist. And if all the
-beings capable of conceptualizing Tom ceased to exist, would he follow
-their fate, or would he still be?</p>
-
-<p>Okay, Tom Sawyer being imaginary is one thing, but how about
-<a href="https://en.wikipedia.org/wiki/Mathematics">mathematics</a>?  Does math
-exist?  Could we state that math does not exist? That would sound
-crazy, though we could state that <em>physically</em> math does not
-exist. Unlike Tom Sawyer, however, we can’t claim mathematics to have
-been imagined by us. The ratio of a circle’s circumference to its
-diameter had existed as a <a href="https://en.wikipedia.org/wiki/Pi">constant</a>
-before any intelligent life and will continue to exist long after
-we’re gone. Yet the statement that Pi <em>physically</em> does not exist
-somehow sounds slightly odd to my ear, after all Pi is fundamental to
-the laws of nature to which all things physical conform. One key
-subtelty here is whether existence implies recognition: before we
-understood algebra or geometry they didn’t exist, but now, after
-millenia of scientific exploration and discovery they do? Or have they
-always existed, irrespective of anyone’s understanding?</p>
-
-<p>And finally, what about the being whose existence is most contested:
-<a href="https://en.wikipedia.org/wiki/God">God</a>. Does God exist? As a concept
-God quite certainly exists. Regardless of whether you belive that God
-exists, you do recognize the concept. Physically though,
-it is not likely that God exists, after all, if you had god-like
-abilities and created your own universe including the mere concept of
-existence, it probably wouldn’t apply to you and you wouldn’t actually
-be in it? And so if physically God does not exist, is God in the same
-category as Pi? Has God never existed, always existed, only existed
-when recognized, existed irrespective of our understanding or neither
-of the above?</p>
-
-<p>Think carefully next time you use the word “is”…</p>
 ]]></content>
   </entry>
   
@@ -4418,6 +4360,172 @@ formula for the seasonal component (I don’t know which is better):</p>
 & s_x = \gamma(y_x - \ell_{x-1} - b_{x-1}) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
 \end{align}
  %]]&gt;</script>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Holt-Winters Forecasting for Dummies - Part II]]></title>
+    <link href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/"/>
+    <updated>2016-02-16T13:05:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii</id>
+    <content type="html"><![CDATA[<p>If you haven’t read <a href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
+you probably should, or the following will be hard to make sense of.</p>
+
+<p>All the forecasting methods we covered so far, including single
+exponential smoothing, were only good at predicting a single
+point. We can do better than that, but first we need to be introduced to
+a couple of new terms.</p>
+
+<h2 id="more-terminology">More terminology</h2>
+
+<h3 id="level"><em>Level</em></h3>
+
+<p>Expected value has another name, which, again varies depending on who wrote the
+text book: <em>baseline</em>, <em>intercept</em> (as in
+<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
+<em>level</em>. We will stick with “level” here.</p>
+
+<p>So level is that one predicted point that we learned how to calculate
+in Part I. But because now it’s going to be only part of calculation
+of the forcast, we can no longer refer to it as $\hat{y}$ and will instead
+use $\ell$.</p>
+
+<h3 id="trend-or-slope"><em>Trend</em> or <em>Slope</em></h3>
+
+<p>You should be familiar with
+<a href="https://en.wikipedia.org/wiki/Slope">slope</a> from your high school algebra
+class. What you might be a little rusty on is how to calculate it,
+which is important, because a series slope has an interesting
+characteristic. Slope is:</p>
+
+<script type="math/tex; mode=display">
+m = \dfrac{\Delta{y}} {\Delta{x}}
+</script>
+
+<p>where $\Delta{y}$ is the difference in the $y$ coordinates and
+$\Delta{x}$ is the difference in the $x$ coordinates, respectively,
+between two points. While in real algebraic problems $\Delta{x}$ could
+be anything, in a series, from one point to the next, it is always
+1. Which means that for a series, slope between two adjacent points
+is simply $\dfrac{\Delta{y}} {1}$ or $\Delta{y}$, or:</p>
+
+<script type="math/tex; mode=display">
+b = y_x - y_{x-1}
+</script>
+
+<p>Where $b$ is <em>trend</em>. To the best of my understanding terms “trend”
+and “slope” are interchangeable. In forecasting parlance “trend” is
+more common, and in math notation forecasters refer to it as $b$
+rather than $m$.</p>
+
+<h4 id="additive-vs-multiplicative">Additive vs Multiplicative</h4>
+
+<p>Another thing to know about trend is that instead of subtracting
+$y_{x-1}$ from $y_x$, we could divide one by the other thereby
+getting a ratio. The difference between these two approaches is
+similar to how we can say that something costs $20 more or 5%
+more. The variant of the method based on subtraction is known as
+<em>additive</em>, while the one based on division is known as
+<em>multiplicative</em>.</p>
+
+<p>Practice shows that a ratio (i.e. multiplicative) is a more stable
+predictor. The additive method, however is simpler to understand, and
+going from additive to multiplicative is trivial once you understand
+this whole thing. For this reason we will stick with the additive
+method here, leaving the multiplicative method an exercise for the
+reader.</p>
+
+<h2 id="double-exponential-smoothing">Double Exponential Smoothing</h2>
+
+<p>So now we have two components to a series: level and trend. In Part I
+we learned several methods to forecast the level, and it should follow
+that every one of these methods can be applied to the trend
+just as well. E.g. the naive method would assume that trend between
+last two points is going to stay the same, or we could average all
+slopes between all points to get an average trend, use a moving trend
+average or apply exponential smoothing.</p>
+
+<p>Double exponential smoothing then is nothing more than exponential
+smoothing applied to both level and trend. To express this in
+mathematical notation we now need three equations: one for level, one
+for the trend and one to combine the level and trend to get the
+expected $\hat{y}$.</p>
+
+<script type="math/tex; mode=display">% &lt;![CDATA[
+
+\begin{align}
+& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
+& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
+& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
+\end{align}
+ %]]&gt;</script>
+
+<p>The first equation is from Part I, only now we’re using $\ell$ instead
+of $\hat{y}$ and on the right side the expected value becomes the sum
+of level end trend.</p>
+
+<p>The second equation introduces $\beta$, the <em>trend factor</em> (or
+coefficient). As with $\alpha$, some values of ${\beta}$ work better
+than others depending on the series.</p>
+
+<p>Similarly to single exponential smoothing, where we used the first
+observed value as the first expected, we can use the first observed
+trend as the first expected. Of course we need at least two points to
+compute the initial trend.</p>
+
+<p>Because we have a level and a trend, this method can forecast not one,
+but two data points. In Python:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
+</span><span class="line"><span class="k">def</span> <span class="nf">double_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span class="line">            <span class="n">level</span><span class="p">,</span> <span class="n">trend</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
+</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span class="line">        <span class="k">else</span><span class="p">:</span>
+</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+</span><span class="line">        <span class="n">last_level</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
+</span><span class="line">        <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">-</span><span class="n">last_level</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
+</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># &gt;&gt;&gt; double_exponential_smoothing(series, alpha=0.9, beta=0.9)</span>
+</span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And here is a picture of double exponential smoothing in action (the
+green dotted line).</p>
+
+<p><img src="http://grisha.org/images/hw03.png" /></p>
+
+<h2 id="quick-review">Quick Review</h2>
+
+<p>We’ve learned that a data point in a series can be represented as a
+level and a trend, and we have learned how to appliy exponential
+smoothing to each of them to be able to forecast not one, but two
+points.</p>
+
+<p>In <a href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
+we’ll finally talk about triple exponential smoothing.</p>
 ]]></content>
   </entry>
   
