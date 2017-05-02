@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-02T11:08:17-04:00</updated>
+  <updated>2017-05-02T11:10:31-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Go Web App - Part 4]]></title>
+    <title type="html"><![CDATA[Building a Go Web App - Part 4]]></title>
     <link href="http://grisha.org/blog/2017/05/02/go-web-app-part-4/"/>
     <updated>2017-05-02T09:13:00-04:00</updated>
     <id>http://grisha.org/blog/2017/05/02/go-web-app-part-4</id>
