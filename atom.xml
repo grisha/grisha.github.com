@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-02T16:24:27-04:00</updated>
+  <updated>2017-05-02T16:27:56-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -136,8 +136,9 @@ nearly all of it because of the GIL.</p>
 <p>More and more, server-side HTML generation is becoming a thing of the
 past. The latest (and correct) trend is for UI construction and
 rendering to happen completely client-side, driven by JavaScript. Apps
-whose user interface is fully JS-driven are sometimes called Single
-Page Applications, and are in my opinion the future. In an SPA
+whose user interface is fully JS-driven are sometimes called
+<a href="https://en.wikipedia.org/wiki/Single-page_application">Single Page Applications</a>,
+and are in my opinion the future whether we like it or not. In an SPA
 scenario the server only serves data, typically as JSON, and no HTML
 is constructed there. In this set up, the tremendous complexity
 introduced primarily so that a popular scripting language could be
