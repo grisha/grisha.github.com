@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="In a recent post
-I explained how a relational database could be backed by a key-value
-store by virtue of B-Trees. This sounded great in theory, but I &hellip;">
+  <meta name="description" content="Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I’m presuming that code gets
+released to &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,149 @@ store by virtue of B-Trees. This sounded great in theory, but I &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/31/compiling-impala-from-github/">Compiling Impala From Github</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-31T10:48:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
+        
+         | <a href="/blog/2013/05/31/compiling-impala-from-github/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I’m presuming that code gets
+released to Github once undergone some level of internal scrutiny, but
+I’ve not seen any documentation on how one could tie publically
+available code to the official Impala (binary) release, currently 1.0.</p>
+
+<p>Anyway, I tried compiling the github code last night, and here are the
+steps that worked for me.</p>
+
+<p>My setup:</p>
+
+<ul>
+  <li>
+    <p>Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).</p>
+  </li>
+  <li>
+    <p>CDH 4.3 installed using Cloudera RPM’s. No configuration was done, I
+just ran yum install as described in the installation guide.</p>
+  </li>
+  <li>
+    <p>Impala checked out from Github, HEAD is 60cb0b75 (Mon May 13 09:36:37 2013).</p>
+  </li>
+  <li>
+    <p>Boost 1.42, compiled and installed manually (see below).</p>
+  </li>
+</ul>
+
+<p>The steps I followed:</p>
+
+<ul>
+  <li>Check out Impala:</li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">git clone git://github.com/cloudera/impala.git
+</span><span class="line">&lt;...&gt;
+</span><span class="line">
+</span><span class="line">git branch -v
+</span><span class="line">* master 60cb0b7 Fixed formatting in README
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<ul>
+  <li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
+</span><span class="line">    make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn <span class="se">\</span>
+</span><span class="line">    libevent-devel cyrus-sasl-devel wget git unzip
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<ul>
+  <li>
+    <p>Install LLVM. Follow the precise steps in the Impala README, it works.</p>
+  </li>
+  <li>
+    <p>Make sure you have the Oracle JDK 6, not OpenJDK. I found <a href="http://www.if-not-true-then-false.com/2010/install-sun-oracle-java-jdk-jre-6-on-fedora-centos-red-hat-rhel/">this link</a> helpful.</p>
+  </li>
+  <li>
+    <p>Remove the CentOS version of Boost (1.41) if you have it. Impala
+needs uuid, which is only supported in 1.42 and later:</p>
+  </li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
+</span><span class="line">sudo yum erase <span class="sb">`</span>rpm -qa | grep boost<span class="sb">`</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<ul>
+  <li>
+    <p>Download and untar Boost 1.42 from [http://www.boost.org/users/history/version<em>1</em>42<em>0.html](http://www.boost.org/users/history/version</em>1<em>42</em>0.html)</p>
+  </li>
+  <li>
+    <p>Compile and install Boost. Note that Boost <em>must</em> be compiled with multi-threaded support and the layout matters too. I ended up up using the following:</p>
+  </li>
+</ul>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nb">cd </span>boost_1_42_0/
+</span><span class="line">./bootstrap.sh
+</span><span class="line"><span class="c"># not sure how necessary the --libdir=/usr/lib64 is, there was a post mentioning it, i followed this advice blindly</span>
+</span><span class="line">./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged
+</span><span class="line">sudo ./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged install
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<ul>
+  <li>
+    <p>Install Maven, just like the README says, only the URL didn’t work, I used
+<a href="http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz">http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz</a> instead</p>
+  </li>
+  <li>
+    <p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p>
+  </li>
+</ul>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1342,23 +1485,23 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2017/05/02/simplistic-go-web-app/">Building a Go Web App in 2017</a>
+        <a href="/blog/2017/04/27/simplistic-go-web-app/">Building a Go Web App in 2017</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/simplistic-go-web-app-part-2/">Building a Go Web App - Part 2</a>
+        <a href="/blog/2017/04/27/simplistic-go-web-app-part-2/">Building a Go Web App - Part 2</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/go-web-app-part-3/">Building a Go Web App - Part 3</a>
+        <a href="/blog/2017/04/27/go-web-app-part-3/">Building a Go Web App - Part 3</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/go-web-app-part-4/">Building a Go Web App - Part 4</a>
+        <a href="/blog/2017/04/27/go-web-app-part-4/">Building a Go Web App - Part 4</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series with Go and PostgreSQL</a>
+        <a href="/blog/2017/04/01/existence/">Existential Question</a>
       </li>
     
   </ul>

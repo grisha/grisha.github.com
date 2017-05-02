@@ -9,9 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="This story started back in 1996. I was in my early twenties, working
-as a programmer at a small company specializing in on-line reporting of
-certain &hellip;">
+  <meta name="description" content="I’m not very fond of it. Here is why. CGI Origins WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
+there in the name. CGI solved &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +95,209 @@ certain &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My Thoughts on WSGI</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/26/my-thoughts-on-wsgi/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I’m not very fond of it. Here is why.</p>
+
+<h2 id="cgi-origins">CGI Origins</h2>
+
+<p>WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
+there in the name.</p>
+
+<p>CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn’t a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.</p>
+
+<p>There is now an RFC (<a href="http://www.ietf.org/rfc/rfc3875">RFC3875</a>)
+describing CGI, but I hazard that
+<a href="http://ken.coar.org/">Ken Coar</a> wrote the RFC not because he thought CGI was great, but rather
+out of discontent with the present state of affairs - everyone was
+using CGI, yet there never was a formal document describing it.</p>
+
+<p>So if I were to attempt to unite all Python web applications under the
+same standard, CGI wouldn’t be the first thing I would consider. There are
+other efforts at solving the same problem in more elegant ways which
+could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
+
+<h2 id="headers">Headers</h2>
+
+<p>CGI dictated that HTTP headers be passed to the CGI script by way of
+<a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
+same environment that contain your <code>$PATH</code> and <code>$TERM</code>.  (Note this
+also explains the origin of the term <em>environment</em> in WSGI - in HTTP
+there is no <em>request environment</em>, there is simply a <em>request</em>). So as
+to not clash with any other environment variables, CGI would prepend
+<code>HTTP_</code> to every header name. It also swapped dashes with underscores
+because dashes are not allowed in shell variable names. And because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized. Thus <code>"content-type"</code> would become <code>"HTTP_CONTENT_TYPE"</code>.</p>
+
+<p>And how much sense applying the same transformation make in the realm
+in which WSGI operates? The headers are typically read by the
+webserver and stored in some kind of a structure, which ought to be
+directly accessible so the application can get headers in the
+original, unmodified format. For example in Apache this would be the
+<code>req.headers_in</code> table.  What is the benefit of combing through that
+structure converting every key to some capitalized HTTP_ string at
+every request? Why are WSGI developers forced to use
+<code>env['HTTP_CONTENT_LENGTH']</code> rather than <code>env['Content-length']</code>?</p>
+
+<p>Another thing about the environment is that the WSGI standard states
+that it must be a real Python dictionary, thereby dictating that a
+memory allocation happen to satisfy this requirement, <em>at every
+request</em>.</p>
+
+<h2 id="startresponse">start_response()</h2>
+
+<p>In order to be able to write anything to the client a WSGI application
+must envoke the start_response() function passed to it which would
+return a write() method.</p>
+
+<p>Ten points for cuteness here, but the practicality of this solution
+eludes me. This is certainly a clever way to make the fact that the start
+of a response is an irreversible action in HTTP because the headers are
+sent first, but seriosly - do programmers who code at this level not
+know it? Why can’t the header sending part happen implicitly at the
+first write(), and why can’t an application write without sending any
+headers?</p>
+
+<p>There is also another problem here - function calls are relatively
+expensive in Python. The requirement that the app must beg for the
+write object every time introduces a completely unnecessary function
+call.</p>
+
+<p>The request object with a write() method should simply be passed
+in. This is how it has always worked in mod_python (cited in PEP3333 a
+number of times!).</p>
+
+<h2 id="error-handling">Error handling</h2>
+
+<p>First, I must confess that after re-reading the section of the PEP3333
+describing the <code>exc_info</code> argument several times I still can’t say I
+grok what it’s saying. Looking at some implementations out there I am
+releived to know I am not the only one.</p>
+
+<p>But the gist of it that an exception can be supplied along with some
+headers. It seems to me there is confusion between HTTP errors and
+Python errors here, the two are not related. What is the expected
+outcome of passing a Python exception to an HTTP server? The server
+would probably convert it to a 500 Internal Server Error (well it only
+has so many possibilities to chose from), and what’s the point of that?</p>
+
+<p>Wouldn’t the outcome be same if the application simply raised an
+exception?</p>
+
+<p>If the spec wanted to provide means for the application Python errors
+to somehow map to HTTP errors, why not define a special exception
+class which could be used to send HTTP errors? What was wrong with
+mod_python’s:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">raise apache.SERVER_RETURN, apache.HTTP_INTERNAL_SERVER_ERROR</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I think it’s simple and self-explanatory.</p>
+
+<h2 id="other-things">Other things</h2>
+
+<p>What is <code>wsgi.run_once</code>, why does it matter and why should the web
+server provide it? What would be a good use case for such a thing?</p>
+
+<p>There is a long section describing “middleware”. Middleware is a
+wrapper, an example of the <a href="http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm">pipeline design pattern</a>
+and there doesn’t seem to be anything special with this concept that
+the WSGI spec should even mention it. (I also object to the term
+“middleware” - my intuition suggests it’s a layer between “hardware”
+and “software”, not a wrapper.)</p>
+
+<h2 id="scriptname-and-pathinfo">SCRIPT_NAME and PATH_INFO</h2>
+
+<p>Perhaps the most annoying part of CGI were these two mis-understood
+variables, and sadly WSGI uses them too.</p>
+
+<p>Remember that in CGI we always had a script. A typical CGI script
+resided somewhere on the filesystem to which the request URI maps. As
+part of serving the request the server traversed the URI mapping each
+element to an element of the filesystem path to locate the
+script. Once the script was found, the portion of the URI used thus far
+was assigned to the SCRIPT_NAME variable, while the remainder of the
+URI got assigned to PATH_INFO.</p>
+
+<p>But where is <em>the script</em> in WSGI? Is my Python module the script?
+What relatioship does there exist between the request URI and the
+(non-existent) script?</p>
+
+<h2 id="bottom-line">Bottom line</h2>
+
+<p>I am not convinced that there should be a universal standard for
+Python web applications to begin with. I think that what we refer to
+as “web applications” is still not very well understood by us
+programmers.</p>
+
+<p>But if we are to have one, I think that WSGI approach is not the right
+one. It brings the world of Python web development to the lowest
+common denominator - CGI and introduces some problems of its own on
+top of it.</p>
+
+<h2 id="other-notes">Other notes</h2>
+
+<h3 id="what-is-the-gateway-in-cgi">What is the Gateway in CGI</h3>
+
+<p>I did some digging into the etymology of “Common Gateway Interface”,
+because I wanted to know what the original author (Rob McCool) meant
+by it when he came up with it. From reading <a href="http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html">this</a>
+it’s apparent that he saw it as the Web daemon’s gateway to an outside
+program:</p>
+
+<p>“For example, let’s say that you wanted to “hook up” your Unix
+database to the World Wide Web, to allow people from all over the
+world to query it. Basically, you need to create a CGI program that
+the Web daemon will execute to transmit information to the database
+engine, and receive the results back again and display them to the
+client. This is an example of a gateway, and this is where CGI,
+currently version 1.1, got its origins.”</p>
+
+<p>I always perceived it the other way around, I thought the “gateway”
+was a gateway to the web server. I think that when Phillip J. Eby
+first proposed the name WSGI he was under the same misperception as I.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1640,149 +1842,6 @@ password and a well established and easily available algorithm.
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/31/compiling-impala-from-github/">Compiling Impala From Github</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-31T10:48:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/31/compiling-impala-from-github/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Apparently Impala has two versions of source code, one internal to
-Cloudera, the other available on Github. I’m presuming that code gets
-released to Github once undergone some level of internal scrutiny, but
-I’ve not seen any documentation on how one could tie publically
-available code to the official Impala (binary) release, currently 1.0.</p>
-
-<p>Anyway, I tried compiling the github code last night, and here are the
-steps that worked for me.</p>
-
-<p>My setup:</p>
-
-<ul>
-  <li>
-    <p>Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).</p>
-  </li>
-  <li>
-    <p>CDH 4.3 installed using Cloudera RPM’s. No configuration was done, I
-just ran yum install as described in the installation guide.</p>
-  </li>
-  <li>
-    <p>Impala checked out from Github, HEAD is 60cb0b75 (Mon May 13 09:36:37 2013).</p>
-  </li>
-  <li>
-    <p>Boost 1.42, compiled and installed manually (see below).</p>
-  </li>
-</ul>
-
-<p>The steps I followed:</p>
-
-<ul>
-  <li>Check out Impala:</li>
-</ul>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">git clone git://github.com/cloudera/impala.git
-</span><span class="line">&lt;...&gt;
-</span><span class="line">
-</span><span class="line">git branch -v
-</span><span class="line">* master 60cb0b7 Fixed formatting in README
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<ul>
-  <li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
-</ul>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">sudo yum install libevent-devel automake libtool flex bison gcc-c++ openssl-devel <span class="se">\</span>
-</span><span class="line">    make cmake doxygen.x86_64 glib-devel python-devel bzip2-devel svn <span class="se">\</span>
-</span><span class="line">    libevent-devel cyrus-sasl-devel wget git unzip
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<ul>
-  <li>
-    <p>Install LLVM. Follow the precise steps in the Impala README, it works.</p>
-  </li>
-  <li>
-    <p>Make sure you have the Oracle JDK 6, not OpenJDK. I found <a href="http://www.if-not-true-then-false.com/2010/install-sun-oracle-java-jdk-jre-6-on-fedora-centos-red-hat-rhel/">this link</a> helpful.</p>
-  </li>
-  <li>
-    <p>Remove the CentOS version of Boost (1.41) if you have it. Impala
-needs uuid, which is only supported in 1.42 and later:</p>
-  </li>
-</ul>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="c"># YMMV - this is how I did it, you may want to be more cautious</span>
-</span><span class="line">sudo yum erase <span class="sb">`</span>rpm -qa | grep boost<span class="sb">`</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<ul>
-  <li>
-    <p>Download and untar Boost 1.42 from [http://www.boost.org/users/history/version<em>1</em>42<em>0.html](http://www.boost.org/users/history/version</em>1<em>42</em>0.html)</p>
-  </li>
-  <li>
-    <p>Compile and install Boost. Note that Boost <em>must</em> be compiled with multi-threaded support and the layout matters too. I ended up up using the following:</p>
-  </li>
-</ul>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nb">cd </span>boost_1_42_0/
-</span><span class="line">./bootstrap.sh
-</span><span class="line"><span class="c"># not sure how necessary the --libdir=/usr/lib64 is, there was a post mentioning it, i followed this advice blindly</span>
-</span><span class="line">./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged
-</span><span class="line">sudo ./bjam --libdir<span class="o">=</span>/usr/lib64 <span class="nv">threading</span><span class="o">=</span>multi --layout<span class="o">=</span>tagged install
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<ul>
-  <li>
-    <p>Install Maven, just like the README says, only the URL didn’t work, I used
-<a href="http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz">http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz</a> instead</p>
-  </li>
-  <li>
-    <p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p>
-  </li>
-</ul>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -1838,23 +1897,23 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2017/05/02/simplistic-go-web-app/">Building a Go Web App in 2017</a>
+        <a href="/blog/2017/04/27/simplistic-go-web-app/">Building a Go Web App in 2017</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/simplistic-go-web-app-part-2/">Building a Go Web App - Part 2</a>
+        <a href="/blog/2017/04/27/simplistic-go-web-app-part-2/">Building a Go Web App - Part 2</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/go-web-app-part-3/">Building a Go Web App - Part 3</a>
+        <a href="/blog/2017/04/27/go-web-app-part-3/">Building a Go Web App - Part 3</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/05/02/go-web-app-part-4/">Building a Go Web App - Part 4</a>
+        <a href="/blog/2017/04/27/go-web-app-part-4/">Building a Go Web App - Part 4</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series with Go and PostgreSQL</a>
+        <a href="/blog/2017/04/01/existence/">Existential Question</a>
       </li>
     
   </ul>
