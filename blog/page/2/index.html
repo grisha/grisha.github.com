@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Did you know you can use Tgres components
-in your code without PostgreSQL, and in
-just a dozen lines of code instrument your program with a time &hellip;">
+  <meta name="description" content="If you’re reading this, chances are you may have searched for
+definition of “Time Series”. And, like me, you were probably
+disappointed by what you’ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,104 @@ just a dozen lines of code instrument your program with a time &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/23/time-series-what-is-it/">Why Is There No Formal Definition of Time Series?</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-12-23T09:13:00-05:00" pubdate data-updated="true">Dec 23<span>rd</span>, 2016</time>
+        
+         | <a href="/blog/2016/12/23/time-series-what-is-it/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>If you’re reading this, chances are you may have searched for
+definition of “Time Series”. And, like me, you were probably
+disappointed by what you’ve found.</p>
+
+<p>The most popular “definition” I come across amongst our fellow
+programmer folk is that it’s “data points with timestamps”. Or something
+like that. And you can make charts from it. And that’s about it, alas.</p>
+
+<p>The word <em>time</em> suggests that is has something to do with time. At
+first it seems reasonable, I bite. The word <em>series</em> is a little more
+peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
+Most people though think “series” and “sequence” are the
+same thing, and that’s fine. But it’s a clue that <em>time series</em> is
+not a scientific term, because it would have been called
+<em>time sequence</em> most likely.</p>
+
+<p>Lets get back to the time aspect of it. Why do data points need
+timestamps? Or do they? Isn’t it the time <em>interval</em> between points
+that is most essential, rather than the absolute time? And if the data
+points are spaced equally (which conforms to the most common definiton
+of time series), then what purpose would <em>any</em> time-related
+information attached to a data point serve?</p>
+
+<p>To understand this better, picture a time chart. Of anything -
+temperature, price of bitcoin over a week, whatever. Now think - does
+the absolute time of every point provide any useful information to
+you? Does the essential meaning of the chart change depending on
+whether it shows the price of bitcoin in the year 2016 or 2098 or
+10923?</p>
+
+<p>Doesn’t it seem like “time” in “time series” is a bit of a red
+herring?</p>
+
+<p>Here is another example. Let’s say I decide to travel from
+San-Francisco to New York taking measurements of elevation above the
+sea level at every mile. I then plot that sequence on a chart where
+x-axis is distance traveled and y-axis is elevation. You would agree
+that this chart is not a “time series” by any stretch, right? But then
+if I renamed x-axis to “time traveled” (let’s assume I moved at
+constant speed), the chart wouldn’t change at all, but now it’s okay
+to call it “time series”?</p>
+
+<p>So it’s no surprise that there is no formal definition of “time
+series”.  In the end a “time series” is just a <em>sequence</em>. There are
+no timestamps required and there is nothing at all special regarding a
+dimension being time as opposed to any other unit, which is why there
+is no mathematical definition of “time series”. Time series is a
+colloquial term etymological origins of which are not known to me, but
+it’s not a thing from a scientific perspective, I’m afraid.</p>
+
+<p>Next time you hear “time series” just substitute it with “sequence” and
+see how much sense that makes. For example a “time series database” is
+a “sequence database”, i.e. database optimized for sequences. Aren’t
+all relational databases optimized for sequences?</p>
+
+<p>Something to think about over the holidays…</p>
+
+<p>Edit: Someone brought up the subject of <a href="https://en.wikipedia.org/wiki/Unevenly_spaced_time_series"><em>unevenly-spaced time series</em></a>.
+All series are evenly spaced given proper resolution. An
+unevenly-spaced time series with timestamps accurate to 1 millisecond
+is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1890,201 +1988,6 @@ formula for the seasonal component (I don’t know which is better):</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-02-16T13:05:00-05:00" pubdate data-updated="true">Feb 16<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>If you haven’t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
-you probably should, or the following will be hard to make sense of.</p>
-
-<p>All the forecasting methods we covered so far, including single
-exponential smoothing, were only good at predicting a single
-point. We can do better than that, but first we need to be introduced to
-a couple of new terms.</p>
-
-<h2 id="more-terminology">More terminology</h2>
-
-<h3 id="level"><em>Level</em></h3>
-
-<p>Expected value has another name, which, again varies depending on who wrote the
-text book: <em>baseline</em>, <em>intercept</em> (as in
-<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
-<em>level</em>. We will stick with “level” here.</p>
-
-<p>So level is that one predicted point that we learned how to calculate
-in Part I. But because now it’s going to be only part of calculation
-of the forcast, we can no longer refer to it as $\hat{y}$ and will instead
-use $\ell$.</p>
-
-<h3 id="trend-or-slope"><em>Trend</em> or <em>Slope</em></h3>
-
-<p>You should be familiar with
-<a href="https://en.wikipedia.org/wiki/Slope">slope</a> from your high school algebra
-class. What you might be a little rusty on is how to calculate it,
-which is important, because a series slope has an interesting
-characteristic. Slope is:</p>
-
-<script type="math/tex; mode=display">
-m = \dfrac{\Delta{y}} {\Delta{x}}
-</script>
-
-<p>where $\Delta{y}$ is the difference in the $y$ coordinates and
-$\Delta{x}$ is the difference in the $x$ coordinates, respectively,
-between two points. While in real algebraic problems $\Delta{x}$ could
-be anything, in a series, from one point to the next, it is always
-1. Which means that for a series, slope between two adjacent points
-is simply $\dfrac{\Delta{y}} {1}$ or $\Delta{y}$, or:</p>
-
-<script type="math/tex; mode=display">
-b = y_x - y_{x-1}
-</script>
-
-<p>Where $b$ is <em>trend</em>. To the best of my understanding terms “trend”
-and “slope” are interchangeable. In forecasting parlance “trend” is
-more common, and in math notation forecasters refer to it as $b$
-rather than $m$.</p>
-
-<h4 id="additive-vs-multiplicative">Additive vs Multiplicative</h4>
-
-<p>Another thing to know about trend is that instead of subtracting
-$y_{x-1}$ from $y_x$, we could divide one by the other thereby
-getting a ratio. The difference between these two approaches is
-similar to how we can say that something costs $20 more or 5%
-more. The variant of the method based on subtraction is known as
-<em>additive</em>, while the one based on division is known as
-<em>multiplicative</em>.</p>
-
-<p>Practice shows that a ratio (i.e. multiplicative) is a more stable
-predictor. The additive method, however is simpler to understand, and
-going from additive to multiplicative is trivial once you understand
-this whole thing. For this reason we will stick with the additive
-method here, leaving the multiplicative method an exercise for the
-reader.</p>
-
-<h2 id="double-exponential-smoothing">Double Exponential Smoothing</h2>
-
-<p>So now we have two components to a series: level and trend. In Part I
-we learned several methods to forecast the level, and it should follow
-that every one of these methods can be applied to the trend
-just as well. E.g. the naive method would assume that trend between
-last two points is going to stay the same, or we could average all
-slopes between all points to get an average trend, use a moving trend
-average or apply exponential smoothing.</p>
-
-<p>Double exponential smoothing then is nothing more than exponential
-smoothing applied to both level and trend. To express this in
-mathematical notation we now need three equations: one for level, one
-for the trend and one to combine the level and trend to get the
-expected $\hat{y}$.</p>
-
-<script type="math/tex; mode=display">% <![CDATA[
-
-\begin{align}
-& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
-& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
-& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
-\end{align}
- %]]></script>
-
-<p>The first equation is from Part I, only now we’re using $\ell$ instead
-of $\hat{y}$ and on the right side the expected value becomes the sum
-of level end trend.</p>
-
-<p>The second equation introduces $\beta$, the <em>trend factor</em> (or
-coefficient). As with $\alpha$, some values of ${\beta}$ work better
-than others depending on the series.</p>
-
-<p>Similarly to single exponential smoothing, where we used the first
-observed value as the first expected, we can use the first observed
-trend as the first expected. Of course we need at least two points to
-compute the initial trend.</p>
-
-<p>Because we have a level and a trend, this method can forecast not one,
-but two data points. In Python:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">double_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-</span><span class="line">            <span class="n">level</span><span class="p">,</span> <span class="n">trend</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span class="line">        <span class="k">else</span><span class="p">:</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</span><span class="line">        <span class="n">last_level</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">        <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">-</span><span class="n">last_level</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
-</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; double_exponential_smoothing(series, alpha=0.9, beta=0.9)</span>
-</span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And here is a picture of double exponential smoothing in action (the
-green dotted line).</p>
-
-<p><img src="/images/hw03.png" /></p>
-
-<h2 id="quick-review">Quick Review</h2>
-
-<p>We’ve learned that a data point in a series can be represented as a
-level and a trend, and we have learned how to appliy exponential
-smoothing to each of them to be able to forecast not one, but two
-points.</p>
-
-<p>In <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
-we’ll finally talk about triple exponential smoothing.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -2156,7 +2059,7 @@ google_ad_type = "image";
       </li>
     
       <li class="post">
-        <a href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/">Tgres 0.10.0b - Time Series with Go and PostgreSQL</a>
+        <a href="/blog/2017/04/01/existence/">Existential Question</a>
       </li>
     
   </ul>
