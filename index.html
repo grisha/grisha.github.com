@@ -1394,7 +1394,7 @@ instructed, but since “jsx” is not a file type it is familiar with, it
 simply ignored it. When Babel got its chance to run, it scanned our
 document for any script tags referencing “text/babel” as its type, and
 re-requested those pages (which makes them show up twice in developer
-tools, but the second request ought to served entirely from cache). It
+tools, but the second request ought to served entirely from browser cache). It
 then transpiled it to valid JavaScript and executed it, which in turn
 caused React to actually render the “Hello World”.</p>
 

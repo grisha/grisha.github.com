@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-05T09:32:15-04:00</updated>
+  <updated>2017-05-05T09:33:40-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -1226,7 +1226,7 @@ instructed, but since “jsx” is not a file type it is familiar with, it
 simply ignored it. When Babel got its chance to run, it scanned our
 document for any script tags referencing “text/babel” as its type, and
 re-requested those pages (which makes them show up twice in developer
-tools, but the second request ought to served entirely from cache). It
+tools, but the second request ought to served entirely from browser cache). It
 then transpiled it to valid JavaScript and executed it, which in turn
 caused React to actually render the “Hello World”.</p>
 
