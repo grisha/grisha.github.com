@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-05T09:05:05-04:00</updated>
+  <updated>2017-05-05T09:32:15-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -1125,7 +1125,7 @@ not having to deal with a transpiler is definitely a win).</p>
 
 <p>First, we need three pieces of external JavaScript. They are (1) React
 and ReactDOM, (2) Babel in-browser transpiler and (3) a little lib
-called Axios which useful for making JSON HTTP requests. I get them
+called Axios which is useful for making JSON HTTP requests. I get them
 out of Cloudflare CDN, there are probably other ways. To do this, we
 need to augment our <code>indexHTML</code> variable to look like this:</p>
 

@@ -206,7 +206,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/2017/04/27/go-web-app-part-3/</loc>
-        <lastmod>2017-05-02T15:49:16-04:00</lastmod>
+        <lastmod>2017-05-05T09:32:11-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/blog/2017/04/27/simplistic-go-web-app-part-2/</loc>
@@ -218,7 +218,7 @@
     </url>
     <url>
         <loc>http://grisha.org/blog/archives/</loc>
-        <lastmod>2017-05-05T09:04:45-04:00</lastmod>
+        <lastmod>2017-05-05T09:32:11-04:00</lastmod>
     </url>
     <url>
         <loc>http://grisha.org/robots.txt</loc>
@@ -226,6 +226,6 @@
     </url>
     <url>
         <loc>http://grisha.org/</loc>
-        <lastmod>2017-05-05T09:04:45-04:00</lastmod>
+        <lastmod>2017-05-05T09:32:11-04:00</lastmod>
     </url>
 </urlset>
