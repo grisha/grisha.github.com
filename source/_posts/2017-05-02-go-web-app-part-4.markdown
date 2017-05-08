@@ -1,14 +1,14 @@
 ---
 layout: post
 title: "Building a Go Web App - Part 4"
-date: 2017-05-02 09:13
+date: 2017-04-27 09:13
 comments: true
 categories:
 ---
 
 This is part 4. See [part 1](/blog/2017/04/27/simplistic-go-web-app/),
-[part 2](/blog/2017/04/28/simplistic-go-web-app-part-2/) and
-[part 3](/blog/2017/05/01/go-web-app-part-3/).
+[part 2](/blog/2017/04/27/simplistic-go-web-app-part-2/) and
+[part 3](/blog/2017/04/27/go-web-app-part-3/).
 
 In this part I will try to briefly go over the missing pieces in our
 very simplistic Go Web App.

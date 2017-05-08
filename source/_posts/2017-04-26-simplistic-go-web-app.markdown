@@ -1,40 +1,50 @@
 ---
 layout: post
 title: "Building a Go Web App in 2017"
-date: 2017-04-27 21:00
+date: 2017-04-27 15:00
 comments: true
 categories:
 published: true
 ---
 
-Update: [part 2](/blog/2017/04/28/simplistic-go-web-app-part-2/) is
-here, enjoy. And [part 3](/blog/2017/05/01/go-web-app-part-3/). And
-[part 4](/blog/2017/05/02/go-web-app-part-4/).
+Update: [part 2](/blog/2017/04/27/simplistic-go-web-app-part-2/) is
+here, enjoy. And [part 3](/blog/2017/04/27/go-web-app-part-3/). And
+[part 4](/blog/2017/04/27/go-web-app-part-4/).
 
-A few weeks ago I started building yet another web-based app, in Go.
+A few weeks ago I started building yet another web-based app, in
+[Go](https://golang.org/). Being mostly a back-end developer, I don't
+have to write web apps very often, and every time I do, it seems like a great challenge.
+I often wish someone would write a guide to web development for people
+who do not have all day to get into the intricacies of great design
+and just need to build a functional site that works without too much
+fuss.
+
 I've decided to use this opportunity to start from scratch and build
 it to the best of my understanding of how an app ought to be built in
 2017. I've spent many hours getting to the bottom of all things I've
 typically avoided in the past, just so that for once in many years I
-can claim to have a personal take on the matter.
+can claim to have a personal take on the matter and have a reusable
+recipe that at least works for me, and hopefully not just me.
 
 This post is the beginning of what I expect to be a short series
-highlighting what I've learned in the process. The first part is a
+highlighting what I've learned in the process. The first post is a
 general introduction describing the present problematic state of
-affairs, it contains no code or examples. I expect to be moving into
-details in future posts. I am curious whether my experience resonates
+affairs and why I think Go is a good choice. The subsequent posts have
+more details and code. I am curious whether my experience resonates
 with others, and what I may have gotten wrong, so don't hesitate to
 comment!
+
+Edit: If you'd rather just see code, it's [here](https://github.com/grisha/gowebapp).
 
 ### Introduction ###
 
 In the past my basic knowledge of HTML, CSS and JavaScript has been
 sufficient for my modest site building needs. Most of the apps I've
-ever built were done using mod_python directly using the publisher
-handler. Ironically for an early Python adopter, I've also done a fair
-bit of work with Rails. For the past several years I focused on (big)
-data infrastructure, which isn't web development at all, though having
-a web-based UI's is quite common. In fact the app I'm referring to
+ever built were done using [mod_python](https://github.com/grisha/mod_python)
+directly using the publisher handler. Ironically for an early Python adopter,
+I've also done a fair bit of work with [Rails](http://rubyonrails.org/). For the past several years
+I focused on (big) data infrastructure, which isn't web development at all,
+though having to build web-based UI's is not uncommon. In fact the app I'm referring to
 here is a data app, but it's not open source and what it does really
 doesn't matter for this discussion. Anyway, this should provide some
 perspective of where I come from when approaching this problem.
@@ -54,7 +64,8 @@ frameworks/tools to choose from, e.g. Rails, Django, Sinatra, Flask,
 etc, etc.
 
 And even though these languages have certain significant limitations,
-such as the GIL, the ease with which they address the complexity of
+such as the [GIL](https://en.wikipedia.org/wiki/Global_interpreter_lock),
+the ease with which they address the complexity of
 generating HTML is far more valuable than any trade-offs that came
 with them.
 
@@ -114,8 +125,9 @@ nearly all of it because of the GIL.
 More and more, server-side HTML generation is becoming a thing of the
 past. The latest (and correct) trend is for UI construction and
 rendering to happen completely client-side, driven by JavaScript. Apps
-whose user interface is fully JS-driven are sometimes called Single
-Page Applications, and are in my opinion the future. In an SPA
+whose user interface is fully JS-driven are sometimes called
+[Single Page Applications](https://en.wikipedia.org/wiki/Single-page_application),
+and are in my opinion the future whether we like it or not. In an SPA
 scenario the server only serves data, typically as JSON, and no HTML
 is constructed there. In this set up, the tremendous complexity
 introduced primarily so that a popular scripting language could be
@@ -237,4 +249,4 @@ an app with roughly the following requirements:
 * PostgreSQL backend.
 * Single Page Application.
 
-[part 2](/blog/2017/04/28/simplistic-go-web-app-part-2/)
+[part 2](/blog/2017/04/27/simplistic-go-web-app-part-2/)

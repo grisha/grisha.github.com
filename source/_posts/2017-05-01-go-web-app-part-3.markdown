@@ -1,13 +1,13 @@
 ---
 layout: post
 title: "Building a Go Web App - Part 3"
-date: 2017-05-01 12:22
+date: 2017-04-27 13:00
 comments: true
 categories:
 ---
 
 This is part 3. See [part 1](/blog/2017/04/27/simplistic-go-web-app/)
-and [part 2](/blog/2017/04/28/simplistic-go-web-app-part-2/).
+and [part 2](/blog/2017/04/27/simplistic-go-web-app-part-2/).
 
 The previous two posts got us to a point where we had a Go app which
 was able to serve a tiny bit of HTML. This post will talk about the
@@ -112,7 +112,7 @@ not having to deal with a transpiler is definitely a win).
 
 First, we need three pieces of external JavaScript. They are (1) React
 and ReactDOM, (2) Babel in-browser transpiler and (3) a little lib
-called Axios which useful for making JSON HTTP requests. I get them
+called Axios which is useful for making JSON HTTP requests. I get them
 out of Cloudflare CDN, there are probably other ways. To do this, we
 need to augment our `indexHTML` variable to look like this:
 
@@ -180,13 +180,13 @@ instructed, but since "jsx" is not a file type it is familiar with, it
 simply ignored it. When Babel got its chance to run, it scanned our
 document for any script tags referencing "text/babel" as its type, and
 re-requested those pages (which makes them show up twice in developer
-tools, but the second request ought to served entirely from cache). It
+tools, but the second request ought to served entirely from browser cache). It
 then transpiled it to valid JavaScript and executed it, which in turn
 caused React to actually render the "Hello World".
 
 ### Listing People ###
 
-We need to first go back to the server side and create a handler that
+We need to first go back to the server side and create a URI that
 lists people. In order for that to happen, we need an http handler,
 which might look like this:
 
@@ -299,7 +299,7 @@ people from our database.
 
 ### Conclusion ###
 
-In essence, this is all you need to know to make fully functional Web
+In essence, this is all you need to know to make a fully functional Web
 App in Go. This app has a number of shortcomings, which I will
 hopefully address later. For example in-browser transpilation is not
 ideal, though it might be fine for a low volume internal app where
@@ -313,4 +313,4 @@ Enjoy!
 
 P.S. Complete code is [here](https://github.com/grisha/gowebapp)
 
-Continued in [part 4](/blog/2017/05/02/go-web-app-part-4/)...
+Continued in [part 4](/blog/2017/04/27/go-web-app-part-4/)...

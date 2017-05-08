@@ -1,14 +1,15 @@
 ---
 layout: post
 title: "Building a Go Web App - Part 2"
-date: 2017-04-28 15:59
+date: 2017-04-27 14:00
 comments: true
 categories:
 published: true
 ---
 
 This is a continuation of [part 1](/blog/2017/04/27/simplistic-go-web-app/).
-(There is also [part 3](/blog/2017/05/01/go-web-app-part-3/)).
+(There is also [part 3](/blog/2017/04/27/go-web-app-part-3/)
+and [part 4](/blog/2017/04/27/go-web-app-part-4/)).
 
 So our app is going to have two major parts to it: client and
 server. (What year is this?). The server side is going to be in Go,
@@ -504,4 +505,4 @@ Above is essentially all the knowledge required to build a basic Go
 web app, at least the Go side of it. Next week I'll get into the
 client side and we will complete the people listing code.
 
-Continue to [part 3](/blog/2017/05/01/go-web-app-part-3/).
+Continue to [part 3](/blog/2017/04/27/go-web-app-part-3/).
