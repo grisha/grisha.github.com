@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-05-08T11:51:27-04:00</updated>
+  <updated>2017-07-05T12:50:08-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,227 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Tgres Status - July 4th 2017]]></title>
+    <link href="http://grisha.org/blog/2017/07/04/tgres-status-july-2017/"/>
+    <updated>2017-07-04T08:28:00-04:00</updated>
+    <id>http://grisha.org/blog/2017/07/04/tgres-status-july-2017</id>
+    <content type="html"><![CDATA[<p>It’s been a while since I’ve written on
+<a href="https://github.com/tgres/tgres">Tgres</a>,
+here’s a little update, Independence Day edition.</p>
+
+<h3 id="current-status">Current Status</h3>
+
+<p>The current status is that Tgres is looking more and more like a
+finished product. It still needs time and especially user testing (the
+ball is in your court, dear reader), because only time reveals the
+weirdest of bugs and validates stability. I would not ditch your
+current stack just yet, but at this point you’d be remiss not
+having given Tgres a spin.</p>
+
+<p>Recently I had an opportunity to test Tgres as a mirror replica of a
+sizable Graphite/Statsd/Grafana set up receiving approximately 10K
+data points per second across more than 200K series, and the results
+were inspiring. Tgres handled the incoming data without breaking a
+sweat on “hardware” (ec2 instances, rather) that was a fraction of the
+Graphite machines while still outperforming it in most respects.</p>
+
+<p>I’d say the biggest problem (and not really a Tgres one) is that
+mirroring Graphite functionality <em>exactly</em> is next to impossible. Or,
+rather, it is possible, but it would imply purposely introducing
+inaccuracies and complexities. Because of this Tgres can never be a
+“drop in” replacement for Graphite. Tgres can provide results that are
+close but not identical, and dashboards and how the data is interpreted
+would require some rethinking.</p>
+
+<h2 id="whats-new">What’s new?</h2>
+
+<h3 id="data-point-versioning">Data Point Versioning</h3>
+
+<p>In a round-robin database slot values are overwritten as time moves
+forward and the archive comes full-circle. Whenever a value is not
+overwritten for whatever reason, a stale value from an obsolete
+iteration erroneously becomes the value for the current iteration.</p>
+
+<p>One solution is to be diligent and always make sure that values are
+overwritten. This solution can be excessively I/O intensive for sparse
+series. If a series is sparse, then more I/O resources are spent
+blanking out non-data (by setting the value to NaN or whatever) than
+storing actual data points.</p>
+
+<p>A much more efficient approach is to store a version number along with
+the datapoint. Every time the archive comes full-circle, version is
+incremented. With versions there is no need to nullify slots, they
+become obsoleted by virtue of the data point version not matching the
+current version.</p>
+
+<p>Under the hood Tgres does this by keeping a separate array in the <code>ts</code>
+table which contains a smallint (2 bytes) for every data point. The <code>tv</code>
+view is aware of it and considers versions without exposing any
+details, in other words everything works as before, only Tgres is a
+lot more efficient and executes a lot less SQL statements.</p>
+
+<h3 id="zero-heartbeat-series">Zero Heartbeat Series</h3>
+
+<p>Tgres always strives to connect the data points. If two data points
+arrive more than a step apart, the slots in between are
+<a href="https://github.com/tgres/tgres/blob/d5a622a33511c1a8c43538c8de915fac52b02291/rrd/ds.go#L220-L229">filled in</a>
+to provide continuity. A special parameter called
+<a href="https://github.com/tgres/tgres/blob/d5a622a33511c1a8c43538c8de915fac52b02291/rrd/ds.go#L81-L105">Heartbeat</a>
+controls the maximum time between data points. A gap greater than the Heartbeat is
+considered unknown or NaN.</p>
+
+<p>This was a deliberate design decision from the beginning, and it is not changing.
+Some tools choose to store data points as is,
+deferring any normalization to the query time. Graphite is kind of in
+the middle: it doesn’t store the data points as is, yet it does not
+attempt to do any normalization either, which ultimately leads to
+inaccuracies which I describe in another
+<a href="http://grisha.org/blog/2015/05/04/recording-time-series/">post</a>.</p>
+
+<p>The concept of Heartbeat should be familiar to those experienced with
+RRDTool, but it is unknown to Graphite users which has no such
+parameter. This “disconnected” behavior is often taken advantage of to
+track things that aren’t continuous but are event occurrences which can
+still benefit from being observed as a time series. Tracking
+application deploys, where each deploy is a data value of 1 is one
+such example.</p>
+
+<p>Tgres now supports this behavior when the the Heartbeat is set to
+0. Incoming data points are simply stored in the best matching slot
+and no attempt is made to fill in the gap in between with data.</p>
+
+<h3 id="tgres-listens-to-delete-events">Tgres Listens to DELETE Events</h3>
+
+<p>This means that to delete a DS all you need to do is run <code>DELETE FROM
+ds WHERE ...</code> and you’re done. All the corresponding table rows will
+be deleted by Postgres because of the foreign key constraints, and the
+DS will be cleared from the Tgres cache at the same time.</p>
+
+<p>This is possible thanks to the Postgres excellent
+<a href="https://www.postgresql.org/docs/current/static/sql-notify.html">LISTEN/NOTIFY</a>
+capability.</p>
+
+<h3 id="in-memory-series-for-faster-querying">In-Memory Series for Faster Querying</h3>
+
+<p>A subset of series can be kept entirely in memory. The recent testing
+has shown that people take query performance very seriously, and
+dashboards with refresh rates of 5s or even 1s are not unheard
+of. When you have to go to the database to answer every query, and if
+the dashboard touches a hundred series, this does not work too well.</p>
+
+<p>To address this, Tgres now keeps an in-memory cache of queried
+series. The cache is an <a href="https://godoc.org/github.com/hashicorp/golang-lru">LRU</a>
+and its size is configurable. On restart Tgres saves cache keys and loads the series
+back to keep the cache “warm”.</p>
+
+<p>Requests for some cached queries can now be served in literally
+<a href="https://en.wikipedia.org/wiki/Microsecond">microseconds</a>, which
+makes for some pretty amazing user experience.</p>
+
+<h3 id="ds-and-rra-state-is-an-array">DS and RRA State is an Array</h3>
+
+<p>One problem with the Tgres table layout was that DS and RRA tables
+contained frequently updated columns such as lastupdate, value and
+duration The initial strategy was that these could be updated
+periodically in a lzay fashion, but it became apparent that it was not
+practical for any substantial number of series.</p>
+
+<p>To address this all frequently mutable attributes are now stored in
+arrays, same way as data points and therefore can be updated 200 (or
+whatever segment width is configured) at a time.</p>
+
+<p>To simplify querying DSs and RRAs two new views (<code>dsv</code> and <code>rrav</code>)
+were created which abstract away the array value lookup.</p>
+
+<h3 id="whisper-data-migration">Whisper Data Migration</h3>
+
+<p>The <a href="https://github.com/tgres/tgres/tree/master/cmd/whisper_import">whisper_import</a>
+tool has been pretty much rewritten and has better instructions. It’s been
+tested extensively, though admittedly on one particular set up, your mileage may vary.</p>
+
+<h3 id="graphite-dsl">Graphite DSL</h3>
+
+<p>Lots and lots of fixes and additions to the Graphite DSL
+implementation. Tgres still does not support <em>all</em> of the functions,
+but that was never the plan to begin with.</p>
+
+<h2 id="future">Future</h2>
+
+<p>Here’s some ideas I might tackle in the near future. If you are
+interested in contributing, do not be shy, pull requests, issues and
+any questions or comments are welcome. (Probably best to keep
+development discussion in <a href="https://github.com/tgres/tgres/issues">Github</a>).</p>
+
+<ul>
+  <li>
+    <h4 id="get-rid-of-the-config-file">Get rid of the config file</h4>
+  </li>
+</ul>
+
+<p>Tgres doesn’t really need a config file - the few options that are
+required for running should be command line args, the rest, such as
+new series specs should be in the database.</p>
+
+<ul>
+  <li>
+    <h4 id="a-user-interface">A user interface</h4>
+  </li>
+</ul>
+
+<p>Not terribly high on the priority list, since the main UI is <code>psql</code>
+for low level stuff and Grafana for visualization, but something to
+list series and tweak config options might come in handy.</p>
+
+<ul>
+  <li>
+    <h4 id="track-usage">Track Usage</h4>
+  </li>
+</ul>
+
+<p>It would be interesting to know how many bytes exactly a series
+occupies, how often it is updated and queried, and what is the
+resource cost for maintaining it.</p>
+
+<ul>
+  <li>
+    <h4 id="better-code-organization">Better code organization</h4>
+  </li>
+</ul>
+
+<p>For example vcache could be a separate package.</p>
+
+<ul>
+  <li>
+    <h4 id="rethink-the-dsl">Rethink the DSL</h4>
+  </li>
+</ul>
+
+<p>There should be a DSL version 2, which is not based on the Graphite
+unwieldiness. It should be very simple and versatile and not have
+hundreds of functions.</p>
+
+<ul>
+  <li>
+    <h4 id="authentication-and-encryption">Authentication and encryption</h4>
+  </li>
+</ul>
+
+<p>No concrete ideas here, but it would be nice to have a plan.</p>
+
+<ul>
+  <li>
+    <h4 id="clustering-needs-to-be-re-considered">Clustering needs to be re-considered</h4>
+  </li>
+</ul>
+
+<p>The current clustering strategy is flawed. It might work with the
+current plan, but some serious brainstorming needs to happen
+here. Perhaps it should just be removed in favor of delegating
+horizontal scaling to the database layer.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Building a Go Web App in 2017]]></title>
@@ -4373,172 +4594,6 @@ formula for the seasonal component (I don’t know which is better):</p>
 & s_x = \gamma(y_x - \ell_{x-1} - b_{x-1}) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
 \end{align}
  %]]&gt;</script>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Holt-Winters Forecasting for Dummies - Part II]]></title>
-    <link href="http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/"/>
-    <updated>2016-02-16T13:05:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii</id>
-    <content type="html"><![CDATA[<p>If you haven’t read <a href="http://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
-you probably should, or the following will be hard to make sense of.</p>
-
-<p>All the forecasting methods we covered so far, including single
-exponential smoothing, were only good at predicting a single
-point. We can do better than that, but first we need to be introduced to
-a couple of new terms.</p>
-
-<h2 id="more-terminology">More terminology</h2>
-
-<h3 id="level"><em>Level</em></h3>
-
-<p>Expected value has another name, which, again varies depending on who wrote the
-text book: <em>baseline</em>, <em>intercept</em> (as in
-<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
-<em>level</em>. We will stick with “level” here.</p>
-
-<p>So level is that one predicted point that we learned how to calculate
-in Part I. But because now it’s going to be only part of calculation
-of the forcast, we can no longer refer to it as $\hat{y}$ and will instead
-use $\ell$.</p>
-
-<h3 id="trend-or-slope"><em>Trend</em> or <em>Slope</em></h3>
-
-<p>You should be familiar with
-<a href="https://en.wikipedia.org/wiki/Slope">slope</a> from your high school algebra
-class. What you might be a little rusty on is how to calculate it,
-which is important, because a series slope has an interesting
-characteristic. Slope is:</p>
-
-<script type="math/tex; mode=display">
-m = \dfrac{\Delta{y}} {\Delta{x}}
-</script>
-
-<p>where $\Delta{y}$ is the difference in the $y$ coordinates and
-$\Delta{x}$ is the difference in the $x$ coordinates, respectively,
-between two points. While in real algebraic problems $\Delta{x}$ could
-be anything, in a series, from one point to the next, it is always
-1. Which means that for a series, slope between two adjacent points
-is simply $\dfrac{\Delta{y}} {1}$ or $\Delta{y}$, or:</p>
-
-<script type="math/tex; mode=display">
-b = y_x - y_{x-1}
-</script>
-
-<p>Where $b$ is <em>trend</em>. To the best of my understanding terms “trend”
-and “slope” are interchangeable. In forecasting parlance “trend” is
-more common, and in math notation forecasters refer to it as $b$
-rather than $m$.</p>
-
-<h4 id="additive-vs-multiplicative">Additive vs Multiplicative</h4>
-
-<p>Another thing to know about trend is that instead of subtracting
-$y_{x-1}$ from $y_x$, we could divide one by the other thereby
-getting a ratio. The difference between these two approaches is
-similar to how we can say that something costs $20 more or 5%
-more. The variant of the method based on subtraction is known as
-<em>additive</em>, while the one based on division is known as
-<em>multiplicative</em>.</p>
-
-<p>Practice shows that a ratio (i.e. multiplicative) is a more stable
-predictor. The additive method, however is simpler to understand, and
-going from additive to multiplicative is trivial once you understand
-this whole thing. For this reason we will stick with the additive
-method here, leaving the multiplicative method an exercise for the
-reader.</p>
-
-<h2 id="double-exponential-smoothing">Double Exponential Smoothing</h2>
-
-<p>So now we have two components to a series: level and trend. In Part I
-we learned several methods to forecast the level, and it should follow
-that every one of these methods can be applied to the trend
-just as well. E.g. the naive method would assume that trend between
-last two points is going to stay the same, or we could average all
-slopes between all points to get an average trend, use a moving trend
-average or apply exponential smoothing.</p>
-
-<p>Double exponential smoothing then is nothing more than exponential
-smoothing applied to both level and trend. To express this in
-mathematical notation we now need three equations: one for level, one
-for the trend and one to combine the level and trend to get the
-expected $\hat{y}$.</p>
-
-<script type="math/tex; mode=display">% &lt;![CDATA[
-
-\begin{align}
-& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
-& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
-& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
-\end{align}
- %]]&gt;</script>
-
-<p>The first equation is from Part I, only now we’re using $\ell$ instead
-of $\hat{y}$ and on the right side the expected value becomes the sum
-of level end trend.</p>
-
-<p>The second equation introduces $\beta$, the <em>trend factor</em> (or
-coefficient). As with $\alpha$, some values of ${\beta}$ work better
-than others depending on the series.</p>
-
-<p>Similarly to single exponential smoothing, where we used the first
-observed value as the first expected, we can use the first observed
-trend as the first expected. Of course we need at least two points to
-compute the initial trend.</p>
-
-<p>Because we have a level and a trend, this method can forecast not one,
-but two data points. In Python:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">double_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-</span><span class="line">            <span class="n">level</span><span class="p">,</span> <span class="n">trend</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span class="line">        <span class="k">else</span><span class="p">:</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</span><span class="line">        <span class="n">last_level</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">        <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">-</span><span class="n">last_level</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
-</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; double_exponential_smoothing(series, alpha=0.9, beta=0.9)</span>
-</span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And here is a picture of double exponential smoothing in action (the
-green dotted line).</p>
-
-<p><img src="http://grisha.org/images/hw03.png" /></p>
-
-<h2 id="quick-review">Quick Review</h2>
-
-<p>We’ve learned that a data point in a series can be represented as a
-level and a trend, and we have learned how to appliy exponential
-smoothing to each of them to be able to forecast not one, but two
-points.</p>
-
-<p>In <a href="http://grisha.org/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
-we’ll finally talk about triple exponential smoothing.</p>
 ]]></content>
   </entry>
   
