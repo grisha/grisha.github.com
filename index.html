@@ -9,9 +9,10 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="It’s been a while since I’ve written on
-Tgres,
-here’s a little update, Independence Day edition. Current Status The current status is that Tgres is &hellip;">
+  <meta name="description" content="There is a new kid on the time series block:
+TimescaleDB. (From here on
+sometimes referred to as Timescale, for brevity). TimescaleDB is a
+descendant &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +97,131 @@ here’s a little update, Independence Day edition. Current Status The current s
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2017/07/13/timescaledb/">TimescaleDB</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-07-13T07:56:00-04:00" pubdate data-updated="true">Jul 13<span>th</span>, 2017</time>
+        
+         | <a href="/blog/2017/07/13/timescaledb/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>There is a new kid on the time series block:
+<a href="https://github.com/timescale/timescaledb">TimescaleDB</a>. (From here on
+sometimes referred to as <em>Timescale</em>, for brevity). TimescaleDB is a
+descendant of the company formerly known as iobeam, a hosted data
+analysis service for connected hardware. TimescaleDB is an
+open-sourced and evolved version of the underlying data storage
+technology.</p>
+
+<p>What I find interesting about Timescale is that it is a Postgres-based
+thing. In fact upon some digging I discovered that its very early
+code (e.g. <a href="https://github.com/timescale/timescaledb/tree/c3d55d339e37de75fa2eab27d6537dca05cc6c48">here</a>)
+consisted entirely in PL/pgSQL.</p>
+
+<p>There isn’t a lot of documentation on how it works, though there is a
+<a href="https://www.timescale.com/papers/timescaledb.pdf">paper</a>, but it
+lacks on the implementation details. The paper
+talks about the TimescaleDB <em>hypertable</em>, which to the best of my
+understanding is another name for the <a href="https://en.wikipedia.org/wiki/OLAP_cube">OLAP cube</a>, aka hypercube.</p>
+
+<p>I am not really an expert on OLAP cubes, but they are not a new
+concept, e.g. “pivot tables” is a feature of MS Excel since version 5
+released in 1993. My understanding is that under the hood it is a tree
+structure where a parent is an element of some dimension of the cube
+and children are then other dimensions related to the parent. This way
+to find the intersection of “year 1993”, “month of June”, “sales”,
+“phase of the moon” and “chickens” is a straight forward tree
+traversal operation with the number of steps approximately equal to
+the number of dimensions. If the entire structure is in RAM, this can
+be extremely fast.</p>
+
+<p>In any event, the initial PL/pgSQL TimescaleDB implementation didn’t
+have any hypercubes, those were added later.</p>
+
+<h2 id="how-does-it-work">How does it work?</h2>
+
+<p>From staring at the code for a few hours, it looks like the general
+idea is that once you convert your table to a hypertable it becomes a
+partitioned table with insert triggers.  On INSERT, rows are added to
+an in-memory hypercube while at the same time a second copy is written
+to a
+<a href="https://www.postgresql.org/docs/current/static/ddl-partitioning.html">partition</a>.
+This partition is known as a <em>chunk</em>. The schema of the chunk is
+identical to the original table, the chunk is a
+<a href="https://www.postgresql.org/docs/current/static/ddl-inherit.html">child</a>
+of the table.  You cannot see the chunks because they are tucked away
+in a separate namespace. To the user it just acts like any other
+table.</p>
+
+<p>The data is divided
+across partitions by the <em>chunk_time_interval</em> parameter, as well as
+(optionally) another dimension (partitioning column) which you can specify as an argument to the
+<a href="http://docs.timescale.com/api/api-timescaledb#create_hypertable">create_hypertable</a> function.
+(As far as I can tell, only one such dimension is supported).</p>
+
+<p>I am still not very clear on what is done to make inserts faster or even
+if they are indeed faster than any other PG insert. I think that the
+<a href="/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">trick</a>
+we’re using in Tgres where a bunch of data points across multiple series
+is sent as an array of a single row is a performance optimization that would
+be hard to beat when it comes to writes.</p>
+
+<p>As far as querying, if the chunk you need to answer the query is in
+memory, then naturally it is extremely fast. If the chunk is not in
+memory, then it will be loaded first, which too, is actually pretty
+fast. I am not very clear on what happens when the query spans chunks
+that are on disk and there isn’t enough memory to load them all, it
+seems to me that in this case a Timescale table wouldn’t perform much
+faster than any other Postgres one.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>I like it. I think the approach is a good one, especially because to
+the extent possible, Timescale blends into Postgres and all the PG
+tools are at your disposal. Timescale does not attempt to reinvent
+storage, which is my biggest issue with most every “time series
+database” out there. It leaves storage to the experts, if you trust
+Postgres, you can trust TimescaleDB. It seems to me that it is not going to be
+a solution to all problems, but in my limited testing it does provide
+a very substantial (10x) speed up with not a lot of effort - all you
+need to do is to call create_hypertable() after creating your table.</p>
+
+<p>I still need to do some research on what is happening with the
+inserts. I think that it would be interesting to experiment with Tgres
+and see if it could run on top of Timescale, though that would be a
+lot of work. There may also be some interesting stuff done whereby
+incoming data is stored in the Tgres format, but then is somehow by
+way of a trigger copied into a Timescale table and perhaps that could
+make queries even faster.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -3188,188 +3314,6 @@ intensive and rarely read, this may not be a bad compromise.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/">Simple Tgres Part II - a High Rate Counter</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-12-28T17:06:00-05:00" pubdate data-updated="true">Dec 28<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Continuing on the <a href="/blog/2016/12/21/simple-time-series-app-with-tgres/">the previous</a>
-post on simple use of <a href="https://github.com/tgres/tgres">Tgres</a> components, let’s
-try to count something that goes by really fast.</p>
-
-<p>This time let’s start out with creating a memory-based SerDe. This
-means that all our data is in memory and there is no database backing
-our series.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-<span class="line-number">24</span>
-<span class="line-number">25</span>
-<span class="line-number">26</span>
-<span class="line-number">27</span>
-<span class="line-number">28</span>
-<span class="line-number">29</span>
-<span class="line-number">30</span>
-<span class="line-number">31</span>
-<span class="line-number">32</span>
-<span class="line-number">33</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">package</span> <span class="nx">main</span>
-</span><span class="line">
-</span><span class="line"><span class="kn">import</span> <span class="p">(</span>
-</span><span class="line">    <span class="s">&quot;fmt&quot;</span>
-</span><span class="line">    <span class="s">&quot;net/http&quot;</span>
-</span><span class="line">    <span class="s">&quot;time&quot;</span>
-</span><span class="line">
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
-</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/receiver&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/serde&quot;</span>
-</span><span class="line"><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">step</span> <span class="o">:=</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="c1">// 1 second resolution</span>
-</span><span class="line">    <span class="nx">span</span> <span class="o">:=</span> <span class="mi">600</span> <span class="o">*</span> <span class="nx">step</span>      <span class="c1">// spanning 10 minutes</span>
-</span><span class="line">
-</span><span class="line">    <span class="c1">// In-memory SerDe</span>
-</span><span class="line">    <span class="nx">ms</span> <span class="o">:=</span> <span class="nx">serde</span><span class="p">.</span><span class="nx">NewMemSerDe</span><span class="p">()</span>
-</span><span class="line">
-</span><span class="line">    <span class="c1">// Create a receiver of our data points backed by the above</span>
-</span><span class="line">    <span class="c1">// memory SerDe</span>
-</span><span class="line">    <span class="nx">rcvr</span> <span class="o">:=</span> <span class="nx">receiver</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">ms</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">receiver</span><span class="p">.</span><span class="nx">SimpleDSFinder</span><span class="p">{</span><span class="o">&amp;</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DSSpec</span><span class="p">{</span>
-</span><span class="line">        <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
-</span><span class="line">        <span class="nx">RRAs</span><span class="p">:</span> <span class="p">[]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span>
-</span><span class="line">            <span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span><span class="nx">Function</span><span class="p">:</span> <span class="nx">rrd</span><span class="p">.</span><span class="nx">WMEAN</span><span class="p">,</span>
-</span><span class="line">                <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
-</span><span class="line">                <span class="nx">Span</span><span class="p">:</span> <span class="nx">span</span><span class="p">,</span>
-</span><span class="line">            <span class="p">},</span>
-</span><span class="line">        <span class="p">}}})</span>
-</span><span class="line">    <span class="nx">rcvr</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now let’s create a goroutine which creates data points as fast as it
-can, the difference from the previous blog post is that we are using
-QueueGauge(), which is a <em>paced metric</em>, meaning that it flushes to the
-time series only periodically (once per second by default) so as to
-not overwhelm the I/O and or network (even though in this case it doesn’t
-really matter since we’re using a memory-based SerDe anyway).</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
-</span><span class="line">    <span class="nx">end</span> <span class="o">:=</span> <span class="nx">start</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="nx">span</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">        <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
-</span><span class="line">        <span class="k">for</span> <span class="nx">t</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">();</span> <span class="nx">t</span><span class="p">.</span><span class="nx">Before</span><span class="p">(</span><span class="nx">end</span><span class="p">);</span> <span class="nx">t</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="nx">serde</span><span class="p">.</span><span class="nx">Ident</span><span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="s">&quot;foo.bar&quot;</span><span class="p">},</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
-</span><span class="line">            <span class="nx">n</span><span class="o">++</span>
-</span><span class="line">        <span class="p">}</span>
-</span><span class="line">    <span class="p">}()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And finally, as before, we need to hook up a couple of http handlers:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcher</span><span class="p">(</span><span class="nx">ms</span><span class="p">.</span><span class="nx">Fetcher</span><span class="p">())</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
-</span><span class="line">    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="nx">listenSpec</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="p">}</span> <span class="c1">// end of main()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now if we run the above code with something like
-<code>go run simpletgres.go</code>, we’ll notice that unlike with the previous
-example, the web server starts right away, and the data points are
-being written while the server is running. If we aim Grafana at it,
-we should be able to see the chart update in real time.</p>
-
-<p>After a couple of minutes, mine looks like this:</p>
-
-<p><img src="/images/simple-tgres01.png" /></p>
-
-<p>So my macbook can crank these out at about 2.5 million per second.</p>
-
-<p>In my experience instrumenting my apps with simple counters like this
-and having them available directly from the app without having to send
-them to a separate statsd server somewhere has been extremely useful in
-helping understand performance and other issues.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -3423,6 +3367,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/07/13/timescaledb/">TimescaleDB</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/07/04/tgres-status-july-2017/">Tgres Status - July 4th 2017</a>
       </li>
     
@@ -3436,10 +3384,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2017/04/27/go-web-app-part-3/">Building a Go Web App - Part 3</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/04/27/go-web-app-part-4/">Building a Go Web App - Part 4</a>
       </li>
     
   </ul>
