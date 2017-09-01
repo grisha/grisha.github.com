@@ -9,10 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="There is a new kid on the time series block:
-TimescaleDB. (From here on
-sometimes referred to as Timescale, for brevity). TimescaleDB is a
-descendant &hellip;">
+  <meta name="description" content="It’s been a while since I’ve written on
+Tgres,
+here’s a little update, Independence Day edition. Current Status The current status is that Tgres is &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -103,7 +102,7 @@ descendant &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2017/07/13/timescaledb/">TimescaleDB</a></h1>
+      <h1 class="entry-title"><a href="/blog/2017/07/04/tgres-status-july-2017/">Tgres Status - July 4th 2017</a></h1>
     
     
       <p class="meta">
@@ -119,103 +118,228 @@ descendant &hellip;">
   
 
 
-<time datetime="2017-07-13T07:56:00-04:00" pubdate data-updated="true">Jul 13<span>th</span>, 2017</time>
+<time datetime="2017-07-04T08:28:00-04:00" pubdate data-updated="true">Jul 4<span>th</span>, 2017</time>
         
-         | <a href="/blog/2017/07/13/timescaledb/#disqus_thread">Comments</a>
+         | <a href="/blog/2017/07/04/tgres-status-july-2017/#disqus_thread">Comments</a>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>There is a new kid on the time series block:
-<a href="https://github.com/timescale/timescaledb">TimescaleDB</a>. (From here on
-sometimes referred to as <em>Timescale</em>, for brevity). TimescaleDB is a
-descendant of the company formerly known as iobeam, a hosted data
-analysis service for connected hardware. TimescaleDB is an
-open-sourced and evolved version of the underlying data storage
-technology.</p>
+  <div class="entry-content"><p>It’s been a while since I’ve written on
+<a href="https://github.com/tgres/tgres">Tgres</a>,
+here’s a little update, Independence Day edition.</p>
 
-<p>What I find interesting about Timescale is that it is a Postgres-based
-thing. In fact upon some digging I discovered that its very early
-code (e.g. <a href="https://github.com/timescale/timescaledb/tree/c3d55d339e37de75fa2eab27d6537dca05cc6c48">here</a>)
-consisted entirely in PL/pgSQL.</p>
+<h3 id="current-status">Current Status</h3>
 
-<p>There isn’t a lot of documentation on how it works, though there is a
-<a href="https://www.timescale.com/papers/timescaledb.pdf">paper</a>, but it
-lacks on the implementation details. The paper
-talks about the TimescaleDB <em>hypertable</em>, which to the best of my
-understanding is another name for the <a href="https://en.wikipedia.org/wiki/OLAP_cube">OLAP cube</a>, aka hypercube.</p>
+<p>The current status is that Tgres is looking more and more like a
+finished product. It still needs time and especially user testing (the
+ball is in your court, dear reader), because only time reveals the
+weirdest of bugs and validates stability. I would not ditch your
+current stack just yet, but at this point you’d be remiss not
+having given Tgres a spin.</p>
 
-<p>I am not really an expert on OLAP cubes, but they are not a new
-concept, e.g. “pivot tables” is a feature of MS Excel since version 5
-released in 1993. My understanding is that under the hood it is a tree
-structure where a parent is an element of some dimension of the cube
-and children are then other dimensions related to the parent. This way
-to find the intersection of “year 1993”, “month of June”, “sales”,
-“phase of the moon” and “chickens” is a straight forward tree
-traversal operation with the number of steps approximately equal to
-the number of dimensions. If the entire structure is in RAM, this can
-be extremely fast.</p>
+<p>Recently I had an opportunity to test Tgres as a mirror replica of a
+sizable Graphite/Statsd/Grafana set up receiving approximately 10K
+data points per second across more than 200K series, and the results
+were inspiring. Tgres handled the incoming data without breaking a
+sweat on “hardware” (ec2 instances, rather) that was a fraction of the
+Graphite machines while still outperforming it in most respects.</p>
 
-<p>In any event, the initial PL/pgSQL TimescaleDB implementation didn’t
-have any hypercubes, those were added later.</p>
+<p>I’d say the biggest problem (and not really a Tgres one) is that
+mirroring Graphite functionality <em>exactly</em> is next to impossible. Or,
+rather, it is possible, but it would imply purposely introducing
+inaccuracies and complexities. Because of this Tgres can never be a
+“drop in” replacement for Graphite. Tgres can provide results that are
+close but not identical, and dashboards and how the data is interpreted
+would require some rethinking.</p>
 
-<h2 id="how-does-it-work">How does it work?</h2>
+<h2 id="whats-new">What’s new?</h2>
 
-<p>From staring at the code for a few hours, it looks like the general
-idea is that once you convert your table to a hypertable it becomes a
-partitioned table with insert triggers.  On INSERT, rows are added to
-an in-memory hypercube while at the same time a second copy is written
-to a
-<a href="https://www.postgresql.org/docs/current/static/ddl-partitioning.html">partition</a>.
-This partition is known as a <em>chunk</em>. The schema of the chunk is
-identical to the original table, the chunk is a
-<a href="https://www.postgresql.org/docs/current/static/ddl-inherit.html">child</a>
-of the table.  You cannot see the chunks because they are tucked away
-in a separate namespace. To the user it just acts like any other
-table.</p>
+<h3 id="data-point-versioning">Data Point Versioning</h3>
 
-<p>The data is divided
-across partitions by the <em>chunk_time_interval</em> parameter, as well as
-(optionally) another dimension (partitioning column) which you can specify as an argument to the
-<a href="http://docs.timescale.com/api/api-timescaledb#create_hypertable">create_hypertable</a> function.
-(As far as I can tell, only one such dimension is supported).</p>
+<p>In a round-robin database slot values are overwritten as time moves
+forward and the archive comes full-circle. Whenever a value is not
+overwritten for whatever reason, a stale value from an obsolete
+iteration erroneously becomes the value for the current iteration.</p>
 
-<p>I am still not very clear on what is done to make inserts faster or even
-if they are indeed faster than any other PG insert. I think that the
-<a href="/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">trick</a>
-we’re using in Tgres where a bunch of data points across multiple series
-is sent as an array of a single row is a performance optimization that would
-be hard to beat when it comes to writes.</p>
+<p>One solution is to be diligent and always make sure that values are
+overwritten. This solution can be excessively I/O intensive for sparse
+series. If a series is sparse, then more I/O resources are spent
+blanking out non-data (by setting the value to NaN or whatever) than
+storing actual data points.</p>
 
-<p>As far as querying, if the chunk you need to answer the query is in
-memory, then naturally it is extremely fast. If the chunk is not in
-memory, then it will be loaded first, which too, is actually pretty
-fast. I am not very clear on what happens when the query spans chunks
-that are on disk and there isn’t enough memory to load them all, it
-seems to me that in this case a Timescale table wouldn’t perform much
-faster than any other Postgres one.</p>
+<p>A much more efficient approach is to store a version number along with
+the datapoint. Every time the archive comes full-circle, version is
+incremented. With versions there is no need to nullify slots, they
+become obsoleted by virtue of the data point version not matching the
+current version.</p>
 
-<h2 id="conclusion">Conclusion</h2>
+<p>Under the hood Tgres does this by keeping a separate array in the <code>ts</code>
+table which contains a smallint (2 bytes) for every data point. The <code>tv</code>
+view is aware of it and considers versions without exposing any
+details, in other words everything works as before, only Tgres is a
+lot more efficient and executes a lot less SQL statements.</p>
 
-<p>I like it. I think the approach is a good one, especially because to
-the extent possible, Timescale blends into Postgres and all the PG
-tools are at your disposal. Timescale does not attempt to reinvent
-storage, which is my biggest issue with most every “time series
-database” out there. It leaves storage to the experts, if you trust
-Postgres, you can trust TimescaleDB. It seems to me that it is not going to be
-a solution to all problems, but in my limited testing it does provide
-a very substantial (10x) speed up with not a lot of effort - all you
-need to do is to call create_hypertable() after creating your table.</p>
+<h3 id="zero-heartbeat-series">Zero Heartbeat Series</h3>
 
-<p>I still need to do some research on what is happening with the
-inserts. I think that it would be interesting to experiment with Tgres
-and see if it could run on top of Timescale, though that would be a
-lot of work. There may also be some interesting stuff done whereby
-incoming data is stored in the Tgres format, but then is somehow by
-way of a trigger copied into a Timescale table and perhaps that could
-make queries even faster.</p>
+<p>Tgres always strives to connect the data points. If two data points
+arrive more than a step apart, the slots in between are
+<a href="https://github.com/tgres/tgres/blob/d5a622a33511c1a8c43538c8de915fac52b02291/rrd/ds.go#L220-L229">filled in</a>
+to provide continuity. A special parameter called
+<a href="https://github.com/tgres/tgres/blob/d5a622a33511c1a8c43538c8de915fac52b02291/rrd/ds.go#L81-L105">Heartbeat</a>
+controls the maximum time between data points. A gap greater than the Heartbeat is
+considered unknown or NaN.</p>
+
+<p>This was a deliberate design decision from the beginning, and it is not changing.
+Some tools choose to store data points as is,
+deferring any normalization to the query time. Graphite is kind of in
+the middle: it doesn’t store the data points as is, yet it does not
+attempt to do any normalization either, which ultimately leads to
+inaccuracies which I describe in another
+<a href="/blog/2015/05/04/recording-time-series/">post</a>.</p>
+
+<p>The concept of Heartbeat should be familiar to those experienced with
+RRDTool, but it is unknown to Graphite users which has no such
+parameter. This “disconnected” behavior is often taken advantage of to
+track things that aren’t continuous but are event occurrences which can
+still benefit from being observed as a time series. Tracking
+application deploys, where each deploy is a data value of 1 is one
+such example.</p>
+
+<p>Tgres now supports this behavior when the the Heartbeat is set to
+0. Incoming data points are simply stored in the best matching slot
+and no attempt is made to fill in the gap in between with data.</p>
+
+<h3 id="tgres-listens-to-delete-events">Tgres Listens to DELETE Events</h3>
+
+<p>This means that to delete a DS all you need to do is run <code>DELETE FROM
+ds WHERE ...</code> and you’re done. All the corresponding table rows will
+be deleted by Postgres because of the foreign key constraints, and the
+DS will be cleared from the Tgres cache at the same time.</p>
+
+<p>This is possible thanks to the Postgres excellent
+<a href="https://www.postgresql.org/docs/current/static/sql-notify.html">LISTEN/NOTIFY</a>
+capability.</p>
+
+<h3 id="in-memory-series-for-faster-querying">In-Memory Series for Faster Querying</h3>
+
+<p>A subset of series can be kept entirely in memory. The recent testing
+has shown that people take query performance very seriously, and
+dashboards with refresh rates of 5s or even 1s are not unheard
+of. When you have to go to the database to answer every query, and if
+the dashboard touches a hundred series, this does not work too well.</p>
+
+<p>To address this, Tgres now keeps an in-memory cache of queried
+series. The cache is an <a href="https://godoc.org/github.com/hashicorp/golang-lru">LRU</a>
+and its size is configurable. On restart Tgres saves cache keys and loads the series
+back to keep the cache “warm”.</p>
+
+<p>Requests for some cached queries can now be served in literally
+<a href="https://en.wikipedia.org/wiki/Microsecond">microseconds</a>, which
+makes for some pretty amazing user experience.</p>
+
+<h3 id="ds-and-rra-state-is-an-array">DS and RRA State is an Array</h3>
+
+<p>One problem with the Tgres table layout was that DS and RRA tables
+contained frequently updated columns such as lastupdate, value and
+duration The initial strategy was that these could be updated
+periodically in a lzay fashion, but it became apparent that it was not
+practical for any substantial number of series.</p>
+
+<p>To address this all frequently mutable attributes are now stored in
+arrays, same way as data points and therefore can be updated 200 (or
+whatever segment width is configured) at a time.</p>
+
+<p>To simplify querying DSs and RRAs two new views (<code>dsv</code> and <code>rrav</code>)
+were created which abstract away the array value lookup.</p>
+
+<h3 id="whisper-data-migration">Whisper Data Migration</h3>
+
+<p>The <a href="https://github.com/tgres/tgres/tree/master/cmd/whisper_import">whisper_import</a>
+tool has been pretty much rewritten and has better instructions. It’s been
+tested extensively, though admittedly on one particular set up, your mileage may vary.</p>
+
+<h3 id="graphite-dsl">Graphite DSL</h3>
+
+<p>Lots and lots of fixes and additions to the Graphite DSL
+implementation. Tgres still does not support <em>all</em> of the functions,
+but that was never the plan to begin with.</p>
+
+<h2 id="future">Future</h2>
+
+<p>Here’s some ideas I might tackle in the near future. If you are
+interested in contributing, do not be shy, pull requests, issues and
+any questions or comments are welcome. (Probably best to keep
+development discussion in <a href="https://github.com/tgres/tgres/issues">Github</a>).</p>
+
+<ul>
+  <li>
+    <h4 id="get-rid-of-the-config-file">Get rid of the config file</h4>
+  </li>
+</ul>
+
+<p>Tgres doesn’t really need a config file - the few options that are
+required for running should be command line args, the rest, such as
+new series specs should be in the database.</p>
+
+<ul>
+  <li>
+    <h4 id="a-user-interface">A user interface</h4>
+  </li>
+</ul>
+
+<p>Not terribly high on the priority list, since the main UI is <code>psql</code>
+for low level stuff and Grafana for visualization, but something to
+list series and tweak config options might come in handy.</p>
+
+<ul>
+  <li>
+    <h4 id="track-usage">Track Usage</h4>
+  </li>
+</ul>
+
+<p>It would be interesting to know how many bytes exactly a series
+occupies, how often it is updated and queried, and what is the
+resource cost for maintaining it.</p>
+
+<ul>
+  <li>
+    <h4 id="better-code-organization">Better code organization</h4>
+  </li>
+</ul>
+
+<p>For example vcache could be a separate package.</p>
+
+<ul>
+  <li>
+    <h4 id="rethink-the-dsl">Rethink the DSL</h4>
+  </li>
+</ul>
+
+<p>There should be a DSL version 2, which is not based on the Graphite
+unwieldiness. It should be very simple and versatile and not have
+hundreds of functions.</p>
+
+<ul>
+  <li>
+    <h4 id="authentication-and-encryption">Authentication and encryption</h4>
+  </li>
+</ul>
+
+<p>No concrete ideas here, but it would be nice to have a plan.</p>
+
+<ul>
+  <li>
+    <h4 id="clustering-needs-to-be-re-considered">Clustering needs to be re-considered</h4>
+  </li>
+</ul>
+
+<p>The current clustering strategy is flawed. It might work with the
+current plan, but some serious brainstorming needs to happen
+here. Perhaps it should just be removed in favor of delegating
+horizontal scaling to the database layer.</p>
 </div>
   
   
@@ -3299,7 +3423,7 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2017/07/13/timescaledb/">TimescaleDB</a>
+        <a href="/blog/2017/07/04/tgres-status-july-2017/">Tgres Status - July 4th 2017</a>
       </li>
     
       <li class="post">
