@@ -3,6 +3,7 @@ layout: post
 title: "Tgres Status - July 4th 2017"
 date: 2017-07-04 08:28
 comments: true
+published: true
 categories:
 ---
 

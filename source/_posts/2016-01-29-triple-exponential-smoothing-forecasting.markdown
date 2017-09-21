@@ -280,7 +280,7 @@ def weighted_average(series, weights):
 Weighted moving average is fundamental to what follows, please take a
 moment to understand it, give it a think before reading on.
 
-I would also like to stretch the importance of the weights adding up
+I would also like to stress the importance of the weights adding up
 to 1. To demonstrate why, let's say we pick weights `[0.9, 0.8, 0.7,
 0.6]` (which add up to 3.0). Watch what happens:
 
