@@ -9,8 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="If you haven’t read Part I
-you probably should, or the following will be hard to make sense of. All the forecasting methods we covered so far, &hellip;">
+  <meta name="description" content="If you haven’t read Part I and
+Part II
+you probably should, or the following will be hard to make sense of. In Part I we’ve learned how to forceast &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -95,6 +96,321 @@ you probably should, or the following will be hard to make sense of. All the for
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Holt-Winters Forecasting for Dummies - Part III</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-02-17T10:39:00-05:00" pubdate data-updated="true">Feb 17<span>th</span>, 2016</time>
+        
+         | <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>If you haven’t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a> and
+<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+you probably should, or the following will be hard to make sense of.</p>
+
+<p>In Part I we’ve learned how to forceast one point, in Part II we’ve
+learned how to forecast two points. In this part we’ll learn how to
+forecast <em>many</em> points.</p>
+
+<h2 id="more-terminology">More Terminology</h2>
+
+<h3 id="season"><em>Season</em></h3>
+
+<p>If a series appears to be repetitive at regular intervals, such an
+interval is referred to as a <em>season</em>, and the series is said to be
+<em>seasonal</em>. <a href="https://en.wikipedia.org/wiki/Seasonality">Seasonality</a>
+is required for the Holt-Winters method to work, non-seasonal series
+(e.g. stock prices) cannot be forecasted using this method (would be
+nice though if they could be).</p>
+
+<h3 id="season-length"><em>Season Length</em></h3>
+
+<p><em>Season length</em> is the number of data points after which a new season
+begins. We will use $L$ to denote season length.</p>
+
+<h3 id="seasonal-component"><em>Seasonal Component</em></h3>
+
+<p>The <em>seasonal component</em> is an additional deviation from level + trend
+that repeats itself at the same offset into the season. There is a
+seasonal component for every point in a season, i.e. if your season
+length is 12, there are 12 seasonal components. We will use $s$ to
+denote the seasonal component.</p>
+
+<h2 id="triple-exponential-smoothing-aka-holt-winters-method">Triple Exponential Smoothing a.k.a Holt-Winters Method</h2>
+
+<p>The idea behind triple exponential smoothing is to apply exponential
+smoothing to the seasonal components in addition to level and
+trend. The smoothing is applied across seasons, e.g. the seasonal
+component of the 3rd point into the season would be exponentially
+smoothed with the the one from the 3rd point of last season, 3rd point
+two seasons ago, etc. In math notation we now have four equations (see footnote):</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{align}
+& \ell_x = \alpha(y_x - s_{x-L}) + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
+& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
+& s_x = \gamma(y_x - \ell_x) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
+& \hat{y}_{x+m} = \ell_x + mb_x + s_{x-L+1+(m-1)modL}& \mbox{forecast}\\
+\end{align}
+ %]]></script>
+
+<ul>
+  <li>What’s new:
+    <ul>
+      <li>We now have a third greek letter, $\gamma$ (gamma) which is the smoothing
+factor for the seasonal component.</li>
+      <li>The expected value index is $x+m$ where $m$ can be any integer meaning
+we can forecast any number of points into the future (woo-hoo!)</li>
+      <li>The forecast equation now consists of level, trend and the seasonal
+component.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>The index of the seasonal component of the forecast
+$s_{x-L+1+(m-1)modL}$ may appear a little mind boggling, but it’s
+just the offset into the list of seasonal components from the last set
+from observed data. (I.e. if we are forecasting the 3rd point into the
+season 45 seasons into the future, we cannot use seasonal components
+from the 44th season in the future since that season is also
+forecasted, we must use the last set of seasonal components from
+observed points, or from “the past” if you will.) It looks much
+simpler in Python as you’ll see shortly.</p>
+
+<h3 id="initial-values">Initial Values</h3>
+
+<p>Before we can discuss initial values, let me introduce to you a new
+tiny series (okay, not as tiny):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">48</span><span class="p">,</span><span class="mi">53</span><span class="p">,</span><span class="mi">47</span><span class="p">,</span><span class="mi">37</span><span class="p">,</span><span class="mi">39</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="mi">35</span><span class="p">,</span><span class="mi">41</span><span class="p">,</span><span class="mi">38</span><span class="p">,</span>
+</span><span class="line">          <span class="mi">27</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">33</span><span class="p">,</span><span class="mi">35</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">36</span><span class="p">,</span><span class="mi">22</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">14</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">19</span><span class="p">,</span>
+</span><span class="line">          <span class="mi">26</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">46</span><span class="p">,</span><span class="mi">33</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="mi">22</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span>
+</span><span class="line">          <span class="mi">18</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">34</span><span class="p">,</span><span class="mi">44</span><span class="p">,</span><span class="mi">38</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This is what it looks like:</p>
+
+<p><img src="/images/hw04.png" /></p>
+
+<p>You can see that this series is seasonal, there are clearly visible 6
+seasons. Although perhaps not easily apparent from the picture, the
+season length for this series is 12, i.e. it “repeats” every 12
+points. In order to apply triple exponential smoothing we need to know
+what the season length is. (There do exist methods for detecting
+seasonality in series, but this is way beyond the scope of this text).</p>
+
+<h4 id="initial-trend">Initial Trend</h4>
+
+<p>For double exponential smoothing we simply used the first two points
+for the initial trend. With seasonal data we can do better than that,
+since we can observe many seasons and can extrapolate a better
+starting trend. The most common practice is to compute the average of
+trend averages across seasons.</p>
+
+<script type="math/tex; mode=display">
+b_0 = \dfrac{1}{L}\left(\dfrac{y_{L+1}-y_1}{L}+\dfrac{y_{L+2}-y_2}{L}+...+\dfrac{y_{L+L}-y_L}{L}\right)
+</script>
+
+<p>Good news - this looks simpler in Python than in math notation:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">initial_trend</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">):</span>
+</span><span class="line">    <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slen</span><span class="p">):</span>
+</span><span class="line">        <span class="nb">sum</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">slen</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="n">slen</span>
+</span><span class="line">    <span class="k">return</span> <span class="nb">sum</span> <span class="o">/</span> <span class="n">slen</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># &gt;&gt;&gt; initial_trend(series, 12)</span>
+</span><span class="line"><span class="c"># -0.7847222222222222</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h4 id="initial-seasonal-components">Initial Seasonal Components</h4>
+
+<p>The situation is even more complicated when it comes to initial values
+for the seasonal components. Briefly, we need to compute the average
+level for every observed season we have, divide every observed value
+by the average for the season it’s in and finally average each of
+these numbers across our observed seasons. If you want more detail, here is
+<a href="http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm">one thorough description of this process</a>.</p>
+
+<p>I will forgo the math notation for initial seasonal components, but
+here it is in Python. The result is a season-length array of seasonal components.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">initial_seasonal_components</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">):</span>
+</span><span class="line">    <span class="n">seasonals</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class="line">    <span class="n">season_averages</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class="line">    <span class="n">n_seasons</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">/</span><span class="n">slen</span><span class="p">)</span>
+</span><span class="line">    <span class="c"># compute season averages</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seasons</span><span class="p">):</span>
+</span><span class="line">        <span class="n">season_averages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">slen</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">slen</span><span class="p">))</span>
+</span><span class="line">    <span class="c"># compute initial values</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slen</span><span class="p">):</span>
+</span><span class="line">        <span class="n">sum_of_vals_over_avg</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span class="line">        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seasons</span><span class="p">):</span>
+</span><span class="line">            <span class="n">sum_of_vals_over_avg</span> <span class="o">+=</span> <span class="n">series</span><span class="p">[</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">season_averages</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+</span><span class="line">        <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_of_vals_over_avg</span><span class="o">/</span><span class="n">n_seasons</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">seasonals</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># &gt;&gt;&gt; initial_seasonal_components(series, 12)</span>
+</span><span class="line"><span class="c"># {0: -7.4305555555555545, 1: -15.097222222222221, 2: -7.263888888888888, 3: -5.097222222222222, 4: 3.402777777777778, 5: 8.069444444444445, 6: 16.569444444444446, 7: 9.736111111111112, 8: -0.7638888888888887, 9: 1.902777777777778, 10: -3.263888888888889, 11: -0.7638888888888887}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="the-algorithm">The Algorithm</h3>
+
+<p>And finally, here is the additive Holt-Winters method in Python. The
+arguments to the function are the series of observed values, the
+season length, alpha, beta, gamma and the number of points we want
+forecasted.:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">triple_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">n_preds</span><span class="p">):</span>
+</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span class="line">    <span class="n">seasonals</span> <span class="o">=</span> <span class="n">initial_seasonal_components</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">)</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="n">n_preds</span><span class="p">):</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c"># initial values</span>
+</span><span class="line">            <span class="n">smooth</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class="line">            <span class="n">trend</span> <span class="o">=</span> <span class="n">initial_trend</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">)</span>
+</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span class="line">            <span class="k">continue</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
+</span><span class="line">            <span class="n">m</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">smooth</span> <span class="o">+</span> <span class="n">m</span><span class="o">*</span><span class="n">trend</span><span class="p">)</span> <span class="o">+</span> <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span>
+</span><span class="line">        <span class="k">else</span><span class="p">:</span>
+</span><span class="line">            <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+</span><span class="line">            <span class="n">last_smooth</span><span class="p">,</span> <span class="n">smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">smooth</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
+</span><span class="line">            <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">smooth</span><span class="o">-</span><span class="n">last_smooth</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
+</span><span class="line">            <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">]</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">*</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">smooth</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">*</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">]</span>
+</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">smooth</span><span class="o">+</span><span class="n">trend</span><span class="o">+</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># # forecast 24 points (i.e. two seasons)</span>
+</span><span class="line"><span class="c"># &gt;&gt;&gt; triple_exponential_smoothing(series, 12, 0.716, 0.029, 0.993, 24)</span>
+</span><span class="line"><span class="c"># [30, 20.34449316666667, 28.410051892109554, 30.438122252647577, 39.466817731253066, ...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And here is what this looks like if we were to plot the original
+series, followed by the last 24 points from the result of the
+<code>triple_exponential_smoothing()</code> call:</p>
+
+<p><img src="/images/hw05.png" /></p>
+
+<h3 id="a-note-on---and-">A Note on α, β and γ</h3>
+
+<p>You may be wondering how I came up with 0.716, 0.029 and 0.993 for
+$\alpha$, $\beta$ and $\gamma$, respectively. To make long story short, it
+was done by way of trial and error: simply running the algorithm over and
+over again and selecting the values that give you the smallest
+<a href="https://en.wikipedia.org/wiki/Residual_sum_of_squares">SSE</a>. As I
+mentioned before, this process is known as <em>fitting</em>.</p>
+
+<p>To compute the smothing factors to three decimal points
+we may have to run through 1,000,000,000 iterations, but luckily
+there are more efficient methods at zooming in on best
+values. Unfortunately this would take a whole other very long post to
+describe this process. One good algorithm for this is
+<a href="https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method">Nelder-Mead</a>,
+which is what <a href="https://github.com/tgres/tgres">tgres</a> uses.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Well - here you have it, Holt-Winters method explained the way I wish
+it would have been explained to me when I needed it. If you think I
+missed something, found an error or a suggestion, please do not
+hesitate to comment!</p>
+
+<h2 id="footnote">Footnote</h2>
+
+<p>The triple exponential smoothing additive method formula is as it is
+described in “Forecasting Method and Applications, Third Edition” by
+Makridakis, Wheelwright and Hyndman (1998). <a href="https://en.wikipedia.org/wiki/Exponential_smoothing#Triple_exponential_smoothing">Wikipedia</a> has a different
+formula for the seasonal component (I don’t know which is better):</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{align}
+& s_x = \gamma(y_x - \ell_{x-1} - b_{x-1}) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
+\end{align}
+ %]]></script>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2714,135 +3030,6 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a Single Request Object?</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-30T13:18:00-04:00" pubdate data-updated="true">Oct 30<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Are you in favor of a single request object, or two separate objects:
-request and response?  Could it be that the two options are not
-contradictory or even mutually exclusive?</p>
-
-<p>I thouhgt I always was in favor of a single request object which I
-<a href="https://mail.python.org/pipermail/web-sig/2003-October/000162.html">expressed on the Web-SIG mailing list thread</a>
-dating back to October 2003 (ten years ago!). But it is only now that
-I’ve come to realize that both proponents of a single object and two
-separate objects were correct, they were just talking about different
-things.</p>
-
-<p>The confusion lies in the distinction between what I am going to term
-a web application and a request handler.</p>
-
-<p>A <em>request handler</em> exists in the realm of an HTTP server, which
-(naturally) serves HTTP requests. An HTTP request consists of a
-request (a method, such as “GET”, along with some HTTP headers and
-possibly a body) and a response (a status line, some HTTP headers and
-possibly a body) sent over the TCP connection. There is a one-to-one
-correspondence between a request and a response established by the
-commonality of the connection. An HTTP request is incomplete if the
-response is missing, and a response cannot exist without a
-request. (Yes, the term “request” is used to denote both the request
-and response, as well as just the request part of the request, and
-that’s confusing).</p>
-
-<p>A <em>web application</em> is a layer on top of the HTTP request handler. A web
-application operates in requests and responses as well, but those
-should not be confused with the HTTP request/response pairs.</p>
-
-<p>Making the conceptual distinction between a web application request
-and an HTTP request is difficult because both web applications and
-request handlers use HTTP headers and status to accomplish their
-objectives. The difference is that strictly speaking a web application
-does not have to use HTTP and ideally should be protocol-agnostic,
-though it is very common for a web application to rely on
-HTTP-specific features these days. Not every HTTP request exists as
-part of a web application. But because it is difficult to imagine a
-web application without HTTP, we tend to lump the two concepts
-together. It is also exacerbated by the fact that HTTP headers carry
-both application-specific and HTTP-specific information.</p>
-
-<p>A good example of the delineation between a web application response
-and an HTTP response is handling of an error condition. A web
-application error is typically not an HTTP error.  Imagine an “invalid
-login” page. It is a web application error, but not an HTTP error. An
-“invalid login” page should send a “200 OK” status line and a body
-explaining that the credentials supplied were not valid. But then HTTP
-provides its own authentication mechanism, and an HTTP “401
-Unauthorized” (which ought not be used by web applications) is often
-misunderstood as something that web applications should incorporate
-into how they do things.</p>
-
-<p>Another example of a place where the line gets blurry is a redirect. A
-redirect is quite common in a web application, and it is typically
-accomplished by way of an HTTP redirect (3XX status code), yet the two
-are not the same. An HTTP redirect, for example, may happen
-unbeknownst to the web application for purely infrastructural reasons,
-and a web application redirect does not always cause an HTTP redirect.</p>
-
-<p>Yet another example: consider a website serving static content where
-same URI responds with different content according to the
-Accept-Language header in the request. Is this a “web application”?
-Hardly. Could you have some Python (or whatever you favorite language
-is) help along with this process? Certainly. Wouldn’t this code be
-part of a “web application”?  Good question. It is not uncommon for a
-web application to consider the Accept-Language header in its
-response. You could also accomplish this entirely in an http server by
-configuring it correctly. Sometimes whether something is a web
-application just depends on how you’re looking at it, but you do have
-to decide for yourself which it is.</p>
-
-<p>Getting to the original problem, the answer to the question of whether
-to use separate response/request objects or not depends very much on
-which realm you’re operating in. A request handler only needs one
-request object representing the HTTP request because it is
-conceptually similar to a file - you don’t typically open a file twice
-once for reading and once for writing. Whereas a web application,
-which may chose between different responses depending on what’s in the
-request is possibly best served with two separate objects.</p>
-
-<p>I think that misunderstanding of what a “web application” is happens
-to be the cause of a lot of bad decisions plaguing the world of web
-development these days. It is not uncommon to see people get stuck on
-low-level HTTP subtleties while referring to web application issues and
-vise-versa. We’d all get along better if we took some time to think
-about the distinction between web applications and HTTP request
-handlers.</p>
-
-<p>P.S. This will get even more complicated when HTTP 2.0 comes around
-where responses may exist without a request. And I haven’t even
-mentioned SSL/TLS.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; Older</a>
@@ -2898,6 +3085,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/09/22/bitcoin-value/">Bitcoin: Better Ink than Gold?</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/07/04/tgres-status-july-2017/">Tgres Status - July 4th 2017</a>
       </li>
     
@@ -2911,10 +3102,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2017/04/27/go-web-app-part-3/">Building a Go Web App - Part 3</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/04/27/go-web-app-part-4/">Building a Go Web App - Part 4</a>
       </li>
     
   </ul>

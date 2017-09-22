@@ -5,14 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Tgres Load Testing Follow Up - Grisha Trubetskoy</title>
+  <title>Grisha Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="To follow up on the previous post,
-after a bunch
-of tweaking, here is Tgres (commit) receiving over 150,000 data points per
-second across 500,000 &hellip;">
+  <meta name="description" content="Thanks to Octopress and Github I blog…. And I Tweet, too? Thanks to Octopress and Github pages I now have a blog: grisha.org&mdash; Grisha Trubetskoy &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -21,7 +18,7 @@ second across 500,000 &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up">
+  <link rel="canonical" href="http://grisha.org/blog/page/6">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
@@ -95,12 +92,15 @@ second across 500,000 &hellip;">
 </nav>
   <div id="main">
     <div id="content">
-      <div>
-<article class="hentry" role="article">
+      <div class="blog-index">
   
+  
+  
+    <article>
+      
   <header>
     
-      <h1 class="entry-title">Tgres Load Testing Follow Up</h1>
+      <h1 class="entry-title"><a href="/blog/2013/03/25/how-does-this-work/">Testing Out Octopress</a></h1>
     
     
       <p class="meta">
@@ -116,84 +116,41 @@ second across 500,000 &hellip;">
   
 
 
-<time datetime="2017-02-28T21:40:00-05:00" pubdate data-updated="true">Feb 28<span>th</span>, 2017</time>
+<time datetime="2013-03-25T11:46:00-04:00" pubdate data-updated="true">Mar 25<span>th</span>, 2013</time>
         
-         | <a href="#disqus_thread">Comments</a>
+         | <a href="/blog/2013/03/25/how-does-this-work/#disqus_thread">Comments</a>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>To follow up on the <a href="/blog/2017/02/23/can-tgres-outperform-graphite/">previous post</a>,
-after a bunch
-of tweaking, here is Tgres (<a href="https://github.com/tgres/tgres/commit/90924e4afa4ac8bef61caf46c3439794983660ec">commit</a>) receiving over 150,000 data points per
-second across 500,000 time series without any signs of the queue size
-or any other resource blowing up.</p>
+  <div class="entry-content"><p>Thanks to <a href="http://octopress.org">Octopress</a> and <a href="http://github.com">Github</a> I blog….</p>
 
-<p>This is both Tgres and Postgres running on the same i2.2xlarge EC2 instance (8 cores, 64GB, SSD).</p>
+<p>And I Tweet, too?</p>
 
-<p><img src="/images/tgres_aws1_150k.png" /></p>
+<blockquote class="twitter-tweet"><p>Thanks to Octopress and Github pages I now have a blog: <a href="http://t.co/yKm0TVRMMu" title="http://grisha.org/">grisha.org</a></p>&mdash; Grisha Trubetskoy (@humblehack) <a href="https://twitter.com/humblehack/status/316339220371349508">March 26, 2013</a></blockquote>
+<script async="" src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
-<p>At this point I think there’s been enough load testing and optimization, and I am
-going to get back to crossing the t’s and dotting the i’s so that we can release
-the first version of Tgres.</p>
+<p>
+<a href="https://www.youtube.com/channel/UCPL5zsiUm0Psny8xD3mK1pg">A link to Gregory Trubetskoy videos</a>
+or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
+</p>
 </div>
-
-
-  <footer>
-    <p class="meta">
-      
   
-
-<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
-
-      
-
-
-
-
-
-
-
-
   
 
 
-<time datetime="2017-02-28T21:40:00-05:00" pubdate data-updated="true">Feb 28<span>th</span>, 2017</time>
-      
-
-
-    </p>
+    </article>
+  
+  <div class="pagination">
     
-      <div class="sharing">
-  
-  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/" data-via="humblehack" data-counturl="http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/" >Tweet</a>
-  
-  
-  
-</div>
-
+    <a href="/blog/archives">Blog Archives</a>
     
-    <p class="meta">
-      
-        <a class="basic-alignment left" href="/blog/2017/02/23/can-tgres-outperform-graphite/" title="Previous Post: PostgreSQL vs Whisper, which is Faster?">&laquo; PostgreSQL vs Whisper, which is Faster?</a>
-      
-      
-        <a class="basic-alignment right" href="/blog/2017/03/22/tgres-0-dot-10-dot-0b-time-series-with-go-and-postgresql/" title="Next Post: Tgres 0.10.0b - Time Series with Go and PostgreSQL">Tgres 0.10.0b - Time Series with Go and PostgreSQL &raquo;</a>
-      
-    </p>
-  </footer>
-</article>
-
-  <section>
-    <h1>Comments</h1>
-    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a class="next" href="/blog/page/5/">Newer &rarr;</a>
+    
+  </div>
 </div>
-  </section>
-
-</div>
-
 <aside class="sidebar">
   
     
@@ -231,8 +188,8 @@ google_ad_type = "image";
   <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
   <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
   <p>I started programming professionally back when I was a teenager.
-  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
-  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+  I&#8217;ve spent most of my early career working at large ISP&#8217;s solving industrial-scale hosting challenges. Since around 2009 I&#8217;ve become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I&#8217;ve lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it&#8217;s gradually become home for us.</p>
 </section>
 <section>
   <h1>Recent Posts</h1>
@@ -268,7 +225,6 @@ google_ad_type = "image";
   
 </aside>
 
-
     </div>
   </div>
   <footer role="contentinfo"><p>
@@ -284,10 +240,7 @@ google_ad_type = "image";
       var disqus_shortname = 'grisha';
       
         
-        // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/';
-        var disqus_url = 'http://grisha.org/blog/2017/02/28/tgres-load-testing-follow-up/';
-        var disqus_script = 'embed.js';
+        var disqus_script = 'count.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
