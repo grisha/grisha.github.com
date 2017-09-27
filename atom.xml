@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-09-27T14:26:17-04:00</updated>
+  <updated>2017-09-27T14:31:39-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -105,7 +105,7 @@ indeed what goes up in value too much too fast often subsequently
 <h3 id="importance-of-market-cap">Importance of Market Cap</h3>
 
 <p><em>Market capitalization</em> is the price of all of the asset available in
-the world. Its easy to compute the market cap for a stock because we
+the world. It’s easy to compute the market cap for a stock because we
 know the number of shares outstanding. There is no such thing as a
 market cap for a commodity because it is continuously produced and
 consumed. When it comes to something like gold, we can estimate the
