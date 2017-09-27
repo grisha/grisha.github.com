@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-09-27T17:34:27-04:00</updated>
+  <updated>2017-09-27T18:03:34-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Bitcoin: Value]]></title>
+    <title type="html"><![CDATA[Bitcoin: USD Value]]></title>
     <link href="http://grisha.org/blog/2017/09/25/bitcoin-value-2/"/>
     <updated>2017-09-25T08:50:00-04:00</updated>
     <id>http://grisha.org/blog/2017/09/25/bitcoin-value-2</id>
