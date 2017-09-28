@@ -9,9 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="In part 1 I explained
-how money has always been a global ledger and Bitcoin is just a
-different implementation of one. The million dollar question &hellip;">
+  <meta name="description" content="How much does it cost in electricity to mine a Bitcoin? As of Sep 28, 2017, according to blockchain.info the hashrate is:
+9,214,860,125 GH/s. As of &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +95,83 @@ different implementation of one. The million dollar question &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity Cost of 1 Bitcoin (Sep 2017)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-09-28T16:38:00-04:00" pubdate data-updated="true">Sep 28<span>th</span>, 2017</time>
+        
+         | <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>How much does it cost in electricity to mine a Bitcoin?</p>
+
+<p>As of Sep 28, 2017, according to blockchain.info the hashrate is:
+9,214,860,125 GH/s.</p>
+
+<p>As of today, it seems that the best miner available for sale is the
+AntMiner S9. It is actually over a year old, and there are faster and
+more energy efficient ASICs now, e.g. BitFury, but it is very hard to
+get any information on those, so we will just use the S9 information.</p>
+
+<p>The S9 is capable of 12,930 GH/s. The collective Bitcoin hash rate is
+equivalent to 712,672 S9 miners running in parallel.</p>
+
+<p>An S9 uses 1375W, which means that in 1 hour it consumes 1.375 kW/h.</p>
+
+<p>In USA, a kWh costs $0.12 on average. (It can be
+as low as 0.04, according to this <a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a">EIA chart</a>.)</p>
+
+<p>At 12c per kWh a running S9 costs $0.165 per hour.</p>
+
+<p>712,672 running S9’s would cost $117,591.02 per hour.</p>
+
+<p>Bitcoin blocks are solved at 6 per hour on average. Thus, each block
+costs $19,598.50 to solve.</p>
+
+<p>The current mining reward is 12.5 BTC, which gives us the answer:</p>
+
+<p>At \$0.12 kW/h a Bitcoin costs \$1,567.88 to mine.</p>
+
+<p>At \$0.04 kW/h a Bitcoin costs \$522.62 to mine.</p>
+
+<p>This, of course, does not include hardware and other costs.</p>
+
+<p>It’s quite likely that the largest mining operations pay even less
+than $0.04 for electricity and the hardware they use is many times
+more efficient.</p>
+
+<p>While grosly inaccurate, this show that mining is quite profitable,
+and that Bitcoin price would have to fall a lot for mining to stop
+being profitable.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2819,523 +2895,6 @@ the first version of Tgres.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2017/02/23/can-tgres-outperform-graphite/">PostgreSQL vs Whisper, Which Is Faster?</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2017-02-23T09:49:00-05:00" pubdate data-updated="true">Feb 23<span>rd</span>, 2017</time>
-        
-         | <a href="/blog/2017/02/23/can-tgres-outperform-graphite/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Note: there is an <a href="/blog/2017/02/28/tgres-load-testing-follow-up/">update</a> to this post.</p>
-
-<h2 id="tldr">TL;DR</h2>
-
-<p>On a 8 CPU / 16 GB EC2 instance,
-<a href="https://github.com/tgres/tgres">Tgres</a> can process 150,000 data
-points per second across 300,000 series (Postgres running on the same
-machine). With some tweaks we were able to get the number of series to
-half a million, flushing ~60K data points per second.</p>
-
-<h2 id="now-the-long-version">Now the long version…</h2>
-
-<p>If you were to ask me whether Tgres could outperform Graphite, just a
-couple of months ago my answer would have been “No”. Tgres uses
-Postgres to store time series data, while Graphite stores data by
-writing to files directly, the overhead of the relational database
-just seemed too great.</p>
-
-<p>Well, I think I’ve managed to prove myself wrong. After re-working
-Tgres to use the
-<a href="/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">write-optimized layout</a>,
-I’ve run some tests on AWS yielding unexpectedly promising results.</p>
-
-<p>As a benchmark I targeted the excellent <a href="http://obfuscurity.com/2016/08/Benchmarking-Carbon-and-Whisper-on-AWS">blog post</a>
-by Jason Dixon describing his AWS Graphite test. My goal was to get to at least half the
-level of performance described therein. But it appears the combination of Go, Postgres and some
-clever data structuring has been able to beat it, not without breaking
-a little sweat, but it has.</p>
-
-<p>My test was conducted on a
-<a href="https://aws.amazon.com/ec2/instance-types/">c4.2xlarge</a> instance,
-which has 8 cores and 16 GB, using 100GB EBS (which, if I understood it
-correctly, comes with 300 IOPS, please comment if I’m wrong). The “c4”
-instances are supposed to be some of the highest speed CPU AWS has to
-offer, but compare this with the instance used in the Graphite test,
-an i2.4xlarge (16 CPU/ 122GB), it had half the CPU cores and nearly
-one tenth of the RAM.</p>
-
-<p>Before I go any further, here is the obligatory screenshot, then my
-observations and lessons learned in the process, as well as a
-screenshot depicting even better performance.</p>
-
-<p><img src="/images/tgres_aws1.png" /></p>
-
-<p>The Tgres version running was <a href="https://github.com/tgres/tgres/tree/1c57cba3fe4cdb0b96bf5054cfd01cb2a41e2bba">this one</a>,
-with the config detailed at the bottom of the post.</p>
-
-<p>Postgres was whatever <code>yum install postgresql95-server</code> brings your
-way, with the <code>data</code> directory moved to the EBS volume formatted using
-ext4 (not that I think it matters). The Postgres config was modified to
-allow a 100ms commit delay and to make autovacuum extra aggressive. I
-did not increase any memory buffers and left everything else as
-is. Specifically, these were the changes:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">autovacuum_work_mem = -1
-</span><span class="line">synchronous_commit = off
-</span><span class="line">commit_delay = 100000
-</span><span class="line">autovacuum_max_workers = 10
-</span><span class="line">autovacuum_naptime = 1s
-</span><span class="line">autovacuum_vacuum_threshold = 2000
-</span><span class="line">autovacuum_vacuum_scale_factor = 0.0
-</span><span class="line">autovacuum_vacuum_cost_delay = 0</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The data points for the test were generated by a <a href="https://github.com/tgres/tgres/blob/06a9f5805a934c304b11f44a32792414ceafe6f0/blaster/blaster.go#L55">goroutine</a>
-in the Tgres process itself. In the past I’ve found that blasting a server
-with this many UDP packets can be tricky and hardware/network
-intensive. It’s also hard to tell when/if they get dropped and why,
-etc. Since Go is not known for having problems in its network stack, I
-was not too worried about it, I just wanted a reliable and
-configurable source of incoming packets, and in Go world writing a
-simple goroutine seemed like the right answer.</p>
-
-<h2 id="somewhat-random-notes-and-making-tgres-even-faster">Somewhat Random Notes and Making Tgres Even Faster</h2>
-
-<h3 id="determining-failure">Determining failure</h3>
-
-<p>Determining when we are “at capacity” is tricky. I’ve mostly looked at
-two factors (aside from the obvious - running out of memory/disk,
-becoming unresponsive, etc): receiver queue size
-and Postgres <a href="https://www.keithf4.com/checking-for-postgresql-bloat/">table bloat</a>.</p>
-
-<h4 id="queue-size">Queue size</h4>
-
-<p>Tgres uses “elastic channels” (so eloquently
-<a href="https://github.com/npat-efault/musings/wiki/Elastic-channels">described here</a> by Nick Patavalis)
-for incoming data points and to load series from Postgres.  These are
-channel-like structures that can grow to arbitrary length only limited
-by the memory available. This is done so as to be able to take maximum
-advantage of the hardware at hand. If any of those queues starts
-growing out of control, we are failing. You can see in the picture
-that at about 140K data points per second the receiver queue started
-growing, though it did stay steady at this size and never spun out of
-control (the actual test was left overnight at this rate just to make
-sure).</p>
-
-<h4 id="pg-table-bloat">PG Table Bloat</h4>
-
-<p>Table bloat is a phenomenon affecting Postgres in write-intensive
-situations because of its adherence to the <a href="https://en.wikipedia.org/wiki/Multiversion_concurrency_control">MVCC</a>.
-It basically means that pages on disk are being updated faster than the autovacuum
-process can keep up with them and the table starts growing out of
-control.</p>
-
-<p>To monitor for table bloat, I used a simple formula which determined
-the approximate size of the table based on the row count (our data is
-all floats, which makes it very predictable) and compared it with the
-actual size. If the actual size exceeded the estimated size, that’s
-considered bloat. Bloat is reported in the “TS Table Size” chart. A
-little bloat is fine, and you can see that it stayed in fairly low
-percent throughout the test.</p>
-
-<p>In the end, though more research is warranted, it may just turn out
-that contrary to every expectation PostgreSQL was <em>not</em> the limiting
-factor here. The <code>postmaster</code> processes stayed below 170MB RSS, which
-is absolutely remarkable, and Grafana refreshes were very quick even
-at peak loads.</p>
-
-<h4 id="memory-consumption">Memory consumption</h4>
-
-<p>Tgres has a slight limitation in that creating a series is
-expensive. It needs to check with Postgres and for reasons I don’t
-want to bore you with it’s always a SELECT, optionally followed by an
-“UPSERT”. This takes time, and during the ramp-up period when the
-number of series is growing fast and lots of them need to be created,
-the Go runtime ends up consuming a lot of memory. You can see that
-screenshot image reports 4.69GB. If I were to restart Tgres (which
-would cause all existing DS names to be pre-cached) its memory
-footprint stayed at about 1.7GB. More work needs to be done to figure
-out what accounts for the difference.</p>
-
-<h4 id="data-point-rate-and-number-of-series">Data Point Rate and Number of Series</h4>
-
-<p>The rate of data points that need to be saved to disk is a function of
-the number of series and the resolution of the RRAs. To illustrate, if
-I have one series at 1 point per second, even if I blast a million
-data points per second, still only 1 data point per second needs to be
-saved.</p>
-
-<p>There is an important difference between Graphite and Tgres in that
-Tgres actually adjusts the final value considering the every data
-point value using weighted mean, while Graphite just ignores all
-points but the last. So Tgres does a bit more work, which adds up
-quickly at 6-figure rates per second.</p>
-
-<p>The Graphite test if I read the chart correctly was able to process
-~70K data points per second across 300K series. My test had 300K
-series and data points were coming in at over 150K/s. But just out of
-curiosity, I tried to push it to its limit.</p>
-
-<p>At 400 series, you can see clear signs of deterioration. You can see
-how vcache isn’t flushed fast enough leaving gaps at the end of
-series. If we stop the data blast, it does eventually catch up,
-so long as there is memory for the cache.</p>
-
-<p><img src="/images/tgres_aws1_det.png" /></p>
-
-<p>If you don’t catch this condition in time, Tgres will die with:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">fatal error: runtime: out of memory
-</span><span class="line">
-</span><span class="line">runtime stack:
-</span><span class="line">runtime.throw<span class="o">(</span>0xa33e5a, 0x16<span class="o">)</span>
-</span><span class="line">        /home/grisha/.gvm/gos/go1.8/src/runtime/panic.go:596 +0x95
-</span><span class="line">...
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h3 id="segment-width">Segment Width</h3>
-
-<p>There is still one easy performance card we can play here. Segment
-width is how many data points are stored in one row, it is also the
-limit on how many points we can transfer in a single SQL operation.
-Segment width by default is 200, because a width higher than that
-causes rows to exceed a page and trigger
-<a href="https://www.postgresql.org/docs/current/static/storage-toast.html">TOAST</a>.
-TOAST can be good or bad because it means data is stored in a separate table
-(not so good), but it also means it’s compressed, which may be an I/O
-win.</p>
-
-<h4 id="so-what-would-happen-if-we-set-the-segment-width-to-1000">So what would happen if we set the segment width to 1000?</h4>
-
-<p>The picture changes significantly (see below). I was able to get the
-number of series to 500K, note the whopping 52,602 data points being
-written to the database per second! You can see we’re pushing it to
-the limit because the receiver queue is beginning to grow. I <em>really</em>
-wanted to get the rate up to 150K/sec, but it just didn’t want to go
-there.</p>
-
-<p><img src="/images/tgres_aws1_1k.png" /></p>
-
-<h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4096">And what would happen if we set the segment width to 4096?</h4>
-
-<p>Interestingly, the memory footprint is a tad larger while the vcache
-is leaner, the number of data points flushed per second is about same,
-though in fewer SQL statements, and the overall picture is about the
-same and the incoming queue still skyrockets at just about 100K/sec
-over 500K series.</p>
-
-<p><img src="/images/tgres_aws1_4k.png" /></p>
-
-<h2 id="conclusion">Conclusion</h2>
-
-<p>There is plenty of places in Tgres code that could still be
-optimized.</p>
-
-<p>One issue that would be worth looking into is exposing Tgres to the
-firehose on an empty database. The current code runs out of memory in
-under a minute when suddenly exposed to 300K new series at
-150K/s. Probably the simplest solution to this would be to somehow
-detect that we’ve unable to keep up and start dropping data
-points. Eventually, when all the series are created and cached,
-performance should even out after the initial spike and all should be
-well.</p>
-
-<p>In any event, it’s nice to be able to do something like this and know
-that it is performant as well:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">tgres</span><span class="o">=&gt;</span> <span class="k">select</span> <span class="n">t</span><span class="p">,</span> <span class="n">r</span> <span class="k">from</span> <span class="n">ds</span>
-</span><span class="line"> <span class="k">join</span> <span class="n">tv</span>  <span class="k">on</span> <span class="n">tv</span><span class="p">.</span><span class="n">ds_id</span> <span class="o">=</span> <span class="n">ds</span><span class="p">.</span><span class="n">id</span>
-</span><span class="line"><span class="k">where</span> <span class="n">ident</span> <span class="o">@&gt;</span> <span class="s1">&#39;{&quot;name&quot;:&quot;tgres.0_0_0_0.runtime.load.five&quot;}&#39;</span>
-</span><span class="line">  <span class="k">and</span> <span class="n">tv</span><span class="p">.</span><span class="n">step_ms</span> <span class="o">=</span> <span class="mi">10000</span>
-</span><span class="line"><span class="k">order</span> <span class="k">by</span> <span class="n">t</span> <span class="k">desc</span>
-</span><span class="line"><span class="k">limit</span> <span class="mi">5</span><span class="p">;</span>
-</span><span class="line">           <span class="n">t</span>            <span class="o">|</span>       <span class="n">r</span>
-</span><span class="line"><span class="c1">------------------------+----------------</span>
-</span><span class="line"> <span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">23</span> <span class="mi">22</span><span class="p">:</span><span class="mi">31</span><span class="p">:</span><span class="mi">50</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">1</span><span class="p">.</span><span class="mi">256833462648</span>
-</span><span class="line"> <span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">23</span> <span class="mi">22</span><span class="p">:</span><span class="mi">26</span><span class="p">:</span><span class="mi">30</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">1</span><span class="p">.</span><span class="mi">305209492142</span>
-</span><span class="line"> <span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">23</span> <span class="mi">22</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mi">10</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">1</span><span class="p">.</span><span class="mi">554056287975</span>
-</span><span class="line"> <span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">23</span> <span class="mi">22</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">1</span><span class="p">.</span><span class="mi">453365774931</span>
-</span><span class="line"> <span class="mi">2017</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">23</span> <span class="mi">22</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mi">50</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">1</span><span class="p">.</span><span class="mi">380504724386</span>
-</span><span class="line"><span class="p">(</span><span class="mi">5</span> <span class="k">rows</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h2 id="reference">Reference</h2>
-
-<p>For completness sake, the instance was created using Terraform config
-approximately like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-<span class="line-number">24</span>
-<span class="line-number">25</span>
-<span class="line-number">26</span>
-<span class="line-number">27</span>
-<span class="line-number">28</span>
-<span class="line-number">29</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">variable</span> <span class="s">&quot;aws_region&quot;</span> <span class="p">{</span> <span class="k">default</span> <span class="p">=</span> <span class="s">&quot;us-east-1&quot;</span> <span class="p">}</span>
-</span><span class="line"><span class="nx">variable</span> <span class="s">&quot;aws_zone&quot;</span> <span class="p">{</span> <span class="k">default</span> <span class="p">=</span> <span class="s">&quot;us-east-1a&quot;</span> <span class="p">}</span>
-</span><span class="line"><span class="nx">variable</span> <span class="s">&quot;key_name&quot;</span> <span class="p">{</span> <span class="k">default</span> <span class="p">=</span> <span class="s">&quot;REDACTED&quot;</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">provider</span> <span class="s">&quot;aws&quot;</span> <span class="p">{</span>
-</span><span class="line">  <span class="nx">region</span> <span class="p">=</span> <span class="s">&quot;${var.aws_region}&quot;</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">resource</span> <span class="s">&quot;aws_ebs_volume&quot;</span> <span class="s">&quot;ebs_volume&quot;</span> <span class="p">{</span>
-</span><span class="line">  <span class="nx">availability_zone</span> <span class="p">=</span> <span class="s">&quot;${var.aws_zone}&quot;</span>
-</span><span class="line">  <span class="nx">size</span> <span class="p">=</span> <span class="mi">100</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">resource</span> <span class="s">&quot;aws_volume_attachment&quot;</span> <span class="s">&quot;ebs_att&quot;</span> <span class="p">{</span>
-</span><span class="line">  <span class="nx">device_name</span> <span class="p">=</span> <span class="s">&quot;/dev/sdh&quot;</span>
-</span><span class="line">  <span class="nx">volume_id</span> <span class="p">=</span> <span class="s">&quot;${aws_ebs_volume.ebs_volume.id}&quot;</span>
-</span><span class="line">  <span class="nx">instance_id</span> <span class="p">=</span> <span class="s">&quot;${aws_instance.tgres-test-tmp.id}&quot;</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">resource</span> <span class="s">&quot;aws_instance&quot;</span> <span class="s">&quot;tgres-test-tmp&quot;</span> <span class="p">{</span>
-</span><span class="line">  <span class="nx">ami</span> <span class="p">=</span> <span class="s">&quot;ami-0b33d91d&quot;</span>
-</span><span class="line">  <span class="nx">instance_type</span> <span class="p">=</span> <span class="s">&quot;c4.2xlarge&quot;</span>
-</span><span class="line">  <span class="nx">subnet_id</span> <span class="p">=</span> <span class="s">&quot;REDACTED&quot;</span>
-</span><span class="line">  <span class="nx">vpc_security_group_ids</span> <span class="p">=</span> <span class="p">[</span>
-</span><span class="line">    <span class="s">&quot;REDACTED&quot;</span>
-</span><span class="line">  <span class="p">]</span>
-</span><span class="line">  <span class="nx">associate_public_ip_address</span> <span class="p">=</span> <span class="kc">true</span>
-</span><span class="line">  <span class="nx">key_name</span> <span class="p">=</span> <span class="s">&quot;${var.key_name}&quot;</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And then the following commands were used to prime everyting:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-<span class="line-number">24</span>
-<span class="line-number">25</span>
-<span class="line-number">26</span>
-<span class="line-number">27</span>
-<span class="line-number">28</span>
-<span class="line-number">29</span>
-<span class="line-number">30</span>
-<span class="line-number">31</span>
-<span class="line-number">32</span>
-<span class="line-number">33</span>
-<span class="line-number">34</span>
-<span class="line-number">35</span>
-<span class="line-number">36</span>
-<span class="line-number">37</span>
-<span class="line-number">38</span>
-<span class="line-number">39</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">sudo mke2fs /dev/sdh
-</span><span class="line">sudo mkdir /ebs
-</span><span class="line">sudo mount /dev/sdh /ebs
-</span><span class="line">
-</span><span class="line">sudo yum install -y postgresql95-server
-</span><span class="line">sudo service postgresql95 initdb
-</span><span class="line">sudo mkdir /ebs/pg
-</span><span class="line">sudo mv /var/lib/pgsql95/data /ebs/pg/data
-</span><span class="line">sudo ln -s /ebs/pg/data /var/lib/pgsql95/data
-</span><span class="line">
-</span><span class="line">sudo vi /var/lib/pgsql95/data/postgresql.conf
-</span><span class="line"><span class="c"># BEGIN postgres config - paste this somewhere in the file</span>
-</span><span class="line"><span class="nv">autovacuum_work_mem</span> <span class="o">=</span> -1
-</span><span class="line"><span class="nv">synchronous_commit</span> <span class="o">=</span> off
-</span><span class="line"><span class="nv">commit_delay</span> <span class="o">=</span> 100000
-</span><span class="line"><span class="nv">autovacuum_max_workers</span> <span class="o">=</span> 10
-</span><span class="line"><span class="nv">autovacuum_naptime</span> <span class="o">=</span> 1s
-</span><span class="line"><span class="nv">autovacuum_vacuum_threshold</span> <span class="o">=</span> 2000
-</span><span class="line"><span class="nv">autovacuum_vacuum_scale_factor</span> <span class="o">=</span> 0.0
-</span><span class="line"><span class="nv">autovacuum_vacuum_cost_delay</span> <span class="o">=</span> 0
-</span><span class="line"><span class="c"># END postgres config</span>
-</span><span class="line">
-</span><span class="line">sudo service postgresql95 restart
-</span><span class="line">
-</span><span class="line"><span class="c"># create PG database</span>
-</span><span class="line">
-</span><span class="line">sudo su - postgres
-</span><span class="line">createuser -s ec2-user   <span class="c"># note -s is superuser - not necessary for tgres but just in case</span>
-</span><span class="line">createdb tgres
-</span><span class="line"><span class="nb">exit</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># Tgres (requires Go - I used 1.8)</span>
-</span><span class="line"><span class="c"># (or you can just scp it from some machine where you already have go environment)</span>
-</span><span class="line">mkdir golang
-</span><span class="line"><span class="nb">export </span><span class="nv">GOPATH</span><span class="o">=</span>~/golang/
-</span><span class="line">go get github.com/tgres/tgres
-</span><span class="line"><span class="nb">cd</span> /home/ec2-user/golang/src/github.com/tgres/tgres
-</span><span class="line">go build
-</span><span class="line">cp etc/tgres.conf.sample etc/tgres.conf
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The <code>tgres.conf</code> file looked like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-<span class="line-number">24</span>
-<span class="line-number">25</span>
-<span class="line-number">26</span>
-<span class="line-number">27</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">min-step                <span class="o">=</span> <span class="s2">&quot;10s&quot;</span>
-</span><span class="line">
-</span><span class="line">pid-file <span class="o">=</span>                 <span class="s2">&quot;tgres.pid&quot;</span>
-</span><span class="line">log-file <span class="o">=</span>                 <span class="s2">&quot;log/tgres.log&quot;</span>
-</span><span class="line">log-cycle-interval <span class="o">=</span>       <span class="s2">&quot;24h&quot;</span>
-</span><span class="line">
-</span><span class="line">max-flushes-per-second      <span class="o">=</span> 1000000 <span class="c"># NB - Deprecated setting</span>
-</span><span class="line"><span class="nv">workers</span>                     <span class="o">=</span> 4       <span class="c"># NB - Deprecated setting</span>
-</span><span class="line">
-</span><span class="line">http-listen-spec            <span class="o">=</span> <span class="s2">&quot;0.0.0.0:8888&quot;</span>
-</span><span class="line">graphite-line-listen-spec   <span class="o">=</span> <span class="s2">&quot;0.0.0.0:2003&quot;</span>
-</span><span class="line">graphite-text-listen-spec   <span class="o">=</span> <span class="s2">&quot;0.0.0.0:2003&quot;</span>
-</span><span class="line">graphite-udp-listen-spec    <span class="o">=</span> <span class="s2">&quot;0.0.0.0:2003&quot;</span>
-</span><span class="line">graphite-pickle-listen-spec <span class="o">=</span> <span class="s2">&quot;0.0.0.0:2004&quot;</span>
-</span><span class="line">
-</span><span class="line">statsd-text-listen-spec     <span class="o">=</span> <span class="s2">&quot;0.0.0.0:8125&quot;</span>
-</span><span class="line">statsd-udp-listen-spec      <span class="o">=</span> <span class="s2">&quot;0.0.0.0:8125&quot;</span>
-</span><span class="line">stat-flush-interval         <span class="o">=</span> <span class="s2">&quot;10s&quot;</span>
-</span><span class="line">stats-name-prefix           <span class="o">=</span> <span class="s2">&quot;stats&quot;</span>
-</span><span class="line">
-</span><span class="line">db-connect-string <span class="o">=</span> <span class="s2">&quot;host=/tmp dbname=tgres sslmode=disable&quot;</span>
-</span><span class="line">
-</span><span class="line"><span class="o">[[</span>ds<span class="o">]]</span>
-</span><span class="line"><span class="nv">regexp</span> <span class="o">=</span> <span class="s2">&quot;.*&quot;</span>
-</span><span class="line"><span class="nv">step</span> <span class="o">=</span> <span class="s2">&quot;10s&quot;</span>
-</span><span class="line"><span class="c">#heartbeat = &quot;2h&quot;</span>
-</span><span class="line"><span class="nv">rras</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;10s:6h&quot;</span>, <span class="s2">&quot;1m:7d&quot;</span>, <span class="s2">&quot;1h:1y&quot;</span><span class="o">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Tgres was running with the following. The <code>TGRES_BLASTER</code> starts the
-blaster goroutine.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">TGRES_BIND</span><span class="o">=</span>0.0.0.0 <span class="nv">TGRES_BLASTER</span><span class="o">=</span>1 ./tgres
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Once you have Tgres with the blaster running, you can control it via
-HTTP, e.g. the following would set it to 50K/s data points across 100K
-series. Setting rate to 0 pauses it.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">curl -v <span class="s2">&quot;http://127.0.0.1:8888/blaster/set?rate=50000&amp;n=100000&quot;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -3398,6 +2957,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/09/25/bitcoin-value-2/">Bitcoin: USD Value</a>
       </li>
     
@@ -3411,10 +2974,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2017/04/27/simplistic-go-web-app/">Building a Go Web App in 2017</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/04/27/simplistic-go-web-app-part-2/">Building a Go Web App - Part 2</a>
       </li>
     
   </ul>
