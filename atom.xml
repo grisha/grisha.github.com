@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-09-28T20:10:54-04:00</updated>
+  <updated>2017-09-29T09:50:46-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -58,6 +58,59 @@ more efficient.</p>
 <p>While grosly inaccurate, this shows that mining is quite profitable,
 and that Bitcoin price would have to fall a lot for mining to stop
 being profitable.</p>
+
+<h3 id="looking-at-the-trend">Looking at the Trend</h3>
+
+<p>Current difficulty is 1103400932964, The difficulty before that was
+922724699725.</p>
+
+<p>Difficulty adjusts every 2,016 blocks, which is about two weeks.</p>
+
+<p>The Difficulty number is a coefficient of the “difficulty 1 target”,
+i.e. where the hash has to begin with 4 zero bytes (32 zero bits). It
+means is that it is N times harder than “1 target”.</p>
+
+<p>We can see that at the last adjustment it went up by 180,676,233,239,
+or 16%, which is quite a bit in just two weeks. The last adjustment
+before that was from 888171856257, or 4%.</p>
+
+<p>Assuming that the only miner in the world was the S9, the difficulty
+adjustment can only be explained by more S9’s coming online. The
+number of S9’s online is directly proportional to the hashrate, which
+is directly proportional to the difficulty. Thus there is a direct
+relationship between energy cost and the difficulty.</p>
+
+<p>When the difficulty was 922724699725 (Sep 6 through 16), the hash rate
+was at about 8,000,000 TH/s, or equivalent of 618,716 S9’s. At that
+difficulty and the 12c kW/h price, a BTC cost $1,361 to mine.</p>
+
+<p>Now let’s look back at the world before the S9, which uses the Bitmain
+BM1387 16nm ASIC. Before the S9, there was S7, based on BitMain BM1385
+28nm ASIC. The S7 power consumption is roughly same as S9, or let’s
+assume it is for simplicity, but it is only capable of 4,000 GH/s.</p>
+
+<p>Back at the end of 2015 when S7 was announced, the hashrate was at
+around 700,000,000 GH/s, or equivalent to 175,000 S7’s. That cost
+$28,875 per hour, or $4812.5 per block. The block reward was 25
+Bitcoins then, so a Bitcoin would cost only \$192 to mine. (With a 12.5
+reward it would have been \$385).</p>
+
+<p>This is all very confusing, but we can see that faster hardware and
+more of it drives the cost of mining up and the rlationship between
+the difficulty and the cost of mining a Bitcoin is linear. Faster
+hardware enables higher hash rate at improved energy efficiency, and
+the difficulty adjusts to keep the rate of blocks and supply of new
+BTC at 10 minutes.</p>
+
+<p>The cost factor behind Bitcoin is energy, and spending more energy on
+mining makes a Bitcoin more expensive and less profitable. However, a
+more energy-expensive Bitcoin is a more sound/secure Bitcoin from the
+cryptographic perspective, which means it is likely to go up in USD
+price, and thus should still be profitable for the miners.</p>
+
+<p>I will need to think on this some more as there are a lot of moving
+parts. But if I can make a cursory comclusion here, it is that
+(industrial) mining is and will remain very profitable for some time.</p>
 ]]></content>
   </entry>
   
