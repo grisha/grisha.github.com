@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-09-29T09:59:10-04:00</updated>
+  <updated>2017-10-11T14:56:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,317 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Blockchain in PostgreSQL?]]></title>
+    <link href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/"/>
+    <updated>2017-10-10T17:54:00-04:00</updated>
+    <id>http://grisha.org/blog/2017/10/10/postgre-as-a-full-node</id>
+    <content type="html"><![CDATA[<p>In theory, Postgres should be able to verify transactions and blocks,
+as well as do a lot of other things that are currently only done by
+full nodes. For this to be performant, it will most likely require an
+extension written in C, but I’m curious how far we can get with bare
+bones Postgres.</p>
+
+<p>More importantly, would that actually be useful? A node is really
+just a database, a very efficient one for a very specific purpose, but
+would leveraging the full power of Postgres be somehow more beneficial
+than just running Bitcoin-Qt or btcd, for example?</p>
+
+<p>To get to the bottom of this would be a lot of work, and potentially a
+lot of fun. It would also be a great blockchain learning exercise. (If
+you’re working on a PG extension for Bitcoin or more generally
+blockchain, please do let me know!)</p>
+
+<h3 id="random-thoughts">Random Thoughts</h3>
+
+<p>The structure of the Bitcoin blockchain is relatively simple.  We have
+<em>transactions</em>, which in turn have <em>inputs</em> and <em>outputs</em> and belong
+to <em>blocks</em>. Four tables, that’s it.</p>
+
+<p>I’ve been able to import the whole blockchain with some fairly basic
+Go code into my old Thinkpad running Linux overnight. The Go code
+needs some more polishing and is probably worthy of a separate write
+up, so I won’t get into it for now. Below is the schema I used. I
+intentionally left out referential integrity and indexes to keep it
+simple and avoid premature optimization.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">CREATE TABLE blocks (                     -- CBlockIndex (chain.h)
+</span><span class="line">   id           BIGINT NOT NULL
+</span><span class="line">  ,prev         BIGINT NOT NULL              -- .prev-&gt;nHeight  // genesis will have -1
+</span><span class="line">  ,height       BIGINT NOT NULL              -- .nHeight
+</span><span class="line">  ,hash         BYTEA NOT NULL            -- &lt;computed&gt;
+</span><span class="line">  ,version      BIGINT NOT NULL              -- .nVersion
+</span><span class="line">  ,prevhash     BYTEA NOT NULL            -- .pprev-&gt;GetBlockHash()
+</span><span class="line">  ,merkleroot   BYTEA NOT NULL            -- .hashMerkleRoot
+</span><span class="line">  ,time         BIGINT NOT NULL           -- .nTime
+</span><span class="line">  ,bits         BIGINT NOT NULL           -- .nBits
+</span><span class="line">  ,nonce        BIGINT NOT NULL           -- .nNonce
+</span><span class="line">);
+</span><span class="line">
+</span><span class="line">CREATE TABLE txs (
+</span><span class="line">   id            BIGINT NOT NULL
+</span><span class="line">  ,txid          BYTEA NOT NULL
+</span><span class="line">  ,version       BIGINT NOT NULL
+</span><span class="line">  ,locktime      BIGINT NOT NULL
+</span><span class="line">);
+</span><span class="line">
+</span><span class="line">CREATE TABLE txins (
+</span><span class="line">   id            BIGINT NOT NULL
+</span><span class="line">  ,tx_id         BIGINT NOT NULL
+</span><span class="line">  ,n             BIGINT NOT NULL
+</span><span class="line">  ,prevout_hash  BYTEA NOT NULL
+</span><span class="line">  ,prevout_n     BIGINT NOT NULL
+</span><span class="line">  ,scriptsig     BYTEA NOT NULL
+</span><span class="line">  ,sequence      BIGINT NOT NULL
+</span><span class="line">);
+</span><span class="line">
+</span><span class="line">CREATE TABLE txouts (
+</span><span class="line">   id           BIGINT NOT NULL
+</span><span class="line">  ,tx_id        BIGINT NOT NULL
+</span><span class="line">  ,n            BIGINT NOT NULL
+</span><span class="line">  ,value        BIGINT NOT NULL
+</span><span class="line">  ,scriptpubkey BYTEA NOT NULL
+</span><span class="line">);
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>There are a couple projects out there that keep the blockchain in a
+database, most notably
+<a href="https://github.com/bitcoin-abe/bitcoin-abe">Abe</a>. I haven’t studied
+the code very carefully, but my initial impression was that Abe tries
+to use standard SQL that would work across most big databases, which
+is philosophically different from my objective of going 100% Postgres
+and leveraging all that it can do for us.</p>
+
+<p>Bitcoin uses a lot of uint32’s. A Postgres INT is the correct size,
+but it is signed, which means we have to use the next larger type,
+BIGINT. It seems like it might be a waste to use 64 bits for a 32-bit
+value, but I couldn’t think of anything better than a BIGINT. For the
+binary stuff it seems like BYTEA is the best match.</p>
+
+<p>So what can we do with this? There is no easy way to create or verify an
+<a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">Elliptic Curve signature</a>
+in Postgres, but with the help of the <a href="https://www.postgresql.org/docs/current/static/pgcrypto.html">pgcrypto</a>
+extension, we should be able to at least generate the correct SHA256
+digest which is used in the signature. As a side note, EC signature math is actually
+remarkably simple and could probably be implemented
+as a PG function, but I’m too lazy. Here it is in a
+<a href="https://github.com/wobine/blackboard101/blob/master/EllipticCurvesPart5-TheMagic-SigningAndVerifying.py">few lines of Python</a>.</p>
+
+<p>The rules on how Bitcoin generates the hash (which is then signed) are
+slightly <a href="https://en.bitcoin.it/w/images/en/7/70/Bitcoin_OpCheckSig_InDetail.png">complicated</a>, and that’s an
+<a href="https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2014-November/006878.html">understatement</a>.</p>
+
+<p>For the purposes of this exercise, I’d just be happy with a value that
+matches, even if the code does not fully comply with the Bitcoin rules.</p>
+
+<p>One problem I ran into was that, because Bitcoin blockchain is
+little-endian except for where it isn’t, you often need a way to
+reverse bytes in a BYTEA. Strangely, Postgres does not provide a way
+to do that, unless I’m missing something. But thanks to
+<a href="https://stackoverflow.com/questions/11142235/convert-bigint-to-bytea-but-swap-the-byte-order">stackoverflow</a>,
+here is one way to do this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">FUNCTION</span> <span class="n">reverse</span><span class="p">(</span><span class="n">bytea</span><span class="p">)</span> <span class="k">RETURNS</span> <span class="n">bytea</span> <span class="k">AS</span> <span class="err">$</span><span class="n">reverse</span><span class="err">$</span>
+</span><span class="line">    <span class="k">SELECT</span> <span class="n">string_agg</span><span class="p">(</span><span class="n">byte</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">::</span><span class="n">bytea</span><span class="p">)</span>
+</span><span class="line">       <span class="k">FROM</span> <span class="p">(</span>
+</span><span class="line">          <span class="k">SELECT</span> <span class="n">substr</span><span class="p">(</span><span class="err">$</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="n">byte</span>
+</span><span class="line">             <span class="k">FROM</span> <span class="n">generate_series</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="err">$</span><span class="mi">1</span><span class="p">),</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="n">i</span><span class="p">)</span> <span class="n">s</span>
+</span><span class="line"><span class="err">$</span><span class="n">reverse</span><span class="err">$</span> <span class="k">LANGUAGE</span> <span class="k">sql</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We also have no way to render a Bitcoin
+<a href="https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer">varint</a>, but we can fake it
+with some substringing for the time being.</p>
+
+<p>Equipped with this, we can construct the following statement, sorry
+it’s a little long and I do not have the patience to explain it in
+writing.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+<span class="line-number">38</span>
+<span class="line-number">39</span>
+<span class="line-number">40</span>
+<span class="line-number">41</span>
+<span class="line-number">42</span>
+<span class="line-number">43</span>
+<span class="line-number">44</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">select</span> <span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx_ser</span> <span class="o">||</span> <span class="n">hashtype</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">shasha</span> <span class="k">from</span> <span class="p">(</span>
+</span><span class="line"> <span class="k">select</span> <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="k">version</span><span class="p">))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">4</span><span class="p">)</span> <span class="o">||</span>
+</span><span class="line">       <span class="n">vin</span> <span class="o">||</span>
+</span><span class="line">       <span class="n">vout</span> <span class="o">||</span>
+</span><span class="line">       <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="n">locktime</span><span class="p">))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">4</span><span class="p">)</span> <span class="k">AS</span> <span class="n">tx_ser</span><span class="p">,</span>
+</span><span class="line">       <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">4</span><span class="p">)</span> <span class="k">AS</span> <span class="n">hashtype</span>
+</span><span class="line">  <span class="k">from</span> <span class="n">txs</span> <span class="n">t</span>
+</span><span class="line">  <span class="k">join</span> <span class="n">txins</span> <span class="n">tt</span> <span class="k">ON</span> <span class="n">tt</span><span class="p">.</span><span class="n">tx_id</span> <span class="o">=</span> <span class="n">t</span><span class="p">.</span><span class="n">id</span>
+</span><span class="line">  <span class="k">join</span> <span class="k">lateral</span> <span class="p">(</span>
+</span><span class="line">    <span class="k">select</span> <span class="n">tx_id</span><span class="p">,</span> <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="k">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span> <span class="n">string_agg</span><span class="p">(</span><span class="n">txin_ser</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vin</span>
+</span><span class="line">    <span class="k">from</span> <span class="p">(</span>
+</span><span class="line">      <span class="k">select</span>
+</span><span class="line">         <span class="n">ti</span><span class="p">.</span><span class="n">tx_id</span><span class="p">,</span>
+</span><span class="line">         <span class="n">reverse</span><span class="p">(</span><span class="n">prevout_hash</span><span class="p">)</span> <span class="o">||</span>
+</span><span class="line">         <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="n">prevout_n</span><span class="p">))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">4</span><span class="p">)</span> <span class="o">||</span>
+</span><span class="line">         <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">ti</span><span class="p">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">tt</span><span class="p">.</span><span class="n">n</span> <span class="k">THEN</span> <span class="n">ptxout</span><span class="p">.</span><span class="n">scriptpubkey</span> <span class="k">ELSE</span> <span class="s1">&#39;&#39;</span> <span class="k">END</span><span class="p">)))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span>
+</span><span class="line">         <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">ti</span><span class="p">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">tt</span><span class="p">.</span><span class="n">n</span> <span class="k">THEN</span> <span class="n">ptxout</span><span class="p">.</span><span class="n">scriptpubkey</span> <span class="k">ELSE</span> <span class="s1">&#39;&#39;</span> <span class="k">END</span> <span class="o">||</span>
+</span><span class="line">         <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="n">sequence</span><span class="p">))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">txin_ser</span>
+</span><span class="line">      <span class="k">from</span> <span class="n">txins</span> <span class="n">ti</span>
+</span><span class="line">      <span class="k">join</span> <span class="n">txs</span> <span class="n">ptx</span> <span class="k">on</span> <span class="n">ti</span><span class="p">.</span><span class="n">prevout_hash</span> <span class="o">=</span> <span class="n">ptx</span><span class="p">.</span><span class="n">txid</span>
+</span><span class="line">      <span class="k">join</span> <span class="n">txouts</span> <span class="n">ptxout</span> <span class="k">on</span> <span class="n">ptxout</span><span class="p">.</span><span class="n">tx_id</span> <span class="o">=</span> <span class="n">ptx</span><span class="p">.</span><span class="n">id</span> <span class="k">and</span> <span class="n">ti</span><span class="p">.</span><span class="n">prevout_n</span> <span class="o">=</span> <span class="n">ptxout</span><span class="p">.</span><span class="n">n</span>
+</span><span class="line">      <span class="k">order</span> <span class="k">by</span> <span class="n">ti</span><span class="p">.</span><span class="n">n</span>
+</span><span class="line">     <span class="p">)</span> <span class="n">x</span>
+</span><span class="line">   <span class="k">group</span> <span class="k">by</span> <span class="n">tx_id</span>
+</span><span class="line">   <span class="p">)</span> <span class="n">vin</span> <span class="k">on</span> <span class="n">vin</span><span class="p">.</span><span class="n">tx_id</span> <span class="o">=</span> <span class="n">tt</span><span class="p">.</span><span class="n">tx_id</span>
+</span><span class="line">   <span class="k">join</span> <span class="p">(</span>
+</span><span class="line">      <span class="k">select</span> <span class="n">tx_id</span><span class="p">,</span> <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="k">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span> <span class="n">string_agg</span><span class="p">(</span><span class="n">txout_ser</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vout</span>
+</span><span class="line">      <span class="k">from</span> <span class="p">(</span>
+</span><span class="line">        <span class="k">select</span>
+</span><span class="line">          <span class="n">tx_id</span><span class="p">,</span>
+</span><span class="line">          <span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">||</span>
+</span><span class="line">          <span class="k">substring</span><span class="p">(</span><span class="n">reverse</span><span class="p">(</span><span class="n">int8send</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="n">scriptpubkey</span><span class="p">)))</span> <span class="k">from</span> <span class="mi">1</span> <span class="k">for</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span>
+</span><span class="line">          <span class="n">scriptpubkey</span> <span class="k">as</span> <span class="n">txout_ser</span>
+</span><span class="line">        <span class="k">from</span> <span class="n">txouts</span>
+</span><span class="line">        <span class="k">order</span> <span class="k">by</span> <span class="n">n</span>
+</span><span class="line">        <span class="p">)</span> <span class="n">x</span>
+</span><span class="line">      <span class="k">group</span> <span class="k">by</span> <span class="n">tx_id</span>
+</span><span class="line">    <span class="p">)</span> <span class="k">out</span> <span class="k">ON</span> <span class="k">out</span><span class="p">.</span><span class="n">tx_id</span> <span class="o">=</span> <span class="n">tt</span><span class="p">.</span><span class="n">tx_id</span>
+</span><span class="line"> <span class="k">where</span> <span class="n">tt</span><span class="p">.</span><span class="n">tx_id</span> <span class="o">=</span> <span class="mi">37898</span>
+</span><span class="line"><span class="p">)</span> <span class="n">x</span><span class="p">;</span>
+</span><span class="line"><span class="o">-</span><span class="p">[</span> <span class="n">RECORD</span> <span class="mi">1</span> <span class="p">]</span><span class="c1">--------------------------------------------------------------</span>
+</span><span class="line"><span class="n">shasha</span> <span class="o">|</span> <span class="err">\</span><span class="n">x23c3bf5091f3cdaf5996b0091c5f5bb6d82f3cdc2ce077018bb854f40274e512</span>
+</span><span class="line"><span class="o">-</span><span class="p">[</span> <span class="n">RECORD</span> <span class="mi">2</span> <span class="p">]</span><span class="c1">--------------------------------------------------------------</span>
+</span><span class="line"><span class="n">shasha</span> <span class="o">|</span> <span class="err">\</span><span class="n">xbcd4d519931da3ab98ca9745a0ceba79f05306cad4fa6ee9863819d1783a2e00</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The particular transaction we are looking at is
+<a href="https://blockchain.info/tx/2847ae66175042438532c2eccc5b39935fd1216453e62e2c3cb9c8e5020cc771">this</a>.
+It happens to have id of 37898 in my database. In case you’re
+wondering, for this example I used a subset of the blockchain which
+only has the first 182,000 blocks. On the full blockchain and without
+indexes, this statement would have taken an eternity to execute.</p>
+
+<p>What makes this particular transaction interesting is that it has two
+inputs, which is slightly trickier, because to spend it, there need to
+be two different signatures of the same transaction. This is because
+before signing, the input scriptSig needs to be replaced with the
+output’s scriptPubKey (the oversimplified version). This is reflected in the SQL
+in the use <code>LATERAL</code> and <code>CASE</code>.</p>
+
+<p>You do not have to take my word that the two hashes are correct, we
+can verify them fairly easily with a bit of help from the Python ecdsa
+library. Here is the code to verify the second hash. The key and the
+signature are in the transaction itself.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">import</span> <span class="nn">ecdsa</span>
+</span><span class="line"><span class="kn">import</span> <span class="nn">codecs</span>
+</span><span class="line"><span class="n">key</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;04de99a4267263f495e07721f96241359b48b9f522973b9d333ed8e296357c595130535ca387601955f1406e335cf658bb6a12d62c177e9511498fefcafead1c0e&quot;</span><span class="p">,</span>
+</span><span class="line">    <span class="s">&quot;hex&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">der</span> <span class="o">=</span> <span class="s">&#39;0V0</span><span class="se">\x10\x06\x07</span><span class="s">*</span><span class="se">\x86</span><span class="s">H</span><span class="se">\xce</span><span class="s">=</span><span class="se">\x02\x01\x06\x05</span><span class="s">+</span><span class="se">\x81\x04\x00\n\x03</span><span class="s">B</span><span class="se">\x00</span><span class="s">&#39;</span> <span class="o">+</span> <span class="n">key</span>
+</span><span class="line"><span class="n">digest</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&quot;bcd4d519931da3ab98ca9745a0ceba79f05306cad4fa6ee9863819d1783a2e00&quot;</span><span class="p">,</span> <span class="s">&quot;hex&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">signature</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;30460221008e95fd3536cfd437c49e4c1dfaeeb2ece0e521420c89f1487ca6eff94053485c022100ef3a8cdc9b0a6d6d403bf7758c6b617380db6936de2bbcd3b556ec5f45c03b54&quot;</span><span class="p">,</span>
+</span><span class="line">    <span class="s">&quot;hex&quot;</span><span class="p">)</span>
+</span><span class="line"><span class="n">vk</span> <span class="o">=</span> <span class="n">ecdsa</span><span class="o">.</span><span class="n">VerifyingKey</span><span class="o">.</span><span class="n">from_der</span><span class="p">(</span><span class="n">der</span><span class="p">)</span>
+</span><span class="line"><span class="k">print</span> <span class="n">vk</span><span class="o">.</span><span class="n">verify_digest</span><span class="p">(</span><span class="n">signature</span><span class="p">,</span> <span class="n">digest</span><span class="p">,</span> <span class="n">sigdecode</span><span class="o">=</span><span class="n">ecdsa</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">sigdecode_der</span><span class="p">)</span>
+</span><span class="line"><span class="c"># True</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I hope this was fun! Now I wonder how hard it would be to make an
+extension to provide all the functionality required by Bitcoin….</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Electricity cost of 1 Bitcoin (Sep 2017)]]></title>
@@ -4211,153 +4522,6 @@ need to augment (stub) that function for testing or some other
 reason. As a practical matter, it seems like (contrary to how it’s
 done in the OO world) it is better to always start out with <code>quack(d)</code>
 rather than <code>d.quack()</code>.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[How Data Points Build Up]]></title>
-    <link href="http://grisha.org/blog/2016/08/04/data-points/"/>
-    <updated>2016-08-04T10:35:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/08/04/data-points</id>
-    <content type="html"><![CDATA[<p>This silly SVG animation (animation not my strong suit) demonstrates
-what happens when multiple Tgres data points arrive within the same
-step (i.e. smallest time interval for this series, also known as PDP,
-primary data point).</p>
-
-<object data="/images/data_point.svg" type="image/svg+xml">
-  You browser does not support SVG objects?
-</object>
-
-<h3 id="explanation">Explanation</h3>
-
-<p>Let’s say we have a series with a step of 100 seconds. We receive the
-following data points, all within the 100 second interval of a
-single step:</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>Value</th>
-      <th>Recorded</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>25s</td>
-      <td>2.0</td>
-      <td>0.5</td>
-    </tr>
-    <tr>
-      <td>75s</td>
-      <td>3.0</td>
-      <td>2.0</td>
-    </tr>
-    <tr>
-      <td>100s</td>
-      <td>1.0</td>
-      <td>2.25</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <td> </td>
-      <td>Final:</td>
-      <td>2.25</td>
-    </tr>
-  </tbody>
-</table>
-
-<p />
-<p>Tgres will store 2.25 as the final value for this step. So how
-does 1, 2 and 3 add up to <em>2.25</em>?</p>
-
-<p>One way to think about it is that the incomplete step is an empty
-swimming pool as wide as 1 step, into which we dump blocks of
-water. The first data point dumps a 2.0 × 0.25 block of water, which
-fills the pool to 0.5. The second data point dumps a 3.0 × 0.50 block,
-which raises the water another 1.5 to 2.0. The last data point dumps a
-1.0 × 0.25 block which raises it to the final value of 2.25.  Compare
-this with Graphite which would simply discard the first two data
-points and we are left with 1.0 as the final value.</p>
-
-<p>Why is it done this way? Because this is how rates add up. If this was
-speed of a car in meters per second (more like a bycicle, I guess),
-its weighted average speed for the duration of this step of 2.25
-meters per second would mean that in the 100s it would have traveled
-exactly 225 meters.</p>
-
-<h3 id="nans-or-unknowns">NaNs or “Unknowns”</h3>
-
-<p>What if instead of the first data point, the first 25s were “unknown”
-(recorded as NaN)? This would happen, for example, if the series
-heartbeat (maximum duration without any data) was exceeded. Even
-though the data point has a value of 2.0, it gets recorded as NaN.</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>Value</th>
-      <th>Recorded</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>25s</td>
-      <td>2.0</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <td>75s</td>
-      <td>3.0</td>
-      <td>2.0</td>
-    </tr>
-    <tr>
-      <td>100s</td>
-      <td>1.0</td>
-      <td>2.33</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <td> </td>
-      <td>Final:</td>
-      <td>2.33</td>
-    </tr>
-  </tbody>
-</table>
-
-<p />
-
-<p>But wait a second… 0.50 × 3 + 0.25 × 1 = 1.75 ? Where did
-the value of 2.33 come from?</p>
-
-<p>The reason for this is that NaN ought not be influencing the
-value. The above calculation would only be correct if we assumed that NaN is
-synonymous with zero, but that would be a false assumption, as NaN
-means “we do not know”.</p>
-
-<p>Therefore, we must only consider the known part of the data point,
-which is 75s. We can think of it that the data point (the “swimming
-pool”) just got smaller.  Thus the correct calculation for the 3.0
-point would be 3.0 × 50 ÷ 75 = 2.0 and for the 1.0 point
-2.0 + 1.0 × 25 ÷ 75 = 2.33.</p>
-
-<p>Here it is in SVG:</p>
-
-<object data="/images/data_point_unk.svg" type="image/svg+xml">
-  You browser does not support SVG objects?
-</object>
-
-<p>Also note how the value of the data point which was recorded as NaN
-(2.0 in our example) is essentially irrelevant. This is because any
-calculation with a NaN always results in a NaN. The only thing we know
-about this data point is that it was not NaN and that it marked the
-end of period recorded as NaN. The next data point after this (3.0 in
-our example) is not affected by the NaN, however, this is because it
-in effect starts its own data point afresh, not considering anything
-in the past.</p>
 ]]></content>
   </entry>
   

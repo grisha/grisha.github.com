@@ -9,9 +9,10 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Note: there is an update to this post. TL;DR On a 8 CPU / 16 GB EC2 instance,
-Tgres can process 150,000 data
-points per second across 300,000 series &hellip;">
+  <meta name="description" content="To follow up on the previous post,
+after a bunch
+of tweaking, here is Tgres (commit) receiving over 150,000 data points per
+second across 500,000 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +97,56 @@ points per second across 300,000 series &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2017/02/28/tgres-load-testing-follow-up/">Tgres Load Testing Follow Up</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-02-28T21:40:00-05:00" pubdate data-updated="true">Feb 28<span>th</span>, 2017</time>
+        
+         | <a href="/blog/2017/02/28/tgres-load-testing-follow-up/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>To follow up on the <a href="/blog/2017/02/23/can-tgres-outperform-graphite/">previous post</a>,
+after a bunch
+of tweaking, here is Tgres (<a href="https://github.com/tgres/tgres/commit/90924e4afa4ac8bef61caf46c3439794983660ec">commit</a>) receiving over 150,000 data points per
+second across 500,000 time series without any signs of the queue size
+or any other resource blowing up.</p>
+
+<p>This is both Tgres and Postgres running on the same i2.2xlarge EC2 instance (8 cores, 64GB, SSD).</p>
+
+<p><img src="/images/tgres_aws1_150k.png" /></p>
+
+<p>At this point I think there’s been enough load testing and optimization, and I am
+going to get back to crossing the t’s and dotting the i’s so that we can release
+the first version of Tgres.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1991,182 +2042,6 @@ rather than <code>d.quack()</code>.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/08/04/data-points/">How Data Points Build Up</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-08-04T10:35:00-04:00" pubdate data-updated="true">Aug 4<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/08/04/data-points/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>This silly SVG animation (animation not my strong suit) demonstrates
-what happens when multiple Tgres data points arrive within the same
-step (i.e. smallest time interval for this series, also known as PDP,
-primary data point).</p>
-
-<object data="/images/data_point.svg" type="image/svg+xml">
-  You browser does not support SVG objects?
-</object>
-
-<h3 id="explanation">Explanation</h3>
-
-<p>Let’s say we have a series with a step of 100 seconds. We receive the
-following data points, all within the 100 second interval of a
-single step:</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>Value</th>
-      <th>Recorded</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>25s</td>
-      <td>2.0</td>
-      <td>0.5</td>
-    </tr>
-    <tr>
-      <td>75s</td>
-      <td>3.0</td>
-      <td>2.0</td>
-    </tr>
-    <tr>
-      <td>100s</td>
-      <td>1.0</td>
-      <td>2.25</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <td> </td>
-      <td>Final:</td>
-      <td>2.25</td>
-    </tr>
-  </tbody>
-</table>
-
-<p />
-<p>Tgres will store 2.25 as the final value for this step. So how
-does 1, 2 and 3 add up to <em>2.25</em>?</p>
-
-<p>One way to think about it is that the incomplete step is an empty
-swimming pool as wide as 1 step, into which we dump blocks of
-water. The first data point dumps a 2.0 × 0.25 block of water, which
-fills the pool to 0.5. The second data point dumps a 3.0 × 0.50 block,
-which raises the water another 1.5 to 2.0. The last data point dumps a
-1.0 × 0.25 block which raises it to the final value of 2.25.  Compare
-this with Graphite which would simply discard the first two data
-points and we are left with 1.0 as the final value.</p>
-
-<p>Why is it done this way? Because this is how rates add up. If this was
-speed of a car in meters per second (more like a bycicle, I guess),
-its weighted average speed for the duration of this step of 2.25
-meters per second would mean that in the 100s it would have traveled
-exactly 225 meters.</p>
-
-<h3 id="nans-or-unknowns">NaNs or “Unknowns”</h3>
-
-<p>What if instead of the first data point, the first 25s were “unknown”
-(recorded as NaN)? This would happen, for example, if the series
-heartbeat (maximum duration without any data) was exceeded. Even
-though the data point has a value of 2.0, it gets recorded as NaN.</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Time</th>
-      <th>Value</th>
-      <th>Recorded</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>25s</td>
-      <td>2.0</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <td>75s</td>
-      <td>3.0</td>
-      <td>2.0</td>
-    </tr>
-    <tr>
-      <td>100s</td>
-      <td>1.0</td>
-      <td>2.33</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <td> </td>
-      <td>Final:</td>
-      <td>2.33</td>
-    </tr>
-  </tbody>
-</table>
-
-<p />
-
-<p>But wait a second… 0.50 × 3 + 0.25 × 1 = 1.75 ? Where did
-the value of 2.33 come from?</p>
-
-<p>The reason for this is that NaN ought not be influencing the
-value. The above calculation would only be correct if we assumed that NaN is
-synonymous with zero, but that would be a false assumption, as NaN
-means “we do not know”.</p>
-
-<p>Therefore, we must only consider the known part of the data point,
-which is 75s. We can think of it that the data point (the “swimming
-pool”) just got smaller.  Thus the correct calculation for the 3.0
-point would be 3.0 × 50 ÷ 75 = 2.0 and for the 1.0 point
-2.0 + 1.0 × 25 ÷ 75 = 2.33.</p>
-
-<p>Here it is in SVG:</p>
-
-<object data="/images/data_point_unk.svg" type="image/svg+xml">
-  You browser does not support SVG objects?
-</object>
-
-<p>Also note how the value of the data point which was recorded as NaN
-(2.0 in our example) is essentially irrelevant. This is because any
-calculation with a NaN always results in a NaN. The only thing we know
-about this data point is that it was not NaN and that it marked the
-end of period recorded as NaN. The next data point after this (3.0 in
-our example) is not affected by the NaN, however, this is because it
-in effect starts its own data point afresh, not considering anything
-in the past.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; Older</a>
@@ -2231,6 +2106,10 @@ google_ad_type = "image";
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/10/10/postgre-as-a-full-node/">Blockchain in PostgreSQL?</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
       </li>
     
@@ -2244,10 +2123,6 @@ google_ad_type = "image";
     
       <li class="post">
         <a href="/blog/2017/07/04/tgres-status-july-2017/">Tgres Status - July 4th 2017</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/04/27/simplistic-go-web-app/">Building a Go Web App in 2017</a>
       </li>
     
   </ul>
