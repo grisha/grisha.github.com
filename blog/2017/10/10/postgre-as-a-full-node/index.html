@@ -386,11 +386,11 @@ only has the first 182,000 blocks. On the full blockchain and without
 indexes, this statement would have taken an eternity to execute.</p>
 
 <p>What makes this particular transaction interesting is that it has two
-inputs, which is slightly trickier, because to spend it, there need to
+inputs, which is slightly trickier, because to spend them, there need to
 be two different signatures of the same transaction. This is because
 before signing, the input scriptSig needs to be replaced with the
 output’s scriptPubKey (the oversimplified version). This is reflected in the SQL
-in the use <code>LATERAL</code> and <code>CASE</code>.</p>
+in the use of <code>LATERAL</code> and <code>CASE</code>.</p>
 
 <p>You do not have to take my word that the two hashes are correct, we
 can verify them fairly easily with a bit of help from the Python ecdsa
