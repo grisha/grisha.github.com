@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-10-11T16:35:59-04:00</updated>
+  <updated>2017-10-11T18:07:00-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Blockchain in PostgreSQL?]]></title>
+    <title type="html"><![CDATA[Bitcoin Transaction Hash in Pure PostgreSQL]]></title>
     <link href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/"/>
     <updated>2017-10-10T17:54:00-04:00</updated>
     <id>http://grisha.org/blog/2017/10/10/postgre-as-a-full-node</id>
