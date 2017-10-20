@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-10-19T21:22:58-04:00</updated>
+  <updated>2017-10-20T17:41:30-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,325 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Blockchain in PostgreSQL Part 2]]></title>
+    <link href="http://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2/"/>
+    <updated>2017-10-20T08:05:00-04:00</updated>
+    <id>http://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2</id>
+    <content type="html"><![CDATA[<p>In a <a href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I
+described a simplistic schema to store the Bitcoin blockchain in
+PostgreSQL. In this post I’m investigating pushing the envelope
+with a bit of C programming.</p>
+
+<h3 id="the-missing-functionality">The Missing Functionality</h3>
+
+<p>Postgres cannot do certain things required to fully handle
+transactions. The missing functionality is (at least):</p>
+
+<ol>
+  <li>
+    <p>Support for <a href="https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer">Variable Length Integer</a>
+used in the blockchain and more generally the binary encoding of a transaction or its components.</p>
+  </li>
+  <li>
+    <p><a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">Elliptic Curve Signature</a>. Even
+though postgres integrates with OpenSSL, which has that functionality, there is no way to call
+the EC functions.</p>
+  </li>
+  <li>
+    <p>Ability to parse and evaluate Bitcoin <a href="https://en.bitcoin.it/wiki/Script">script</a>. This is a biggie,
+as transaction verification requires it, and it is one of the more complex and bug-prone
+aspects of Bitcoin.</p>
+  </li>
+</ol>
+
+<p>It is also important that all of the above be performant. Even though
+varints, script and even elliptic curve could be implemented in plain
+<a href="https://www.postgresql.org/docs/current/static/plpgsql.html">PL/pgSQL</a>,
+it probably wouldn’t be fast enough for practical use. Which leaves us with the only possible option:
+a <a href="https://www.postgresql.org/docs/current/static/xfunc-c.html">C extension</a>.</p>
+
+<h3 id="avoid-reinventing-the-wheel">Avoid Reinventing the Wheel</h3>
+
+<p>Anything is possible in C, but can we avoid having to reimplement it
+from scratch? Are there libraries that could be leveraged?</p>
+
+<p>As it is now, the Bitcoin protocol is primarily specified by its
+source code, and the source of all truth is the <a href="https://github.com/bitcoin/bitcoin">Bitcoin Core</a>.
+It is <a href="https://www.postgresql.org/docs/current/static/xfunc-c.html#extend-cpp">possible</a> to use C++ in PG
+extensions, which means at least in theory the Bitcoin Core code could be leveraged somehow.</p>
+
+<p>My initial conclusion is that this would be a daunting task. Bitcoin
+Core code requires at least C++11, as well as Boost. It also seems
+that the core code assumes its own specific storage and caching mechanism and
+isn’t easily abstracted away from it. Not to mention that using C++
+libs from Postgres has complexities of its own.</p>
+
+<p>I looked around for a plain C implementation of Bitcoin and found a few
+rather incomplete ones. The most functional one seems to be Jeff Garzik’s
+<a href="https://github.com/jgarzik/picocoin">picocoin</a>. With the looming
+<a href="https://bitcointechtalk.com/how-segwit2x-replay-protection-works-1a5e41767103">Segwit2x fork</a>
+and all the controversy surrounding it this may seem like an odd
+choice of a library, but for the purpose of what we are doing, I think
+it’s fine. It also seems like Picocoin isn’t actively developed,
+which is not great. I would very much appreciate opinions/advice on this, if
+you know of a better C lib, do leave a comment.</p>
+
+<h3 id="the-c-extension">The C extension</h3>
+
+<p>Thanks to this excellent <a href="http://big-elephants.com/2015-10/writing-postgres-extensions-part-i/">series of posts</a>
+and Postgres’ superb documentation, I was able to put together a proof-of-concept extension,
+available at <a href="https://github.com/blkchain/pg_blkchain">https://github.com/blkchain/pg_blkchain</a>.
+While the C internals of it would be subject for a whole separate post (or
+few), suffice it to say that it is fairly rudimentary and all the
+heavy lifting is delegated to the picocoin lib.</p>
+
+<p>As of now, the extension provides a handful of functions:</p>
+
+<ul>
+  <li>
+    <p><code>get_vin(tx bytea)</code> This is a <a href="https://www.postgresql.org/docs/current/static/functions-srf.html">Set Returning Function</a> (SRF),
+which returns the transaction inputs as rows.</p>
+  </li>
+  <li>
+    <p><code>get_vout(tx bytea)</code> Similarly to get_vin(), an SRF that returns outputs.</p>
+  </li>
+  <li>
+    <p><code>parse_script(script bytea)</code> An SRF which parses a Bitcoin script and returns (more or less) human-readable rows.</p>
+  </li>
+  <li>
+    <p><code>verify_sig(tx bytea, previous_tx bytea, n int)</code> Verifies a specific input of a transaction (denoted by <code>n</code>),
+given a the previous transaction to which the input refers. Returns a boolean.</p>
+  </li>
+</ul>
+
+<p>This is hardly enough to support all of what would be required by a
+full node, but this is sufficient to do some interesting stuff.</p>
+
+<p>Note that the function names and signatures are not final, this is a
+work in progress and I expect this all to evolve and change. For
+example, initially I implemented get_vout() which returned an array,
+but in the end an SRF seemed like a more flexible approach.</p>
+
+<h3 id="the-schema">The Schema</h3>
+
+<p>In the last post I used separate tables for the transaction, inputs
+and outputs. With the ability to serialize/deserialize transactions at
+our disposal, there are more interesting options.</p>
+
+<p>The most compact way to store transactions is to just use the
+serialized binary form in a binary (bytea) column. We can get at any
+particulars of it by using our functions.</p>
+
+<p>The examples below are based on a single table created as</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rtxs</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">id</span>            <span class="nb">BIGINT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">   <span class="n">tx</span>            <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line"><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I imported the first 100K blocks or so into this table, how it was
+done I might describe in a separate post.</p>
+
+<p>I’ll introduce the extension with my favorite example: the decoding of the
+signature of the genesis block <a href="https://blockchain.info/tx/4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b">input</a>:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">SELECT</span> <span class="p">(</span><span class="n">sig</span><span class="p">).</span><span class="n">op_sym</span><span class="p">,</span> <span class="n">encode</span><span class="p">((</span><span class="n">sig</span><span class="p">).</span><span class="k">data</span><span class="p">,</span> <span class="s1">&#39;escape&#39;</span><span class="p">)</span>
+</span><span class="line">  <span class="k">FROM</span> <span class="p">(</span>
+</span><span class="line">    <span class="k">SELECT</span> <span class="n">parse_script</span><span class="p">((</span><span class="n">get_vin</span><span class="p">(</span><span class="n">tx</span><span class="p">)).</span><span class="n">scriptSig</span><span class="p">)</span> <span class="k">AS</span> <span class="n">sig</span> <span class="k">FROM</span> <span class="n">rtxs</span>
+</span><span class="line">    <span class="k">WHERE</span> <span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="o">=</span> <span class="n">E</span><span class="s1">&#39;\\x3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a&#39;</span>
+</span><span class="line">  <span class="p">)</span> <span class="n">x</span><span class="p">;</span>
+</span><span class="line">   <span class="n">op_sym</span>    <span class="o">|</span>                                <span class="n">encode</span>
+</span><span class="line"><span class="c1">-------------+-----------------------------------------------------------------------</span>
+</span><span class="line"> <span class="n">OP_PUSHDATA</span> <span class="o">|</span> <span class="err">\</span><span class="mi">377</span><span class="err">\</span><span class="mi">377</span><span class="err">\</span><span class="mi">000</span><span class="err">\</span><span class="n">x1D</span>
+</span><span class="line"> <span class="n">OP_PUSHDATA</span> <span class="o">|</span> <span class="err">\</span><span class="n">x04</span>
+</span><span class="line"> <span class="n">OP_PUSHDATA</span> <span class="o">|</span> <span class="n">The</span> <span class="n">Times</span> <span class="mi">03</span><span class="o">/</span><span class="n">Jan</span><span class="o">/</span><span class="mi">2009</span> <span class="n">Chancellor</span> <span class="k">on</span> <span class="n">brink</span> <span class="k">of</span> <span class="k">second</span> <span class="n">bailout</span> <span class="k">for</span> <span class="n">banks</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="expression-indexes">Expression Indexes</h3>
+
+<p>One neat feature of PostgreSQL is ability to
+<a href="https://www.postgresql.org/docs/current/static/indexes-expressional.html">index expressions</a>.
+For example, we know that we can compute a transaction hash with</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">select</span> <span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="k">from</span> <span class="n">rtxs</span> <span class="k">limit</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class="line">                               <span class="n">digest</span>
+</span><span class="line"><span class="c1">--------------------------------------------------------------------</span>
+</span><span class="line"> <span class="err">\</span><span class="n">x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Note that this is <a href="https://en.wikipedia.org/wiki/Endianness">little-endian</a>,
+while conventionally transaction id’s are represented with bytes
+reversed (big-endian): <a href="https://blockchain.info/tx/fd6445c8eb3c4ac147ad06d314a9efe153e9752bab5f994483309e024ab0296e">fd6445c8eb3c4ac147ad06d314a9efe153e9752bab5f994483309e024ab0296e</a></p>
+
+<p>Now if we want to be able to look up transactions quickly by the
+transaction hash, as is the convention, we can create an expression
+index like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">INDEX</span> <span class="k">ON</span> <span class="n">rtxs</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">));</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>When we do this, PostgreSQL scans the entire table, computes the hash
+and stores it in the index. An index, after all, is just another table
+(of sorts), and there is nothing wrong with indexes containing values
+that do not exist in the table to which the index refers.</p>
+
+<p>Once we do this, any time the expression <code>digest(digest(tx, 'sha256'), 'sha256')</code>
+is used in reference to the <code>rtxs</code> table, PostgreSQL will not execute
+the <code>digest()</code> function, but would instead use the value stored in
+the index.</p>
+
+<p>We can attest to this with</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">explain</span> <span class="k">analyze</span> <span class="k">SELECT</span> <span class="n">id</span>
+</span><span class="line"><span class="k">FROM</span> <span class="n">rtxs</span>
+</span><span class="line"><span class="k">WHERE</span> <span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="o">=</span> <span class="n">E</span><span class="s1">&#39;\\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span><span class="p">;</span>
+</span><span class="line">                                                                    <span class="n">QUERY</span> <span class="n">PLAN</span>
+</span><span class="line"><span class="c1">--------------------------------------------------------------------------------------------------------------------------------------------------</span>
+</span><span class="line"> <span class="k">Index</span> <span class="n">Scan</span> <span class="k">using</span> <span class="n">rtxs_digest_idx</span> <span class="k">on</span> <span class="n">rtxs</span>  <span class="p">(</span><span class="n">cost</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">42</span><span class="p">..</span><span class="mi">8</span><span class="p">.</span><span class="mi">44</span> <span class="k">rows</span><span class="o">=</span><span class="mi">1</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="p">(</span><span class="n">actual</span> <span class="n">time</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">020</span><span class="p">..</span><span class="mi">0</span><span class="p">.</span><span class="mi">020</span> <span class="k">rows</span><span class="o">=</span><span class="mi">1</span> <span class="n">loops</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span class="line">   <span class="k">Index</span> <span class="n">Cond</span><span class="p">:</span> <span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">::</span><span class="nb">text</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">::</span><span class="nb">text</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span><span class="p">::</span><span class="n">bytea</span><span class="p">)</span>
+</span><span class="line"> <span class="n">Planning</span> <span class="n">time</span><span class="p">:</span> <span class="mi">0</span><span class="p">.</span><span class="mi">077</span> <span class="n">ms</span>
+</span><span class="line"> <span class="n">Execution</span> <span class="n">time</span><span class="p">:</span> <span class="mi">0</span><span class="p">.</span><span class="mi">037</span> <span class="n">ms</span>
+</span><span class="line"><span class="p">(</span><span class="mi">4</span> <span class="k">rows</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This is pretty clever - even though we do not have an actual
+“transaction hash” column in our table, we do have the value and an
+index in the database.</p>
+
+<h3 id="views">Views</h3>
+
+<p>But what if we wanted to have a better readable representation of
+transactions, for example something that includes the transaction
+hash?</p>
+
+<p>The best way to do this is via a view:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">tx_view</span> <span class="k">AS</span>
+</span><span class="line">  <span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">)</span> <span class="k">AS</span> <span class="n">txid</span><span class="p">,</span> <span class="n">tx</span>
+</span><span class="line">    <span class="k">FROM</span> <span class="n">rtxs</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Postgres is clever enough to use the above index for the view:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">explain</span> <span class="k">analyze</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">tx_view</span>
+</span><span class="line"> <span class="k">WHERE</span> <span class="n">txid</span> <span class="o">=</span> <span class="n">E</span><span class="s1">&#39;\\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span><span class="p">;</span>
+</span><span class="line"><span class="c1">--------------------------------------------------------------------------------------------------------------------------------------------------</span>
+</span><span class="line"> <span class="k">Index</span> <span class="n">Scan</span> <span class="k">using</span> <span class="n">rtxs_digest_idx</span> <span class="k">on</span> <span class="n">rtxs</span>  <span class="p">(</span><span class="n">cost</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">42</span><span class="p">..</span><span class="mi">8</span><span class="p">.</span><span class="mi">45</span> <span class="k">rows</span><span class="o">=</span><span class="mi">1</span> <span class="n">width</span><span class="o">=</span><span class="mi">318</span><span class="p">)</span> <span class="p">(</span><span class="n">actual</span> <span class="n">time</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">045</span><span class="p">..</span><span class="mi">0</span><span class="p">.</span><span class="mi">046</span> <span class="k">rows</span><span class="o">=</span><span class="mi">1</span> <span class="n">loops</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span class="line">   <span class="k">Index</span> <span class="n">Cond</span><span class="p">:</span> <span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">digest</span><span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="s1">&#39;sha256&#39;</span><span class="p">::</span><span class="nb">text</span><span class="p">),</span> <span class="s1">&#39;sha256&#39;</span><span class="p">::</span><span class="nb">text</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span><span class="p">::</span><span class="n">bytea</span><span class="p">)</span>
+</span><span class="line"> <span class="n">Planning</span> <span class="n">time</span><span class="p">:</span> <span class="mi">0</span><span class="p">.</span><span class="mi">104</span> <span class="n">ms</span>
+</span><span class="line"> <span class="n">Execution</span> <span class="n">time</span><span class="p">:</span> <span class="mi">0</span><span class="p">.</span><span class="mi">067</span> <span class="n">ms</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>A similar technique can applied to inputs and outputs, for example for
+outputs we could create a view like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">rtxouts</span> <span class="k">AS</span>
+</span><span class="line"> <span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="p">(</span><span class="n">vout</span><span class="p">).</span><span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">vout</span><span class="p">).</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">vout</span><span class="p">).</span><span class="n">scriptpubkey</span>
+</span><span class="line">  <span class="k">FROM</span> <span class="p">(</span> <span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="n">get_vout</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span> <span class="n">vout</span> <span class="k">FROM</span> <span class="n">rtxs</span><span class="p">)</span> <span class="n">x</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The outputs are now easily accessibly as:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">#</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">rtxouts</span> <span class="k">limit</span> <span class="mi">3</span><span class="p">;</span>
+</span><span class="line"> <span class="n">id</span> <span class="o">|</span> <span class="n">n</span> <span class="o">|</span>   <span class="n">value</span>    <span class="o">|</span>                                                               <span class="n">scriptpubkey</span>
+</span><span class="line"><span class="c1">----+---+------------+------------------------------------------------------------------------------------------------------------------------------------------</span>
+</span><span class="line">  <span class="mi">1</span> <span class="o">|</span> <span class="mi">0</span> <span class="o">|</span> <span class="mi">5000000000</span> <span class="o">|</span> <span class="err">\</span><span class="n">x4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac</span>
+</span><span class="line">  <span class="mi">2</span> <span class="o">|</span> <span class="mi">0</span> <span class="o">|</span> <span class="mi">5000000000</span> <span class="o">|</span> <span class="err">\</span><span class="n">x410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac</span>
+</span><span class="line">  <span class="mi">3</span> <span class="o">|</span> <span class="mi">0</span> <span class="o">|</span> <span class="mi">5000000000</span> <span class="o">|</span> <span class="err">\</span><span class="n">x41047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77ac</span>
+</span><span class="line"><span class="p">(</span><span class="mi">3</span> <span class="k">rows</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Want to know the most popular opcode used in scripts?</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="c1">--Note: this is obviously not the full blockchain</span>
+</span><span class="line">
+</span><span class="line"><span class="k">SELECT</span> <span class="p">(</span><span class="n">parse_script</span><span class="p">(</span><span class="n">scriptpubkey</span><span class="p">)).</span><span class="n">op_sym</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class="line">  <span class="k">FROM</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">scriptpubkey</span> <span class="k">FROM</span> <span class="n">rtxouts</span><span class="p">)</span> <span class="n">x</span>
+</span><span class="line"><span class="k">GROUP</span> <span class="k">BY</span> <span class="n">op_sym</span>
+</span><span class="line"><span class="k">ORDER</span> <span class="k">BY</span> <span class="k">count</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class="line">  <span class="n">op_sym</span>     <span class="o">|</span>  <span class="k">count</span>
+</span><span class="line"><span class="c1">----------------+---------</span>
+</span><span class="line"> <span class="n">OP_NOP</span>         <span class="o">|</span>       <span class="mi">5</span>
+</span><span class="line"> <span class="n">OP_DUP</span>         <span class="o">|</span> <span class="mi">1007586</span>
+</span><span class="line"> <span class="n">OP_EQUALVERIFY</span> <span class="o">|</span> <span class="mi">1007586</span>
+</span><span class="line"> <span class="n">OP_HASH160</span>     <span class="o">|</span> <span class="mi">1007586</span>
+</span><span class="line"> <span class="n">OP_PUSHDATA</span>    <span class="o">|</span> <span class="mi">1139431</span>
+</span><span class="line"> <span class="n">OP_CHECKSIG</span>    <span class="o">|</span> <span class="mi">1151434</span>
+</span><span class="line"><span class="p">(</span><span class="mi">6</span> <span class="k">rows</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Anyway, that’s it for now. Please comment your questions/comments
+below, or via twitter, I am very curious on what people think on this
+approach!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Bitcoin Transaction Hash in Pure PostgreSQL]]></title>
@@ -4386,147 +4705,6 @@ possibly caching a little more points in memory than expected.</p>
 
 <p>I will probably get back to some more load testing in a while, but for
 now this is it.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Golang receiver vs function argument]]></title>
-    <link href="http://grisha.org/blog/2016/09/22/golang-receiver-vs-function/"/>
-    <updated>2016-09-22T08:15:00-04:00</updated>
-    <id>http://grisha.org/blog/2016/09/22/golang-receiver-vs-function</id>
-    <content type="html"><![CDATA[<p>What is the difference between a Go <em>receiver</em> (as in “method receiver”)
-and a function <em>argument</em>? Consider these two bits of code:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// receiver</span>
-</span><span class="line">     <span class="c1">// do something</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>versus</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">quack</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// funciton argument</span>
-</span><span class="line">    <span class="c1">// do something</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The “do something” part above would work exactly the same regardless of
-how you declare the function. Which begs the question, which should
-you use?</p>
-
-<p>In the object-oriented world we were used to objects doing things, and
-in that context <code>d.quack()</code> may seem more intuitive or familiar than
-<code>quack(d)</code> because it “reads better”. After all, one could argue that
-the former is a duck quacking, but the latter reads like you’re
-quacking a duck, and what does that even mean? I have learned that you
-should not think this way in the Go universe, and here is why.</p>
-
-<p>First, what is the essential difference? It is that at the time of the
-call, the receiver is an <em>interface</em> and the function to be called is
-determined <em>dynamically</em>. If you are not using interfaces, then this
-doesn’t matter whatsoever and the only benefit you are getting from
-using a method is syntactic sweetness.</p>
-
-<p>But what if you need to write a test where you want to stub out
-<code>quack()</code>. If your code looks like this, then it is not possible,
-because methods are attached to their types inflexibly, you cannot
-change them, and there is no such thing as a “method variable”:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">     <span class="c1">// do something</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">// the function we are testing:</span>
-</span><span class="line"><span class="kd">func</span> <span class="nx">testme</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">d</span><span class="p">.</span><span class="nx">quack</span><span class="p">()</span> <span class="c1">// cannot be stubbed</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>However, if you used a function argument, it would be easy:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">var</span> <span class="nx">quack</span> <span class="p">=</span> <span class="kd">func</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">     <span class="c1">// do something</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">// the function we are testing:</span>
-</span><span class="line"><span class="kd">func</span> <span class="nx">foo</span><span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">quack</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now you can assign another function to quack at test time, e.g. <code>quack = func(d *duck) { // do something else }</code>  and all is
-well.</p>
-
-<p>Alternatively, you can use an interface:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">type</span> <span class="nx">quacker</span> <span class="kd">interface</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">quack</span><span class="p">()</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">type</span> <span class="nx">duck</span> <span class="kd">struct</span><span class="p">{}</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">var</span> <span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">duck</span><span class="p">)</span> <span class="nx">quack</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// satisfies quacker</span>
-</span><span class="line">     <span class="c1">// do something</span>
-</span><span class="line"><span class="p">}</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">// the function we are testing:</span>
-</span><span class="line"><span class="kd">func</span> <span class="nx">foo</span><span class="p">(</span><span class="nx">d</span> <span class="nx">quacker</span><span class="p">)</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">d</span><span class="p">.</span><span class="nx">quack</span><span class="p">()</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Here, if we need to test <code>foo()</code> we can provide a different
-<code>quacker</code>.</p>
-
-<p>Bottom line is that it only makes sense to use a receiver if this
-function is part of an interface implementation, OR if you never ever
-need to augment (stub) that function for testing or some other
-reason. As a practical matter, it seems like (contrary to how it’s
-done in the OO world) it is better to always start out with <code>quack(d)</code>
-rather than <code>d.quack()</code>.</p>
 ]]></content>
   </entry>
   
