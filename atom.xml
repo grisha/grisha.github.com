@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-10-17T09:17:47-04:00</updated>
+  <updated>2017-10-19T21:22:58-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,7 +18,11 @@
     <link href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/"/>
     <updated>2017-10-10T17:54:00-04:00</updated>
     <id>http://grisha.org/blog/2017/10/10/postgre-as-a-full-node</id>
-    <content type="html"><![CDATA[<p>In theory, Postgres should be able to verify transactions and blocks,
+    <content type="html"><![CDATA[<p>Update: hacked together
+<a href="https://github.com/blkchain/pg_blkchain">this</a>, more details to
+follow later…</p>
+
+<p>In theory, Postgres should be able to verify transactions and blocks,
 as well as do a lot of other things that are currently only done by
 full nodes. For this to be performant, it will most likely require an
 extension written in C, but I’m curious how far we can get with bare

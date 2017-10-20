@@ -9,9 +9,10 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="In theory, Postgres should be able to verify transactions and blocks,
-as well as do a lot of other things that are currently only done by
-full nodes &hellip;">
+  <meta name="description" content="Update: hacked together
+this, more details to
+follow later… In theory, Postgres should be able to verify transactions and blocks,
+as well as do a lot &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -124,7 +125,11 @@ full nodes &hellip;">
   </header>
 
 
-<div class="entry-content"><p>In theory, Postgres should be able to verify transactions and blocks,
+<div class="entry-content"><p>Update: hacked together
+<a href="https://github.com/blkchain/pg_blkchain">this</a>, more details to
+follow later…</p>
+
+<p>In theory, Postgres should be able to verify transactions and blocks,
 as well as do a lot of other things that are currently only done by
 full nodes. For this to be performant, it will most likely require an
 extension written in C, but I’m curious how far we can get with bare
