@@ -4,7 +4,7 @@
   <title><![CDATA[Grisha Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-10-20T17:41:30-04:00</updated>
+  <updated>2017-11-23T07:45:42-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -666,7 +666,7 @@ get any information on those, so we will just use the S9 information.</p>
 <p>The S9 is capable of 12,930 GH/s. The collective Bitcoin hash rate is
 equivalent to 712,672 S9 miners running in parallel.</p>
 
-<p>An S9 uses 1375W, which means that in 1 hour it consumes 1.375 kW/h.</p>
+<p>An S9 uses 1375W, which means that in 1 hour it consumes 1.375 kW.</p>
 
 <p>In USA, a kWh costs $0.12 on average. (It can be
 as low as 0.04, according to this <a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a">EIA chart</a>.)</p>
@@ -680,9 +680,9 @@ costs $19,598.50 to solve.</p>
 
 <p>The current mining reward is 12.5 BTC, which gives us the answer:</p>
 
-<p>At \$0.12 kW/h a Bitcoin costs \$1,567.88 to mine.</p>
+<p>At \$0.12 kWh a Bitcoin costs \$1,567.88 to mine.</p>
 
-<p>At \$0.04 kW/h a Bitcoin costs \$522.62 to mine.</p>
+<p>At \$0.04 kWh a Bitcoin costs \$522.62 to mine.</p>
 
 <p>This, of course, does not include hardware and other costs.</p>
 
@@ -717,7 +717,7 @@ relationship between energy cost and the difficulty.</p>
 
 <p>When the difficulty was 922724699725 (Sep 6 through 16), the hash rate
 was at about 8,000,000 TH/s, or equivalent of 618,716 S9’s. At that
-difficulty and the 12c kW/h price, a BTC cost $1,361 to mine.</p>
+difficulty and the 12c kWh price, a BTC cost $1,361 to mine.</p>
 
 <p>Now let’s look back at the world before the S9, which uses the Bitmain
 BM1387 16nm ASIC. Before the S9, there was S7, based on BitMain BM1385
