@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Grisha Trubetskoy]]></title>
+  <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-21T12:55:48-05:00</updated>
+  <updated>2017-12-21T12:59:56-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -63,7 +63,7 @@ of this in the blockchain. The implication of this is that the second
 instance of such a transaction is unspendable. This oddity was
 addressed by a change in the consensus which requires the block
 <em>height</em> to be referenced in the coinbase and is since then no longer
-possible (see <a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">BIP30</a>.</p>
+possible (see <a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">BIP30</a>).</p>
 
 <p>The same transaction can be included in more than one block. This is
 common during chain splits, i.e. when more than one miner solves a
