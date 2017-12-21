@@ -9,8 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Nearly eight years after my last commit
-to Mod_python I’ve decided to spend some time hacking on it again. Five years without active development and &hellip;">
+  <meta name="description" content="“A journey of a thousand miles begins with a single step” Most of my journeys never begin, or cannot continue because of that one
+single step, be it &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -95,6 +95,106 @@ to Mod_python I’ve decided to spend some time hacking on it again. Five years 
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/10/the-next-smallest-step-problem/">The Next Smallest Step Problem</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/08/10/the-next-smallest-step-problem/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
+
+<p>Most of my journeys never begin, or cannot continue because of that one
+single step, be it first or next. Because it is hard, at times
+excruciatingly so.</p>
+
+<p>Here I speak of software, but this applies to many other aspects of my
+life just as well.</p>
+
+<p>I recon it’s because I do not think in steps. I think of a
+destination.  I imagine the end-result. I can picture it with clarity
+and in great detail. I know where I need to be. But what is the next
+step to get there? And it doesn’t help that where I travel, there are
+no signs.</p>
+
+<p>The problem of deciding what to do next is so common for me that I
+even have a name for it. I call it “The Next Smallest Step”
+problem. Whenever I find myself idling, clicking over to online
+time-wasters, I pause and ask myself “What is the Next Smallest Step?
+What’s the next smallest thing I can do, right now?”</p>
+
+<p>It doesn’t matter how much further this small step moves me. A
+nanometer is better than standing still. It has to be something that
+is simple enough that I can just do. Right now.</p>
+
+<p>I always plan to do big things that take days, weeks or months. But of
+all that, can I pick that one small simple and quick thing that I can
+do now?</p>
+
+<p>Sometimes focusing on the next smallest step is so difficult that I
+pencil this question on a piece of paper, and sometimes I just type it
+on the command line or in the source code. My short version is:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
+</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(that’s right, in CAPS)</p>
+
+<p>This simple question has taken me on some of the most fascinating and
+challenging journeys ever. In restrospect, I think I would not be able
+to travel any of them without repeatedly asking it of myself, over and
+over again.</p>
+
+<p>It has resulted in most productive and gratifying days of work. Some
+of my greatest projects began with this question. In many instances it
+established what I had to do for months ahead (years, even?). All
+beginning with this one small question.</p>
+
+<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
+gone by without any results to show for and many a great opportunity
+lost.</p>
+
+<p>I must also note that some of my next smallest steps took days of
+thinking to figure out. Nothing wrong with that.</p>
+
+<p>And so I thought I’d share this with you, just in case you might find
+it helpful. Whenever you find yourself at an impass and progress
+has stopped, ask yourself:</p>
+
+<p>“What is the Next Smallest Step?”</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1548,78 +1648,6 @@ loop back to B-trees, because that’s typically how it’s actually done.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/">MapJoin: A Simple Way to Speed Up Your Hive Queries</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-19T11:15:00-04:00" pubdate data-updated="true">Apr 19<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Mapjoin is a little-known feature of Hive. It allows a table to be
-loaded into memory so that a (very fast) join could be performed
-entirely within a mapper without having to use a Map/Reduce step. If
-your queries frequently rely on small table joins (e.g. cities or
-countries, etc.)  you might see a very substantial speed-up from using
-mapjoins.</p>
-
-<p>There are two ways to enable it. First is by using a hint, which looks
-like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
-should be placed immediately following the <code>SELECT</code>. It directs Hive
-to load <code>aliasname</code> (which is a table or alias of the query) into
-memory.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">SELECT</span> <span class="cm">/*+ MAPJOIN(c) */</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">cities</span> <span class="k">c</span> <span class="k">ON</span> <span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">city_id</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Another (better, in my opinion) way to turn on mapjoins is to let Hive
-do it automatically. Simply set <code>hive.auto.convert.join</code> to true in
-your config, and Hive will automatically use mapjoins for any tables
-smaller than <code>hive.mapjoin.smalltable.filesize</code> (default is 25MB).</p>
-
-<p>Mapjoins have a limitation in that the same table or alias cannot be
-used to join on different columns in the same query. (This makes sense
-because presumably Hive uses a HashMap keyed on the column(s) used in
-the join, and such a HashMap would be of no use for a join on
-different keys).</p>
-
-<p>The workaround is very simple - do not use the same aliases in your
-query.</p>
-
-<p>I also found that when the Hive documentation states that such queries
-are “<a href="https://cwiki.apache.org/Hive/languagemanual-joins.html#LanguageManualJoins-Mapjoinrestrictions">not supported</a>”
- they mean that the query will fail in unexpected
-ways, sometimes with a Java traceback.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; Older</a>
@@ -1667,6 +1695,10 @@ ways, sometimes with a Java traceback.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
       </li>
     
@@ -1680,10 +1712,6 @@ ways, sometimes with a Java traceback.</p>
     
       <li class="post">
         <a href="/blog/2017/09/25/bitcoin-value-2/">Bitcoin: USD Value</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/09/22/bitcoin-value/">Bitcoin: Better Ink than Gold?</a>
       </li>
     
   </ul>
