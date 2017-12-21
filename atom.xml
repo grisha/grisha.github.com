@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-21T17:59:24-05:00</updated>
+  <updated>2017-12-21T18:01:28-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -300,17 +300,17 @@ number of satoshis in a bitcoin).</p>
 is the position within the output list.</p>
 
 <p>The <code>spent</code> column is an optimization, it is not part of the
-blockchain. An output is spent if an input is referencing it. Core
-maintains a separate LevelDb dataset called the <em>UTXO Set</em> (Unspent
-Transaction Output Set) which contains all unspent outputs. The reason
-Core does it this way is because by default it does not index
-transactions, i.e. Core actually does not have a way of quickly
-retrieving a transaction from the store as there generally is no need
-for such retrieval as part of a node operation, while the UTXO Set is
-both sufficient and smaller than a full transaction index. Since in
-Postgres we have no choice but to index transactions, there is no
-benefit in having UTXOs as a separate table, the <code>spent</code> flag serves
-this purpose instead.</p>
+blockchain. An output is spent if later in the blockchain there exists
+an input referencing it. Core maintains a separate LevelDb dataset
+called the <em>UTXO Set</em> (Unspent Transaction Output Set) which contains
+all unspent outputs. The reason Core does it this way is because by
+default it does not index transactions, i.e. Core actually does not
+have a way of quickly retrieving a transaction from the store as there
+generally is no need for such retrieval as part of a node operation,
+while the UTXO Set is both sufficient and smaller than a full
+transaction index. Since in Postgres we have no choice but to index
+transactions, there is no benefit in having UTXOs as a separate table,
+the <code>spent</code> flag serves this purpose instead.</p>
 
 <p>The UTXO Set does not include any outputs with the value of 0, since
 there is nothing to spend there even though no input refers to them
