@@ -1,0 +1,876 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>The Bitcoin Blockchain PostgresSQL Schema - Grisha Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="In a previous post I wrote
+some initial thoughts on storing the blockchain in Postgres. It’s been
+a couple of months and I’ve made some progress on &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2017/12/15/blockchain-and-postgres">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Grisha Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<!-- <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Grisha Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">The Bitcoin Blockchain PostgresSQL Schema</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-12-15T08:28:00-05:00" pubdate data-updated="true">Dec 15<span>th</span>, 2017</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>In a <a href="/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I wrote
+some initial thoughts on storing the blockchain in Postgres. It’s been
+a couple of months and I’ve made some progress on the
+<a href="https://github.com/blkchain/blkchain">import project</a>. This post documents
+the latest incarnation of the SQL schema used to store the
+blockchain as well as thoughts on why it was decided to be this way.</p>
+
+<h2 id="blockchain-data-structure-overview">Blockchain Data Structure Overview</h2>
+
+<p>The <a href="https://bitcoin.org/en/developer-reference#block-chain">Bitcoin blockchain</a>
+consists of <em><a href="https://bitcoin.org/en/developer-reference#serialized-blocks">blocks</a></em>.
+A block is a set of <em><a href="https://bitcoin.org/en/developer-reference#raw-transaction-format">transactions</a></em>.
+A block also contains some <a href="https://bitcoin.org/en/developer-reference#block-headers">block-specific information</a>,
+such as the nonce for the <a href="https://en.bitcoin.it/wiki/Proof_of_work">Proof-Of-Work</a> validating the block.</p>
+
+<p>A transaction consist of <em>inputs</em> and <em>outputs</em>. The inputs reference
+outputs from prior transactions, which may include transactions in the
+same block. When an output is referenced by an input, the output is
+considered spent in its entirety, i.e. there is no way to spend a part
+of an output.</p>
+
+<p>When two <em>different</em> transactions’ inputs reference the same output, it is
+considered a <em><a href="https://en.wikipedia.org/wiki/Double-spending">double spend</a></em>,
+and only one of the spending transactions is valid (the details
+of how validity is determined are outside the scope of this write up).</p>
+
+<p>A transaction’s input value is the sum of its inputs and the output
+value is the sum of its outputs. Naturally, the output value cannot
+exceed the input value, but it is normal for the output value to be
+<em>less</em> than the input value. The discrepancy between the input and the
+output is the transaction <em><a href="https://en.bitcoin.it/wiki/Transaction_fees">fee</a></em>
+and is taken by the miner solving the block in which the transaction is included.</p>
+
+<p>The first transaction in a block is referred to as the
+<em>coinbase</em>. Coinbase is a special transaction where the inputs refer
+to a (non-existent) transaction hash of all zeros. Coinbase outputs
+are the sum of all the fees and the <em><a href="https://en.bitcoin.it/wiki/Mining#Reward">miner reward</a></em>.</p>
+
+<p>Curiously it is possible for the same coinbase transaction to be
+included in more than one block, and there is at least
+<a href="https://blockchain.info/tx/e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468">one case</a>
+of this in the blockchain. The implication of this is that the second
+instance of such a transaction is unspendable. This oddity was
+addressed by a change in the consensus which requires the block
+<em>height</em> to be referenced in the coinbase and is since then no longer
+possible (see <a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">BIP30</a>.</p>
+
+<p>The same transaction can be included in more than one block. This is
+common during chain splits, i.e. when more than one miner solves a
+block. Eventually one of such blocks will become <em>orphaned</em>, but there
+is a period of time during which it is not known which chain is
+considered “best”, and the database structure needs to accommodate
+this. Chain splits also cause multiple blocks to have the same height
+which implies that height alone cannot identify a particular block or
+that it is unique.</p>
+
+<p>With introduction of <em>SegWit</em> transactions also include <em>witness</em>
+data. Witness is stored at the end of a transaction as a list where
+each entry corresponds to an input. A witness entry is in turn a list,
+because an input can have multiple signatures (aka witness). Presently
+per-input witness list is stored in the input record as a BYTEA.</p>
+
+<h2 id="row-ids-and-hashes">Row Ids and Hashes</h2>
+
+<p>In the blockchain blocks and transactions are always referred to
+through their <em>hash</em>. A hash is an array of 32 bytes. While in theory
+we could build a schema which relies on the hash as the record
+identifier, in practice it is cumbersome compared to the traditional
+integer ids. Firstly, 32 bytes is four times larger than a BIGINT and
+eight times larger than an INT, which impacts greatly the amount of
+space required to store inputs and outputs as well as degrades index
+performance. For this reason we use INT for block ids and BIGINT for
+transaction ids (INT is not big enough and would overflow in a few
+years).</p>
+
+<p>There is also an ambiguity in how the hash is printed versus how it is
+stored. While the SHA standard does not specify the endian-ness of the
+hash and refers to it as an array of bytes, Satoshi Nakomoto decided
+to treat hashes as little-endian 256-bit integers. The implication
+being that when the hash is printed (as a transaction id) the order of
+bytes is the reverse of how it is stored in the blockchain.</p>
+
+<p>Using integer ids creates a complication in how inputs reference
+outputs. Whereas in the blockchain it is done entirely via a
+transaction hash, here we need to also store the integer id of the
+referenced transaction (<code>prevout_tx_id</code>). This is an easily
+justifiable optimization, without it to lookup the input transaction
+would require first finding the transaction integer id. The downside
+is that during the initial import maintaining the hash to integer id
+correspondence in an efficient manner is bit of a challenge.</p>
+
+<h2 id="integers">Integers</h2>
+
+<p>Most integers in Core are defined as <code>uint32_t</code>, which is an unsigned
+4-byte integer. Postgres 4-byte <code>INT</code> is signed, which presents us
+with two options: (1) use <code>BIGINT</code> instead, or (2) use <code>INT</code> with the
+understanding that larger values may appear as negative. We are opting
+for the latter as preserving space is more important and for as long as
+all the bits are correct, whether the integer is interpreted as signed
+or unsigned is of no consequence.</p>
+
+<h2 id="blocks">Blocks</h2>
+
+<p>Blocks are collections of transactions. It is a many-to-many
+relationship as multiple blocks can include to the same transaction. The
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/block.h#L20">CBlockHeader</a>
+is defined in Core as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="c++"><span class="line"><span class="k">class</span> <span class="nc">CBlockHeader</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line"><span class="k">public</span><span class="o">:</span>
+</span><span class="line">    <span class="c1">// header</span>
+</span><span class="line">    <span class="n">int32_t</span> <span class="n">nVersion</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint256</span> <span class="n">hashPrevBlock</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint256</span> <span class="n">hashMerkleRoot</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint32_t</span> <span class="n">nTime</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint32_t</span> <span class="n">nBits</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint32_t</span> <span class="n">nNonce</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Our <code>blocks</code> table is defined as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line">  <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">blocks</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">id</span>           <span class="nb">SERIAL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">height</span>       <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">hash</span>         <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="k">version</span>      <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">prevhash</span>     <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">merkleroot</span>   <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">time</span>         <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">bits</span>         <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">nonce</span>        <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">orphan</span>       <span class="nb">BOOLEAN</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="k">false</span>
+</span><span class="line">  <span class="p">,</span><span class="n">status</span>       <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">filen</span>        <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">filepos</span>      <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Columns <code>orphan</code>, <code>status</code>, <code>filen</code> and <code>filepos</code> are from the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/chain.h#L170">CBlockIndex</a>
+class which is serialized in LevelDb and contains information about
+the file in which the block was stored on-disk as far as Core is
+concerned. This information is only necessary for debugging purposes,
+also note that it is unique to the particular instance of the Core
+database, i.e. if you were to wipe it and download the chain from
+scratch, location and even status of blocks is likely to be different.</p>
+
+<p>Note that the C++ <code>CBlockHeader</code> class does not actually include the
+hash, it is computed on-the-fly as needed. Same is true with respect
+to transactions and its hash.</p>
+
+<p>We also need a many-to-many link to transactions, which is the
+<code>block_txs</code> table. Not only do we need to record that a transaction is
+included in a block, but also its exact position relative to other
+transactions, denoted by the <code>n</code> column:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line">  <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">block_txs</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">block_id</span>      <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">n</span>             <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">tx_id</span>         <span class="nb">BIGINT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h3 id="transactions">Transactions</h3>
+
+<p>A transaction is a collection of inputs and outputs. The
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L264">CTransaction</a>
+C++ class is defined as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="c++"><span class="line"><span class="k">class</span> <span class="nc">CTransaction</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line"><span class="k">public</span><span class="o">:</span>
+</span><span class="line">    <span class="k">const</span> <span class="n">int32_t</span> <span class="n">nVersion</span><span class="p">;</span>
+</span><span class="line">    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">CTxIn</span><span class="o">&gt;</span> <span class="n">vin</span><span class="p">;</span>
+</span><span class="line">    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">CTxOut</span><span class="o">&gt;</span> <span class="n">vout</span><span class="p">;</span>
+</span><span class="line">    <span class="k">const</span> <span class="n">uint32_t</span> <span class="n">nLockTime</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>In Postgres transactions are in the <code>txs</code> table:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line">  <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">txs</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">id</span>            <span class="n">BIGSERIAL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">txid</span>          <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="k">version</span>       <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">locktime</span>      <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The <code>txid</code> column is the transaction hash and should not be confused
+with <code>tx_id</code> in other tables referencing the transaction. (“txid” is
+what the transaction hash is typically called in code and
+documentation).</p>
+
+<h2 id="outputs">Outputs</h2>
+
+<p>In Core an output is represented by the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L131">CTxOut</a>
+class:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="c++"><span class="line"><span class="k">class</span> <span class="nc">CTxOut</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line"><span class="k">public</span><span class="o">:</span>
+</span><span class="line">    <span class="n">CAmount</span> <span class="n">nValue</span><span class="p">;</span>
+</span><span class="line">    <span class="n">CScript</span> <span class="n">scriptPubKey</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The <code>CAmount</code> type above is a <code>typedef int64_t</code>, it is the value of
+the output in <em>satoshis</em> which can be as high as <code>21M * 100M</code> (the
+number of satoshis in a bitcoin).</p>
+
+<p>In SQL, an output looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line">  <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">txouts</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">tx_id</span>        <span class="nb">BIGINT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">n</span>            <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">value</span>        <span class="nb">BIGINT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">scriptpubkey</span> <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">spent</span>        <span class="n">BOOL</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The <code>tx_id</code> column is the transaction to which this input belongs, <code>n</code>
+is the position within the input list.</p>
+
+<p>The <code>spent</code> column is an optimization, it is not part of the
+blockchain. An output is spent if an input is referencing it. Core
+maintains a separate LevelDb dataset called the <em>UTXO Set</em> (Unspent
+Transaction Output Set) which contains all unspent outputs. The reason
+Core does it this way is because by default it does not index
+transactions, i.e. Core actually does not have a way of quickly
+retrieving a transaction from the store as there generally is no need
+for such retrieval as part of a node operation, while the UTXO Set is
+both sufficient and smaller than a full transaction index. Since in
+Postgres we have no choice but to index transactions, there is no
+benefit in having UTXOs as a separate table, the <code>spent</code> flag serves
+this purpose instead.</p>
+
+<p>The UTXO Set does not include any outputs with the value of 0, since
+there is nothing to spend there even though no input refers to them
+and they are not technically spent.</p>
+
+<h2 id="inputs">Inputs</h2>
+
+<p>An input in Core is represented by the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L61">CTxIn</a>
+class, which looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="c++"><span class="line"><span class="k">class</span> <span class="nc">CTxIn</span>
+</span><span class="line"><span class="p">{</span>
+</span><span class="line"><span class="k">public</span><span class="o">:</span>
+</span><span class="line">    <span class="n">COutPoint</span> <span class="n">prevout</span><span class="p">;</span>
+</span><span class="line">    <span class="n">CScript</span> <span class="n">scriptSig</span><span class="p">;</span>
+</span><span class="line">    <span class="n">uint32_t</span> <span class="n">nSequence</span><span class="p">;</span>
+</span><span class="line">    <span class="n">CScriptWitness</span> <span class="n">scriptWitness</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The <code>COutPoint</code> class is a combination of a hash and an integer
+representing an output. <code>CScriptWitness</code> is an array of “witnesses” or
+(roughly speaking) signatures, which are byte arrays, just like the
+<code>scriptSig</code>.</p>
+
+<p>In our schema, an input is defined as:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line">  <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">txins</span> <span class="p">(</span>
+</span><span class="line">   <span class="n">tx_id</span>         <span class="nb">BIGINT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">n</span>             <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">prevout_hash</span>  <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">prevout_n</span>     <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">scriptsig</span>     <span class="n">BYTEA</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">sequence</span>      <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span>
+</span><span class="line">  <span class="p">,</span><span class="n">witness</span>       <span class="n">BYTEA</span>
+</span><span class="line">  <span class="p">,</span><span class="n">prevout_tx_id</span> <span class="nb">BIGINT</span>
+</span><span class="line">  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>As we already mentioned above <code>witness</code> is stored as opaque bytes. The
+<code>prevout_tx_id</code> is the database row id of the transaction this input
+is spending.</p>
+
+<h2 id="indexes-and-foreign-key-constraints">Indexes and Foreign Key Constraints</h2>
+
+<p>Blocks and transactions are indexed by <code>id</code> as their primary index.
+Blocks also need an index on <code>hash</code> (unique), as well as on <code>height</code>
+and on <code>prevhash</code> (not unique).  Transactions need a unique index on
+the <code>txid</code>.</p>
+
+<p>Inputs and outputs need <code>(tx_id, n)</code> as primary indexes. Inputs are
+also indexed on <code>(prevout_tx_id, prevout_n)</code> so that we can quickly
+identify the spending input given an output.</p>
+
+<p>Finally, we need a basic set of foreign key constraints that ensure
+the integrity between all the related tables.</p>
+
+<h2 id="triggers">Triggers</h2>
+
+<p>The <code>spent</code> column in the output and the <code>prevout_tx_id</code> of an input
+are maintained by a trigger on the <code>txins</code> table. Every time an input
+is inserted, it locates the database id of the transaction it spends
+as well as updates the <code>spent</code> flag of the corresponding output.</p>
+
+<p>Technically it is done using two triggers for performance
+reasons. This is because a trigger that modifies the row being
+inserted must be a BEFORE trigger, but BEFORE triggers are not allowed
+to be to be CONSTRAINT triggers. CONSTRAINT triggers have the
+advantage of being <em>deferrable</em>, i.e. they can be postponed until
+(database) transaction commit time. Deferring constraints can speed up
+inserts considerably, for this reason the code that updates <code>spent</code> is
+in a separate AFTER trigger.</p>
+
+<p>The trigger code is still rough around the edges, but here it is for
+posterity anyway:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+<span class="line-number">34</span>
+<span class="line-number">35</span>
+<span class="line-number">36</span>
+<span class="line-number">37</span>
+<span class="line-number">38</span>
+<span class="line-number">39</span>
+<span class="line-number">40</span>
+<span class="line-number">41</span>
+<span class="line-number">42</span>
+<span class="line-number">43</span>
+<span class="line-number">44</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">FUNCTION</span> <span class="n">txins_before_trigger_func</span><span class="p">()</span> <span class="k">RETURNS</span> <span class="k">TRIGGER</span> <span class="k">AS</span> <span class="err">$$</span>
+</span><span class="line">  <span class="k">BEGIN</span>
+</span><span class="line">    <span class="n">IF</span> <span class="p">(</span><span class="n">TG_OP</span> <span class="o">=</span> <span class="s1">&#39;UPDATE&#39;</span> <span class="k">OR</span> <span class="n">TG_OP</span> <span class="o">=</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">)</span> <span class="k">THEN</span>
+</span><span class="line">      <span class="n">IF</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_n</span> <span class="o">&lt;&gt;</span> <span class="o">-</span><span class="mi">1</span> <span class="k">AND</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_tx_id</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span>
+</span><span class="line">        <span class="k">SELECT</span> <span class="n">id</span> <span class="k">INTO</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_tx_id</span> <span class="k">FROM</span> <span class="n">txs</span> <span class="k">WHERE</span> <span class="n">txid</span> <span class="o">=</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_hash</span><span class="p">;</span>
+</span><span class="line">        <span class="n">IF</span> <span class="k">NOT</span> <span class="k">FOUND</span> <span class="k">THEN</span>
+</span><span class="line">          <span class="n">RAISE</span> <span class="n">EXCEPTION</span> <span class="s1">&#39;Unknown prevout_hash %&#39;</span><span class="p">,</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_hash</span><span class="p">;</span>
+</span><span class="line">        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">      <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">      <span class="k">RETURN</span> <span class="k">NEW</span><span class="p">;</span>
+</span><span class="line">    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">    <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
+</span><span class="line">  <span class="k">END</span><span class="p">;</span>
+</span><span class="line"><span class="err">$$</span> <span class="k">LANGUAGE</span> <span class="n">plpgsql</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TRIGGER</span> <span class="n">txins_before_trigger</span>
+</span><span class="line"><span class="k">BEFORE</span> <span class="k">INSERT</span> <span class="k">OR</span> <span class="k">UPDATE</span> <span class="k">OR</span> <span class="k">DELETE</span> <span class="k">ON</span> <span class="n">txins</span>
+</span><span class="line">  <span class="k">FOR</span> <span class="k">EACH</span> <span class="k">ROW</span> <span class="k">EXECUTE</span> <span class="k">PROCEDURE</span> <span class="n">txins_before_trigger_func</span><span class="p">();</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">FUNCTION</span> <span class="n">txins_after_trigger_func</span><span class="p">()</span> <span class="k">RETURNS</span> <span class="k">TRIGGER</span> <span class="k">AS</span> <span class="err">$$</span>
+</span><span class="line">  <span class="k">BEGIN</span>
+</span><span class="line">    <span class="n">IF</span> <span class="p">(</span><span class="n">TG_OP</span> <span class="o">=</span> <span class="s1">&#39;DELETE&#39;</span><span class="p">)</span> <span class="k">THEN</span>
+</span><span class="line">      <span class="n">IF</span> <span class="k">OLD</span><span class="p">.</span><span class="n">prevout_tx_id</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">THEN</span>
+</span><span class="line">        <span class="k">UPDATE</span> <span class="n">txouts</span> <span class="k">SET</span> <span class="n">spent</span> <span class="o">=</span> <span class="k">FALSE</span>
+</span><span class="line">         <span class="k">WHERE</span> <span class="n">tx_id</span> <span class="o">=</span> <span class="n">prevout_tx_id</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="k">OLD</span><span class="p">.</span><span class="n">prevout_n</span><span class="p">;</span>
+</span><span class="line">      <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">      <span class="k">RETURN</span> <span class="k">OLD</span><span class="p">;</span>
+</span><span class="line">    <span class="n">ELSIF</span> <span class="p">(</span><span class="n">TG_OP</span> <span class="o">=</span> <span class="s1">&#39;UPDATE&#39;</span> <span class="k">OR</span> <span class="n">TG_OP</span> <span class="o">=</span> <span class="s1">&#39;INSERT&#39;</span><span class="p">)</span> <span class="k">THEN</span>
+</span><span class="line">      <span class="n">IF</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_tx_id</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">THEN</span>
+</span><span class="line">        <span class="k">UPDATE</span> <span class="n">txouts</span> <span class="k">SET</span> <span class="n">spent</span> <span class="o">=</span> <span class="k">TRUE</span>
+</span><span class="line">         <span class="k">WHERE</span> <span class="n">tx_id</span> <span class="o">=</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_tx_id</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_n</span><span class="p">;</span>
+</span><span class="line">        <span class="n">IF</span> <span class="k">NOT</span> <span class="k">FOUND</span> <span class="k">THEN</span>
+</span><span class="line">          <span class="n">RAISE</span> <span class="n">EXCEPTION</span> <span class="s1">&#39;Unknown prevout_n % in txid % (id %)&#39;</span><span class="p">,</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_n</span><span class="p">,</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_hash</span><span class="p">,</span> <span class="k">NEW</span><span class="p">.</span><span class="n">prevout_tx_id</span><span class="p">;</span>
+</span><span class="line">        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">      <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">      <span class="k">RETURN</span> <span class="k">NEW</span><span class="p">;</span>
+</span><span class="line">    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+</span><span class="line">    <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
+</span><span class="line">  <span class="k">END</span><span class="p">;</span>
+</span><span class="line"><span class="err">$$</span> <span class="k">LANGUAGE</span> <span class="n">plpgsql</span><span class="p">;</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">CONSTRAINT</span> <span class="k">TRIGGER</span> <span class="n">txins_after_trigger</span>
+</span><span class="line"><span class="k">AFTER</span> <span class="k">INSERT</span> <span class="k">OR</span> <span class="k">UPDATE</span> <span class="k">OR</span> <span class="k">DELETE</span> <span class="k">ON</span> <span class="n">txins</span> <span class="k">DEFERRABLE</span>
+</span><span class="line">  <span class="k">FOR</span> <span class="k">EACH</span> <span class="k">ROW</span> <span class="k">EXECUTE</span> <span class="k">PROCEDURE</span> <span class="n">txins_after_trigger_func</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="identifying-orphaned-blocks">Identifying Orphaned Blocks</h2>
+
+<p>While this is not part of the schema, I thought it would be
+interesting to the potential readers. An orphaned block is a block to
+which no other <code>prevhash</code> refers. At the time of a chain split we
+start out with two blocks referring to the same block as previous, but
+the next block to arrive will identify one of the two as its previous
+thereby orphaning the other of the pair.</p>
+
+<p>To identify orphans we need to walk the chain backwards starting from
+the highest height. Any block that this walk does not visit is an
+orphan.</p>
+
+<p>In SQL this can be done using the <code>WITH RECURSIVE</code> query like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">blocks</span>
+</span><span class="line">   <span class="k">SET</span> <span class="n">orphan</span> <span class="o">=</span> <span class="n">a</span><span class="p">.</span><span class="n">orphan</span>
+</span><span class="line">  <span class="k">FROM</span> <span class="p">(</span>
+</span><span class="line">    <span class="k">SELECT</span> <span class="n">blocks</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">id</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">AS</span> <span class="n">orphan</span>
+</span><span class="line">      <span class="k">FROM</span> <span class="n">blocks</span>
+</span><span class="line">      <span class="k">LEFT</span> <span class="k">JOIN</span> <span class="p">(</span>
+</span><span class="line">        <span class="k">WITH</span> <span class="k">RECURSIVE</span> <span class="n">recur</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">prevhash</span><span class="p">)</span> <span class="k">AS</span> <span class="p">(</span>
+</span><span class="line">          <span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="n">prevhash</span><span class="p">,</span> <span class="mi">0</span> <span class="k">AS</span> <span class="n">n</span>
+</span><span class="line">            <span class="k">FROM</span> <span class="n">blocks</span>
+</span><span class="line">                            <span class="c1">-- this should be faster than MAX(height)</span>
+</span><span class="line">           <span class="k">WHERE</span> <span class="n">height</span> <span class="k">IN</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">height</span> <span class="k">FROM</span> <span class="n">blocks</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">height</span> <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="mi">1</span><span class="p">)</span>
+</span><span class="line">          <span class="k">UNION</span> <span class="k">ALL</span>
+</span><span class="line">            <span class="k">SELECT</span> <span class="n">blocks</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">blocks</span><span class="p">.</span><span class="n">prevhash</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span> <span class="k">AS</span> <span class="n">n</span>
+</span><span class="line">              <span class="k">FROM</span> <span class="n">recur</span>
+</span><span class="line">              <span class="k">JOIN</span> <span class="n">blocks</span> <span class="k">ON</span> <span class="n">blocks</span><span class="p">.</span><span class="n">hash</span> <span class="o">=</span> <span class="n">recur</span><span class="p">.</span><span class="n">prevhash</span>
+</span><span class="line">            <span class="o">%</span><span class="n">s</span>
+</span><span class="line">        <span class="p">)</span>
+</span><span class="line">        <span class="k">SELECT</span> <span class="n">recur</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">recur</span><span class="p">.</span><span class="n">prevhash</span><span class="p">,</span> <span class="n">n</span>
+</span><span class="line">          <span class="k">FROM</span> <span class="n">recur</span>
+</span><span class="line">      <span class="p">)</span> <span class="n">x</span> <span class="k">ON</span> <span class="n">blocks</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">id</span>
+</span><span class="line">   <span class="p">)</span> <span class="n">a</span>
+</span><span class="line">  <span class="k">WHERE</span> <span class="n">blocks</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The WITH RECURSIVE part connects rows by joining prevhash to hash,
+thereby building a list which starts at the highest hight and going
+towards the beginning until no parent can be found.</p>
+
+<p>Then we LEFT JOIN the above to the blocks table, and where there is
+no match (x.id IS NULL) we mark it as orphan.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Devising this schema was surprisingly tedious and took many trial and
+error attempts to reimport the entire blockchain which collectively
+took weeks. Many different variations on how to optimize operations
+were attempted, for example using an <em>expression index</em> to only index
+a subset of a hash (first 10 bytes are still statistically unique),
+etc.</p>
+
+<p>I would love to hear comments from the database experts out there. I’m
+not considering this version “final”, there is probably still room for
+improvement and new issues might be discovered as I progress to
+writing up how to insert new blocks and actually verify blocks and
+transactions.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-12-15T08:28:00-05:00" pubdate data-updated="true">Dec 15<span>th</span>, 2017</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2017/12/15/blockchain-and-postgres/" data-via="humblehack" data-counturl="http://grisha.org/blog/2017/12/15/blockchain-and-postgres/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017/10/20/blockchain-in-postgresql-part-2/" title="Previous Post: Blockchain in PostgreSQL Part 2">&laquo; Blockchain in PostgreSQL Part 2</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+
+<section>
+  <br/>
+  <p>
+    <small>Send me some crypto if you like this content, TIA!</small><br/><br/>
+<tt><small>Bitcoin: 1GrishapUx3mofmQuTbL4JEEMdzGgeSEcu</small></tt><br/>
+<tt><small>Litecoin: LXLGrXXQM2t5ckq4gmznsVzpRNhRVD1V8w</small></tt><br/>
+  </p>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 75%; margin: 0 auto;">
+  <a href="https://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/09/25/bitcoin-value-2/">Bitcoin: USD Value</a>
+      </li>
+    
+  </ul>
+</section>
+
+<br/><br/><br/>
+<br/><br/><br/>
+<br/><br/><br/>
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="https://pagead2.googlesyndication.com/pagead/show_ads.js">
+            </script>
+  </div>
+</div>
+
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="https://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2017 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2017/12/15/blockchain-and-postgres/';
+        var disqus_url = 'http://grisha.org/blog/2017/12/15/blockchain-and-postgres/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'https://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
