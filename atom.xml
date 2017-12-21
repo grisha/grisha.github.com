@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-21T17:55:04-05:00</updated>
+  <updated>2017-12-21T17:57:10-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -184,12 +184,13 @@ is defined in Core as follows:</p>
 
 <p>Columns <code>orphan</code>, <code>status</code>, <code>filen</code> and <code>filepos</code> are from the
 <a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/chain.h#L170">CBlockIndex</a>
-class which is serialized in LevelDb and contains information about
-the file in which the block was stored on-disk as far as Core is
-concerned. This information is only necessary for debugging purposes,
-also note that it is unique to the particular instance of the Core
-database, i.e. if you were to wipe it and download the chain from
-scratch, location and even status of blocks is likely to be different.</p>
+class which is serialized in LevelDb and not formally part of the blockchain.
+It contains information about the file in which the block was stored
+on-disk as far as Core is concerned. This information is only
+necessary for debugging purposes, also note that it is unique to the
+particular instance of the Core database, i.e. if you were to wipe it
+and download the chain from scratch, location and even status of
+blocks is likely to be different.</p>
 
 <p>Note that the C++ <code>CBlockHeader</code> class does not actually include the
 hash, it is computed on-the-fly as needed. Same is true with respect
