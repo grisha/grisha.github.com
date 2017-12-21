@@ -7,6 +7,10 @@ published: true
 categories:
 ---
 
+Update: hacked together
+[this](https://github.com/blkchain/pg_blkchain), more details to
+follow later...
+
 In theory, Postgres should be able to verify transactions and blocks,
 as well as do a lot of other things that are currently only done by
 full nodes. For this to be performant, it will most likely require an
