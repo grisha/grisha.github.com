@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-21T17:57:10-05:00</updated>
+  <updated>2017-12-21T17:59:24-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -194,7 +194,7 @@ blocks is likely to be different.</p>
 
 <p>Note that the C++ <code>CBlockHeader</code> class does not actually include the
 hash, it is computed on-the-fly as needed. Same is true with respect
-to transactions and its hash.</p>
+to transaction id.</p>
 
 <p>We also need a many-to-many link to transactions, which is the
 <code>block_txs</code> table. Not only do we need to record that a transaction is
@@ -296,8 +296,8 @@ number of satoshis in a bitcoin).</p>
 </span><span class="line">  <span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>The <code>tx_id</code> column is the transaction to which this input belongs, <code>n</code>
-is the position within the input list.</p>
+<p>The <code>tx_id</code> column is the transaction to which this output belongs, <code>n</code>
+is the position within the output list.</p>
 
 <p>The <code>spent</code> column is an optimization, it is not part of the
 blockchain. An output is spent if an input is referencing it. Core
