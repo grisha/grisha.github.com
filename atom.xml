@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-29T18:19:18-05:00</updated>
+  <updated>2017-12-29T18:23:58-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -42,7 +42,10 @@ of an output.</p>
 <p>When two <em>different</em> transactions’ inputs reference the same output, it is
 considered a <em><a href="https://en.wikipedia.org/wiki/Double-spending">double spend</a></em>,
 and only one of the spending transactions is valid (the details
-of how validity is determined are outside the scope of this write up).</p>
+of how validity is determined are outside the scope of this write up).
+While double-spends do imply that one of the transactions is invalid,
+it is not uncommon for double-spends to exist at least for a period of time,
+thus the database schema needs to allow them.</p>
 
 <p>A transaction’s input value is the sum of its inputs and the output
 value is the sum of its outputs. Naturally, the output value cannot
