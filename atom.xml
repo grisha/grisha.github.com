@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-21T18:01:28-05:00</updated>
+  <updated>2017-12-29T18:19:18-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -584,7 +584,11 @@ transactions.</p>
     <link href="http://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2/"/>
     <updated>2017-10-20T08:05:00-04:00</updated>
     <id>http://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2</id>
-    <content type="html"><![CDATA[<p>In a <a href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I
+    <content type="html"><![CDATA[<p>Update: there is now a <a href="http://grisha.org/blog/2017/12/15/blockchain-and-postgres/">better write up</a>
+of the PostgreSQL schema. This post was rather half-baked as much was
+still not understood when I wrote it.</p>
+
+<p>In a <a href="http://grisha.org/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I
 described a simplistic schema to store the Bitcoin blockchain in
 PostgreSQL. In this post I’m investigating pushing the envelope
 with a bit of C programming.</p>
