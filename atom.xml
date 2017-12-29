@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2017-12-29T18:23:58-05:00</updated>
+  <updated>2017-12-29T18:26:58-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -500,7 +500,7 @@ posterity anyway:</p>
 <h2 id="identifying-orphaned-blocks">Identifying Orphaned Blocks</h2>
 
 <p>While this is not part of the schema, I thought it would be
-interesting to the potential readers. An orphaned block is a block to
+of interest to the readers. An orphaned block is a block to
 which no other <code>prevhash</code> refers. At the time of a chain split we
 start out with two blocks referring to the same block as previous, but
 the next block to arrive will identify one of the two as its previous
