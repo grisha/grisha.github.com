@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T14:20:11-05:00</updated>
+  <updated>2018-02-12T14:20:56-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Proof-Of-Work in the Blockchain is a Decetralized Clock]]></title>
+    <title type="html"><![CDATA[Proof-Of-Work in the Blockchain is a Decentralized Clock]]></title>
     <link href="http://grisha.org/blog/2018/01/23/explaining-proof-of-work/"/>
     <updated>2018-01-23T11:41:00-05:00</updated>
     <id>http://grisha.org/blog/2018/01/23/explaining-proof-of-work</id>
