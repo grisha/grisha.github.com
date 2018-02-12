@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T14:25:08-05:00</updated>
+  <updated>2018-02-12T14:33:48-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -85,7 +85,7 @@ produces a new state. The blockchain state moves forward one block at
 a time, and the average 10 minutes of a block is the smallest measure
 of blockchain time.</p>
 
-<h2 id="sha-is-memoryless">SHA is Memoryless</h2>
+<h2 id="sha-is-memoryless-and-progress-free">SHA is Memoryless and Progress-Free</h2>
 
 <p>The Secure Hash Algorithm is what is known in statistics and
 probability as <a href="https://en.wikipedia.org/wiki/Memorylessness"><em>memoryless</em></a>.
@@ -102,7 +102,7 @@ miners try to solve blocks iterating over nonces, each attempt is a
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
-getting any “closer” to a solution or making no progress.</p>
+getting any “closer” to a solution i.e. making no progress.</p>
 
 <p>The probability of finding the solution given a specific difficulty in
 a given period of time is therefore determined solely by the speed at
@@ -115,11 +115,14 @@ the speed of the equipment used to calculate the hash.</p>
 <h2 id="the-sha-input-is-irrelevant">The SHA Input Is Irrelevant</h2>
 
 <p>This too goes against our intuition: It doesn’t matter what you feed
-the SHA function. In the Bitcoin blockchain the input is a block, but
-if you just feed it random values, the probability of finding a
-conforming hash is <em>still the same</em>. Regardless of whether the input
-is a valid block or bytes from /dev/random, it is going to take 10
-minutes on average to find a solution.</p>
+the SHA function. The SHA-256 functin accepts 32 bytes as input and
+returns 32 bytes of output. In the Bitcoin blockchain the input is a
+block header (cut up into 32 bytes pieces).</p>
+
+<p>But if we just fed it random values, the probability of finding a
+conforming hash would <em>still be the same</em>. Regardless of whether the
+input is a valid block header or bytes from /dev/random, it is going
+to take 10 minutes on average to find a solution.</p>
 
 <p>Of course if you find a conforming hash but your input wasn’t a valid
 block, such a solution cannot be added to the blockchain, but it is
