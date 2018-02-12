@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T16:09:16-05:00</updated>
+  <updated>2018-02-12T16:09:59-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -101,7 +101,8 @@ has a 50/50 chance of either outcome regardless of what happened in
 the past.</p>
 
 <p>Memorylessness is required for the problem to be <em>progress-free</em>.
-Progress-free means that as miners try to solve blocks iterating over nonces, each attempt is a
+Progress-free means that as miners try to solve blocks iterating
+over <a href="https://en.bitcoin.it/wiki/Nonce">nonces</a>, each attempt is a
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
