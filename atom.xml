@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T12:56:04-05:00</updated>
+  <updated>2018-02-12T14:12:24-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -96,10 +96,13 @@ heads 10 times in a row, does it mean that the next toss is more
 likely to be tails? Our intuition says yes, but in reality each toss
 has a 50/50 chance regardless of what happened.</p>
 
-<p>When it comes to SHA Proof-Of-Work, it means that as miners try to
-solve blocks iterating over nonces, each attempt is a stand-alone
-event and the probability of finding a solution is constant at each
-attempt, regardless of how much work has been done in the past.</p>
+<p>Memorylessness is required for the problem to be <em>progress-free</em>,
+which is another related statistical term. Progress-free means that as
+miners try to solve blocks iterating over nonces, each attempt is a
+stand-alone event and the probability of finding a solution is
+constant at each attempt, regardless of how much work has been done in
+the past. In other words at each attempt the participant is not
+getting any “closer” to a solution or making no progress.</p>
 
 <p>The probability of finding the solution given a specific difficulty in
 a given period of time is therefore determined solely by the speed at
