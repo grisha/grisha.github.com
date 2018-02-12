@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T16:49:42-05:00</updated>
+  <updated>2018-02-12T16:51:25-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -120,9 +120,6 @@ history, not the data, just the hashrate.</p>
 the speed of the equipment used to calculate the hash.</p>
 
 <h2 id="the-sha-input-is-irrelevant">The SHA Input Is Irrelevant</h2>
-
-<p>This too goes against our intuition: It doesn’t matter what you feed
-the SHA function.</p>
 
 <p>In the Bitcoin blockchain the input is a block header.
 But if we just fed it random values, the probability of finding a
