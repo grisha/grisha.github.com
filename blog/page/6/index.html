@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Mapjoin is a little-known feature of Hive. It allows a table to be
-loaded into memory so that a (very fast) join could be performed
-entirely within a &hellip;">
+  <meta name="description" content="This post attempts to explain how a relational database can be
+implemented atop a key/value store, a subject that I’ve long found
+rather mysterious. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,121 @@ entirely within a &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">Relational Database on Top of Key-value Store Explained (or Why B-trees Are Cool)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-11T11:36:00-04:00" pubdate data-updated="true">May 11<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>This post attempts to explain how a relational database can be
+implemented atop a key/value store, a subject that I’ve long found
+rather mysterious.</p>
+
+<p>Every once in a while I would come across a mention that a relational
+database can be implemented using a key/value store (aka dictionary,
+hash table or hash map - for brevity I’ll be using <em>map</em> from here on).</p>
+
+<p>Whenever I thought about it, it just didn’t make sense. A relational
+database needs to store rows <em>in order</em>, and that’s one feature that
+maps do not provide. Imagine we have a table keyed by employee id
+stored in a map and we need to traverse it by id in ascending order. A
+hypothetical keys() method would return us a list of ids ordered
+randomly. It’s impossible to iterate over a hash map <em>in
+order</em>. So how would a relational database work then?</p>
+
+<p>It took a while for me to realize the root of my misunderstanding. I
+naively was trying to picture how tables, rows and values can be
+represented as key/value pairs, and that was the wrong path to take. I
+was focusing on the wrong layer of abstraction. </p>
+
+<p>As it turns out the
+key [NPI] to this problem is the clever data structure commonly used
+to store data in a relational DB known as
+<em><a href="http://en.wikipedia.org/wiki/B-tree">B-Tree</a></em> (or a variation
+thereof, <em><a href="http://en.wikipedia.org/wiki/B+tree">B+Tree</a></em>). 
+Okay, B-trees are nothing new and I’m sure we’ve all heard of them. In fact B-trees were 
+desgined in the 1970’s as a generalization of the
+<a href="http://en.wikipedia.org/wiki/Binary_search_tree">Binary Search Tree</a> that was 
+more suited for block storage. </p>
+
+<p>But there is something about B-trees that I did not know, and which
+now that I do know, seems absolutely essential as well as simply brilliant. In his 1979 paper “The
+Ubiquitous B-Tree” <a href="http://www.cs.purdue.edu/people/comer">Douglas Comer</a> writes: </p>
+
+<blockquote> The availability of demand paging hardware suggests an
+interesting implementation of B-trees.  Through careful allocation,
+each node of the B-tree can be mapped into one page of the virtual
+address space.  Then the user treats the B-tree as if it were in
+memory.  Accesses to nodes (pages) which are not in memory cause the
+system to &#8220;page-in&#8221; the node from secondary storage. </blockquote>
+
+<p>The above paragraph implies that the B-Tree and all its data can be
+stored in <em>pages</em>. In fact, if you look at the file 
+<a href="http://www.sqlite.org/src/artifact/eecc84f02375b2bb7a44abbcbbe3747dde73edb2">format of a SQLite 3 database</a>
+(who says source code comments are bad?) you’ll see it states quite plainly  that the <em>file
+is divided into pages</em>. (You will also see a fantastic description of exactly
+how a B+tree works, but that’s way outside the scope of this post.)</p>
+
+<p>The important point is that the entire file consists of pages and
+nothing else. Inside those pages live the B-tree structure, as well as
+the data. Each table is a B-tree and to access it we need to know the
+starting page number, which in turn is stored in the sqlite_master
+table whose root page is always the first page of the file. The root
+page of a table is the head of the B-tree strucutre, and it may refer
+to other pages, which in turn may be additional nodes of the tree or
+pure data.</p>
+
+<p>All pages are of the same size and are numbered
+sequentially, thus we can easily retreive any page by its number
+because its offset into the file is the page number multiplied by the
+page size. (By default a SQLite3 page is 1K and will hold 4 keys,
+i.e. the order of the tree is 4).</p>
+
+<p>And bingo, there is our key/value pair: the page number is the key,
+and the page itself is the value! All you need to do is stick those
+pages into your favorite key/value store keyed by page number and
+you’ve got a relational database atop a key/value store. It’s that
+simple.</p>
+
+<p>P.S. An astute reader may point out that there is such a thing as a
+<em>sorted map</em>. But a sorted map is very different from a “pure” hash
+map. The miracle of hashing is that not only does it let you find
+elements in O(1) time, but more importantly that it is very suitable
+for distributed processing, where the map may be spread across
+multiple servers. And if you start thinking about how a <em>sorted</em> map
+might be implemented in a distributed fashion, you will ultimately
+loop back to B-trees, because that’s typically how it’s actually done.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -862,6 +977,10 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2018/01/23/explaining-proof-of-work/">Alternative Explanation of Proof-Of-Work in the Blockchain</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
       </li>
     
@@ -875,10 +994,6 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
     
       <li class="post">
         <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/09/25/bitcoin-value-2/">Bitcoin: USD Value</a>
       </li>
     
   </ul>
