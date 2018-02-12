@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T15:05:52-05:00</updated>
+  <updated>2018-02-12T15:10:32-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -149,8 +149,8 @@ easy to explain. I used the term “universal” because it describes it
 well in one word, but really it means “known by every participant”.</p>
 
 <p>The input to SHA-256 can be thought of as an integer between 0 and
-2^256^ (because the output is 32 bytes, i.e. also between 0 and
-2^256^), it is a set of numbers that is known by every participant
+2<sup>256</sup> (because the output is 32 bytes, i.e. also between 0 and
+2<sup>256</sup>), it is a set of numbers that is known by every participant
 even if it is extremely large. The participants can only pick from
 this set.</p>
 
