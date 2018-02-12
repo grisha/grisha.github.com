@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T15:17:19-05:00</updated>
+  <updated>2018-02-12T15:27:20-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -154,8 +154,8 @@ well in one word, but really it means “known by every participant”.</p>
 even if it is extremely large. The participants can only pick from
 this set.</p>
 
-<p>Since the input set is universally known, the function (SHA-256) is
-universally known, and the difficulty requirement is universally known,
+<p>If the input set is universally known, the function (SHA-256) is
+universally known, as well as the difficulty requirement is universally known,
 then the probability of finding a solution is also indeed universal.</p>
 
 <h2 id="trying-a-sha-makes-you-a-participant">Trying a SHA Makes You a Participant</h2>
