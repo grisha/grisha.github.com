@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T16:43:30-05:00</updated>
+  <updated>2018-02-12T16:46:04-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -122,10 +122,10 @@ the speed of the equipment used to calculate the hash.</p>
 <h2 id="the-sha-input-is-irrelevant">The SHA Input Is Irrelevant</h2>
 
 <p>This too goes against our intuition: It doesn’t matter what you feed
-the SHA function. In the Bitcoin blockchain the input is a block
-header.</p>
+the SHA function.</p>
 
-<p>But if we just fed it random values, the probability of finding a
+<p>In the Bitcoin blockchain the input is a block header.
+But if we just fed it random values, the probability of finding a
 conforming hash would <em>still be the same</em>. Regardless of whether the
 input is a valid block header or bytes from /dev/random, it is going
 to take 10 minutes on average to find a solution.</p>
