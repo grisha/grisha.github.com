@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T11:54:44-05:00</updated>
+  <updated>2018-02-12T12:56:04-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -133,8 +133,15 @@ that they solved it if they do, or else we’ll never know about it.)</p>
 
 <p>In a paradoxical way, the distant participants are “communicating”
 without actually communicating, because they are collectively solving
-the same statistical problem. (There’s probably a quantum theory
-explanation of how this actually happens?)</p>
+the same statistical problem.</p>
+
+<p>The universal property while at first seemingly extraordinary is
+actually easy to explain. The input to SHA-256 is an integer between 0
+and 2**256, it is a set of numbers that is universally known. The
+participants can only pick from this set. The input set is universally
+known, the function (SHA-256) is universally known, the difficulty
+requirement is universally known, and thus the probability of finding
+a solution is indeed universal.</p>
 
 <h2 id="trying-a-sha-makes-you-a-participant">Trying a SHA Makes You a Participant</h2>
 
