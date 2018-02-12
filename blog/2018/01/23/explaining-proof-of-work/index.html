@@ -1,0 +1,507 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Alternative Explanation of Proof-Of-Work in the Blockchain - Gregory Trubetskoy</title>
+  <meta name="author" content="Gregory Trubetskoy">
+
+  
+  <meta name="description" content="If you are confused about what role Proof-Of-Work plays in the Bitcoin
+blockchain, you’ve come to the right place. This is an explanation
+that I wish &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://grisha.org/blog/2018/01/23/explaining-proof-of-work">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Gregory Trubetskoy" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<!-- MathJax -->
+<!-- mathjax config similar to math.stackexchange -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+  jax: ["input/TeX", "output/HTML-CSS"],
+  tex2jax: {
+    inlineMath: [ ['$', '$'] ],
+    displayMath: [ ['$$', '$$']],
+    processEscapes: true,
+  },
+  messageStyle: "none",
+  "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<!-- <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-42971867-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Gregory Trubetskoy</a></h1>
+  
+    <h2>Notes to self.</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:grisha.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Alternative Explanation of Proof-Of-Work in the Blockchain</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-01-23T11:41:00-05:00" pubdate data-updated="true">Jan 23<span>rd</span>, 2018</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>If you are confused about what role Proof-Of-Work plays in the Bitcoin
+blockchain, you’ve come to the right place. This is an explanation
+that I wish was more commonly known. Before you get stuck on trying
+to understand the <a href="http://satoshi.nakamotoinstitute.org/emails/cryptography/11/">byzantine generals problem</a>,
+try this simple reasoning first.</p>
+
+<p>This write up isn’t about Proof-Of-Work per se, it explains why the
+blockchain needs it. If you do not know anything about Proof-Of-Work,
+then <a href="https://en.bitcoin.it/wiki/Proof_of_work">this</a> link might be a
+good start.</p>
+
+<p>This explanation of how the Proof-Of-Work is essential for the
+blockchain rests on illustrating a few properties of Proof-Of-Work and
+the blockchain that are not immediately obvious and sometimes
+counter-intuitive. They are listed below in no specific order. Having
+understood each, one should arrive at the conclusion that it is a
+mechanism by which a distributed and decentralized system of timing,
+i.e. a clock is accomplished.</p>
+
+<h2 id="proof-of-work-recap">Proof-Of-Work Recap</h2>
+
+<p>Very briefly, the Bitcoin Proof-Of-Work is a value whose
+<a href="https://en.wikipedia.org/wiki/SHA-2">SHA-2</a> hash
+conforms to a certain requirement which makes such a value difficult
+to find. The difficulty is established by requiring that the hash is
+less than a specific number, the smaller the number, the more rare the
+input value and the higher the difficulty of finding it.</p>
+
+<p>It is called “Proof Of Work”, because it is known that a value with
+such a hash is extremely rare, and that to find this value requires a
+lot of trial and error, i.e. “work”. Work in turn implies <em>time</em>.</p>
+
+<p>By varying the requirement we can vary the difficulty and thus the
+probability of such a hash being found. The Bitcoin difficulty adjusts
+dynamically so that a conforming hash is found on average once every
+ten minutes.</p>
+
+<h2 id="the-decentralized-ledger-time-ordering-problem">The Decentralized Ledger Time Ordering Problem</h2>
+
+<p>Any ledger absolutely needs order. One cannot spend money before
+receiving it, nor can one spend money that is already
+spent. Blockchain transactions must be ordered in time, unambiguously,
+and without any trusted parties.</p>
+
+<p>But if transactions are generated by anonymous participants all over
+the world, and no central party is responsible for organizing the
+list, how can it be done? For example transactions could include
+timestamps, but how could those be trusted?</p>
+
+<p>Time is but a human concept, and any source of it, such as an atomic
+clock, is a “trusted third party” (which on top of everything is
+slightly wrong most of time). Paradoxically, relying on a timestamp to
+determine event order is not possible in a decentralized system.</p>
+
+<p>It must be stressed that the <em>impossibility of ordering by time</em> was <em>the problem</em> that
+precluded a decentralized ledger from ever being possible until
+Satoshi Nakamoto invented a solution. There are many other technical solutions that
+play into the blockchain, but timing is fundamental and paramount,
+without it there is no blockchain.</p>
+
+<h2 id="what-happens-between-blocks-is-irrelevant">What Happens Between Blocks is Irrelevant</h2>
+
+<p>The state of the chain is reflected by its blocks, and each new block
+produces a new state. The blockchain state moves forward one block at
+a time, and the average 10 minutes of a block is the smallest measure
+of blockchain time.</p>
+
+<h2 id="sha-is-memoryless">SHA is Memoryless</h2>
+
+<p>The Secure Hash Algorithm is what is known in statistics and
+probability as <a href="https://en.wikipedia.org/wiki/Memorylessness"><em>memoryless</em></a>.
+This is a property that is particularly counter-intuitive for us humans.</p>
+
+<p>The best example of memoryless-ness is a coin toss. If a coin comes up
+heads 10 times in a row, does it mean that the next toss is more
+likely to be tails? Our intuition says yes, but in reality each toss
+has a 50/50 chance regardless of what happened.</p>
+
+<p>When it comes to SHA Proof-Of-Work, it means that as miners try to
+solve blocks iterating over nonces, each attempt is a stand-alone
+event and the probability of finding a solution is constant at each
+attempt, regardless of how much work has been done in the past.</p>
+
+<p>The probability of finding the solution given a specific difficulty in
+a given period of time is therefore determined solely by the speed at
+which all participants can crunch through the hashes. Not the prior
+history, not the data, just the hashrate.</p>
+
+<p>The hashrate in turn is a function of the number of participants and
+the speed of the equipment used to calculate the hash.</p>
+
+<h2 id="the-sha-input-is-irrelevant">The SHA Input Is Irrelevant</h2>
+
+<p>This too goes against our intuition: It doesn’t matter what you feed
+the SHA function. In the Bitcoin blockchain the input is a block, but
+if you just feed it random values, the probability of finding a
+conforming hash is <em>still the same</em>. Regardless of whether the input
+is a valid block or bytes from /dev/random, it is going to take 10
+minutes on average to find a solution.</p>
+
+<p>Of course if you find a conforming hash but your input wasn’t a valid
+block, such a solution cannot be added to the blockchain, but it is
+still Proof-Of-Work (albeit useless for the blockchain).</p>
+
+<h2 id="the-difficulty-is-intergalactic">The Difficulty is Intergalactic</h2>
+
+<p>This is where things get particularly difficult to grasp: The
+difficulty is <em>universal</em>, meaning it spans the entire universe. We
+could have miners on Mars helping out, they do not need know or
+communicate with the Earth miners, the problem would still be solved
+every 10 minutes. (Ok, they’ll need to somehow tell the Earth people
+that they solved it if they do, or else we’ll never know about it.)</p>
+
+<p>In a paradoxical way, the distant participants are “communicating”
+without actually communicating, because they are collectively solving
+the same statistical problem. (There’s probably a quantum theory
+explanation of how this actually happens?)</p>
+
+<h2 id="trying-a-sha-makes-you-a-participant">Trying a SHA Makes You a Participant</h2>
+
+<p>Again, mind-boggling. If the stated problem is to find a conforming
+hash, all you have to do is to try it once, and bingo, you’ve affected
+the global hash rate, and for that one attempt you were a participant
+helping others solve the problem. You did not need to tell others that
+you did it, they didn’t need to know about it, but your attempt <em>did</em>
+affect the outcome. For the whole universe, no less.</p>
+
+<p>It is noteworthy that since SHA is memoryless, each attempt could be
+thought of as a participant joining the effort and immediately
+leaving. Thus miners join and leave, trillions of times per second.</p>
+
+<h2 id="work-is-a-clock">Work is a Clock</h2>
+
+<p>And there is the crux of it: The difficulty in finding a conforming
+hash acts as <em>a clock</em>. It doesn’t matter that this clock is
+imprecise. What matters is that the state of the chain can be tied
+unambiguously to the ticks of such a clock.</p>
+
+<p>This clock is operated by the multi-terahash rate of an unknown
+number of collective participants spread across the planet,
+independent of one another.</p>
+
+<h2 id="last-piece-of-the-puzzle">Last Piece of the Puzzle</h2>
+
+<p>It must be the hash of a block (the block header, to be precise). As
+we mentioned, the input doesn’t matter, but if it is an actual block,
+then whenever a solution is found, it happened at the tick of our
+Proof-Of-Work clock. Not before, not after, but exactly at. We know
+this unambiguosly because the block was part of that mechanism.</p>
+
+<p>To put it another way, if blocks weren’t the input to the SHA256
+function, we’d still have a distributed clock, but we couldn’t tie blocks to
+the ticks of this clock. Using the blocks addresses this issue.</p>
+
+<h2 id="and-that-is-it">And that is it</h2>
+
+<p>This is what Proof-Of-Work does for the blockchain. It is not a
+“lottery” where miners win the right to solve a block, nor is it some
+peculiar conversion of real energy into a valuable concept, those
+things are secondary.</p>
+
+<p>For example the lottery and the miner’s reward aspect is what
+encourages miners to participate, but it isn’t what makes the
+blockchain possible. Blocks are a Merkle tree, but again, that has
+nothing to do with Proof-Of-Work, it cryptographically reinforces
+recording of the block ordering. Proof-Of-Work is also the mechanism
+by which blocks become effectively immutable, and that’s a nice
+side-effect which makes Segregated Witness possible, but it could just
+as well be done by preserving the signatures (witness), so this too is
+secondary.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Proof-Of-Work is simply a distributed, decentralized clock.</p>
+
+<p>If you understand this explanation, then you should have a much better
+grasp of how Proof-Of-Work compares to Proof-Of-Stake, and it should
+be clear that they are not really comparable, Proof-Of-Stake is about
+(randomly distributed) authority, while Proof-Of-Work is a clock.</p>
+
+<p>Proof-Of-Work is probably a misnomer. It is not about proving work, it
+is about verifiably taking time. When I see a hash that satisfies the
+difficulty, I know it must have taken time. The method by which the
+delay is accomplished is “work”, but the hash is a proof of <em>time</em>,
+not work.</p>
+
+<p>Figuring out a way to pace ticks without work is a trillion dollar
+problem, if you find one, please do let me know!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-01-23T11:41:00-05:00" pubdate data-updated="true">Jan 23<span>rd</span>, 2018</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2018/01/23/explaining-proof-of-work/" data-via="humblehack" data-counturl="http://grisha.org/blog/2018/01/23/explaining-proof-of-work/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017/12/15/blockchain-and-postgres/" title="Previous Post: The Bitcoin Blockchain PostgresSQL Schema">&laquo; The Bitcoin Blockchain PostgresSQL Schema</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    
+
+
+<section>
+  <br/>
+  <p>
+    <small>Send me some crypto if you like this content, TIA!</small><br/><br/>
+<tt><small>Bitcoin: 1GrishapUx3mofmQuTbL4JEEMdzGgeSEcu</small></tt><br/>
+<tt><small>Litecoin: LXLGrXXQM2t5ckq4gmznsVzpRNhRVD1V8w</small></tt><br/>
+  </p>
+</section>
+
+<section>
+  <h1>About Me</h1>
+
+  <p>
+  <div style="width: 75%; margin: 0 auto;">
+  <a href="https://twitter.com/humblehack" class="twitter-follow-button"
+    data-show-count="">Follow @humblehack</a>
+  </div>
+  </p>
+
+  <p>I am currently a (Data) Hacker at <a href="http://voxmedia.com">Vox Media</a>.</p>
+  <p>Grisha is a common Russian short name for Gregory. It is pronounced more like Greesha.</p>
+  <p>Years ago I wrote <a href="http://modpython.org">mod_python</a>, which became a hugely succesful OSS Project and is still in use by millions of sites.</p>
+  <p>I am a former VP and member emeritus of the <a href="http://apache.org">Apache Software Foundation</a>.</p>
+  <p>I started programming professionally back when I was a teenager.
+  I've spent most of my early career working at large ISP's solving industrial-scale hosting challenges. Since around 2009 I've become more intersted in and now work exclusively on data infrastuctre, both big and small, but mostly big.</p>
+  <p>I was born and grew up in Moscow, Russia, though I've lived in the Washington, DC (USA) area for more than half of my life now. Our kids were born and go to school here, it's gradually become home for us.</p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2018/01/23/explaining-proof-of-work/">Alternative Explanation of Proof-Of-Work in the Blockchain</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
+      </li>
+    
+  </ul>
+</section>
+
+<br/><br/><br/>
+<br/><br/><br/>
+<br/><br/><br/>
+
+<section>
+<script type="text/javascript"><!--
+google_ad_client = "pub-9718360309690383";
+google_ad_width = 200;
+google_ad_height = 200;
+google_ad_format = "200x200_as";
+google_ad_type = "image";
+//-->
+</script>
+<div style="text-align: center;">
+  <div style="text-align: left; width: 200px; display: block; margin-left: auto; margin-right: auto;">
+    <script type="text/javascript"
+            src="https://pagead2.googlesyndication.com/pagead/show_ads.js">
+            </script>
+  </div>
+</div>
+
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  <img src="https://www.ispol.com/grisha_org.gif" height="1" width="1">
+  Copyright &copy; 2018 - Gregory Trubetskoy -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'grisha';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2018/01/23/explaining-proof-of-work/';
+        var disqus_url = 'http://grisha.org/blog/2018/01/23/explaining-proof-of-work/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'https://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
