@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T16:06:24-05:00</updated>
+  <updated>2018-02-12T16:09:16-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -97,11 +97,11 @@ This is a property that is particularly counter-intuitive for us humans.</p>
 <p>The best example of memoryless-ness is a coin toss. If a coin comes up
 heads 10 times in a row, does it mean that the next toss is more
 likely to be tails? Our intuition says yes, but in reality each toss
-has a 50/50 chance regardless of what happened.</p>
+has a 50/50 chance of either outcome regardless of what happened in
+the past.</p>
 
-<p>Memorylessness is required for the problem to be <em>progress-free</em>,
-which is another related statistical term. Progress-free means that as
-miners try to solve blocks iterating over nonces, each attempt is a
+<p>Memorylessness is required for the problem to be <em>progress-free</em>.
+Progress-free means that as miners try to solve blocks iterating over nonces, each attempt is a
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
