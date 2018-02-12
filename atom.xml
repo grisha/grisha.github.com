@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T16:09:59-05:00</updated>
+  <updated>2018-02-12T16:22:21-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -162,13 +162,13 @@ then the probability of finding a solution is also indeed universal.</p>
 
 <h2 id="trying-a-sha-makes-you-a-participant">Trying a SHA Makes You a Participant</h2>
 
-<p>Again, mind-boggling. If the stated problem is to find a conforming
-hash, all you have to do is to try it once, and bingo, you’ve affected
-the global hash rate, and for that one attempt you were a participant
-helping others solve the problem. You did not need to tell others that
-you did it (unless you actually found a solution), others didn’t need to
-know about it, but your attempt <em>did</em> affect the outcome. For the
-whole universe, no less.</p>
+<p>If the stated problem is to find a conforming hash, all you have to do
+is to try it once, and bingo, you’ve affected the global hash rate,
+and for that one attempt you were a participant helping others solve
+the problem. You did not need to tell others that you did it (unless
+you actually found a solution), others didn’t need to know about it,
+but your attempt <em>did</em> affect the outcome. For the whole universe, no
+less.</p>
 
 <p>It is noteworthy that since SHA is progress-free, each attempt could be
 thought of as a participant joining the effort and immediately
