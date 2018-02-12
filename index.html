@@ -242,26 +242,27 @@ still Proof-Of-Work (albeit useless for the blockchain).</p>
 
 <h2 id="the-difficulty-is-intergalactic">The Difficulty is Intergalactic</h2>
 
-<p>This is where things get particularly difficult to grasp: The
-difficulty is <em>universal</em>, meaning it spans the entire universe. We
-could have miners on Mars helping out, they do not need know or
-communicate with the Earth miners, the problem would still be solved
-every 10 minutes. (Ok, they’ll need to somehow tell the Earth people
-that they solved it if they do, or else we’ll never know about it.)</p>
+<p>Curiously, the difficulty is <em>universal</em>, meaning it spans the entire
+universe. We could have miners on Mars helping out, they do not need
+know or communicate with the Earth miners, the problem would still be
+solved every 10 minutes. (Ok, they’ll need to somehow tell the Earth
+people that they solved it if they do, or else we’ll never know about
+it.)</p>
 
 <p>In a paradoxical way, the distant participants are “communicating”
 without actually communicating, because they are collectively solving
 the same statistical problem.</p>
 
-<p>The universal property while at first seemingly magical is actually
+<p>This universal property while at first seemingly magical is actually
 easy to explain. I used the term “universal” because it describes it
 well in one word, but really it means “known by every participant”.</p>
 
 <p>The input to SHA-256 can be thought of as an integer between 0 and
-2<sup>256</sup> (because the output is 32 bytes, i.e. also between 0 and
-2<sup>256</sup>), it is a set of numbers that is known by every participant
-even if it is extremely large. The participants can only pick from
-this set.</p>
+2<sup>256</sup> (because the output is 32 bytes, i.e. also between 0
+and 2<sup>256</sup>, anything larger guarantees a collision,
+i.e. becomes redundant). Even though it is extremely large, it is a
+set of numbers that is known by every participant and the participants
+can only pick from this set.</p>
 
 <p>If the input set is universally known, the function (SHA-256) is
 universally known, as well as the difficulty requirement is universally known,
