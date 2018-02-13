@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-13T15:21:43-05:00</updated>
+  <updated>2018-02-13T15:22:45-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -20,7 +20,7 @@
     <id>http://grisha.org/blog/2018/01/23/explaining-proof-of-work</id>
     <content type="html"><![CDATA[<p>This is an explanation of the key function on Proof-Of-Work in the
 Bitcoin blockchain.  It focuses on the one feature of Proof-Of-Work
-that is essential and show that any other features often talked about
+that is essential and shows that other features often talked about
 such as security are secondary side-effects, useful, but not
 essential.</p>
 
