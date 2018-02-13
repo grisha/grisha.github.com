@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-12T19:51:17-05:00</updated>
+  <updated>2018-02-13T11:32:22-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -152,9 +152,10 @@ well in one word, but really it means “known by every participant”.</p>
 <p>The input to SHA-256 can be thought of as an integer between 0 and
 2<sup>256</sup> (because the output is 32 bytes, i.e. also between 0
 and 2<sup>256</sup>, anything larger guarantees a collision,
-i.e. becomes redundant). Even though it is extremely large, it is a
-set of numbers that is known by every participant and the participants
-can only pick from this set.</p>
+i.e. becomes redundant). Even though it is extremely large
+(<a href="https://learncryptography.com/cryptanalysis/why-is-2-256-secure">exponentially larger</a>
+than the number of atoms in the perceivable universe), it is a set of numbers that is known by every participant
+and the participants can only pick from this set.</p>
 
 <p>If the input set is universally known, the function (SHA-256) is
 universally known, as well as the difficulty requirement is universally known,
