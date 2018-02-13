@@ -32,6 +32,9 @@ When two *different* transactions' inputs reference the same output, it is
 considered a *[double spend](https://en.wikipedia.org/wiki/Double-spending)*,
 and only one of the spending transactions is valid (the details
 of how validity is determined are outside the scope of this write up).
+While double-spends do imply that one of the transactions is invalid,
+it is not uncommon for double-spends to exist at least for a period of time,
+thus the database schema needs to allow them.
 
 A transaction's input value is the sum of its inputs and the output
 value is the sum of its outputs. Naturally, the output value cannot
@@ -52,7 +55,7 @@ of this in the blockchain. The implication of this is that the second
 instance of such a transaction is unspendable. This oddity was
 addressed by a change in the consensus which requires the block
 *height* to be referenced in the coinbase and is since then no longer
-possible (see [BIP30](https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki).
+possible (see [BIP30](https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki)).
 
 The same transaction can be included in more than one block. This is
 common during chain splits, i.e. when more than one miner solves a
@@ -86,7 +89,7 @@ There is also an ambiguity in how the hash is printed versus how it is
 stored. While the SHA standard does not specify the endian-ness of the
 hash and refers to it as an array of bytes, Satoshi Nakomoto decided
 to treat hashes as little-endian 256-bit integers. The implication
-being that when the hash is printed (as a transaction id) the order of
+being that when the hash is printed (e.g. as a transaction id) the order of
 bytes is the reverse of how it is stored in the blockchain.
 
 Using integer ids creates a complication in how inputs reference
@@ -151,16 +154,17 @@ Our `blocks` table is defined as follows:
 
 Columns `orphan`, `status`, `filen` and `filepos` are from the
 [CBlockIndex](https://github.com/bitcoin/bitcoin/blob/0.15/src/chain.h#L170)
-class which is serialized in LevelDb and contains information about
-the file in which the block was stored on-disk as far as Core is
-concerned. This information is only necessary for debugging purposes,
-also note that it is unique to the particular instance of the Core
-database, i.e. if you were to wipe it and download the chain from
-scratch, location and even status of blocks is likely to be different.
+class which is serialized in LevelDb and not formally part of the blockchain.
+It contains information about the file in which the block was stored
+on-disk as far as Core is concerned. This information is only
+necessary for debugging purposes, also note that it is unique to the
+particular instance of the Core database, i.e. if you were to wipe it
+and download the chain from scratch, location and even status of
+blocks is likely to be different.
 
 Note that the C++ `CBlockHeader` class does not actually include the
 hash, it is computed on-the-fly as needed. Same is true with respect
-to transactions and its hash.
+to transaction id.
 
 We also need a many-to-many link to transactions, which is the
 `block_txs` table. Not only do we need to record that a transaction is
@@ -239,21 +243,21 @@ In SQL, an output looks like this:
   );
 ```
 
-The `tx_id` column is the transaction to which this input belongs, `n`
-is the position within the input list.
+The `tx_id` column is the transaction to which this output belongs, `n`
+is the position within the output list.
 
 The `spent` column is an optimization, it is not part of the
-blockchain. An output is spent if an input is referencing it. Core
-maintains a separate LevelDb dataset called the *UTXO Set* (Unspent
-Transaction Output Set) which contains all unspent outputs. The reason
-Core does it this way is because by default it does not index
-transactions, i.e. Core actually does not have a way of quickly
-retrieving a transaction from the store as there generally is no need
-for such retrieval as part of a node operation, while the UTXO Set is
-both sufficient and smaller than a full transaction index. Since in
-Postgres we have no choice but to index transactions, there is no
-benefit in having UTXOs as a separate table, the `spent` flag serves
-this purpose instead.
+blockchain. An output is spent if later in the blockchain there exists
+an input referencing it. Core maintains a separate LevelDb dataset
+called the *UTXO Set* (Unspent Transaction Output Set) which contains
+all unspent outputs. The reason Core does it this way is because by
+default it does not index transactions, i.e. Core actually does not
+have a way of quickly retrieving a transaction from the store as there
+generally is no need for such retrieval as part of a node operation,
+while the UTXO Set is both sufficient and smaller than a full
+transaction index. Since in Postgres we have no choice but to index
+transactions, there is no benefit in having UTXOs as a separate table,
+the `spent` flag serves this purpose instead.
 
 The UTXO Set does not include any outputs with the value of 0, since
 there is nothing to spend there even though no input refers to them
@@ -383,7 +387,7 @@ AFTER INSERT OR UPDATE OR DELETE ON txins DEFERRABLE
 ## Identifying Orphaned Blocks ##
 
 While this is not part of the schema, I thought it would be
-interesting to the potential readers. An orphaned block is a block to
+of interest to the readers. An orphaned block is a block to
 which no other `prevhash` refers. At the time of a chain split we
 start out with two blocks referring to the same block as previous, but
 the next block to arrive will identify one of the two as its previous

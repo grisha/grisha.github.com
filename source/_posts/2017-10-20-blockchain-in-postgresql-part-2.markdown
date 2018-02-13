@@ -7,6 +7,10 @@ published: true
 categories:
 ---
 
+Update: there is now a [better write up](/blog/2017/12/15/blockchain-and-postgres/)
+of the PostgreSQL schema. This post was rather half-baked as much was
+still not understood when I wrote it.
+
 In a [previous post](/blog/2017/10/10/postgre-as-a-full-node/) I
 described a simplistic schema to store the Bitcoin blockchain in
 PostgreSQL. In this post I'm investigating pushing the envelope

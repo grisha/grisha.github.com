@@ -176,7 +176,7 @@ will arrive at the following formula for distance between two slots
 `i` and `j` in a wrap-around array:
 
 {% codeblock lang:python %}
-distance = (size + j - i) % size
+distance = (size + i - j) % size
 {% endcodeblock %}
 
 Another thing to consider is that we're splitting our series across
