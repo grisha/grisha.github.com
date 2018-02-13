@@ -126,42 +126,23 @@ that I wish &hellip;">
 
 <div class="entry-content"><p>If you are confused about what role Proof-Of-Work plays in the Bitcoin
 blockchain, you’ve come to the right place. This is an explanation
-that I wish was more commonly known. Before you get stuck on trying
-to understand the <a href="http://satoshi.nakamotoinstitute.org/emails/cryptography/11/">byzantine generals problem</a>,
-try this simple reasoning first.</p>
+that I wish was more commonly known. It focuses on the one feature of
+Proof-Of-Work that is essential and argues that other features often
+talked about such as “security” or secondary side-effect, useful, but
+not essential.</p>
 
-<p>This write up isn’t about Proof-Of-Work per se, it explains why the
+<p>Note that this write up isn’t about Proof-Of-Work per se, it explains why the
 blockchain needs it. If you do not know anything about Proof-Of-Work,
 then <a href="https://en.bitcoin.it/wiki/Proof_of_work">this</a> link might be a
 good start.</p>
 
-<p>This explanation of how the Proof-Of-Work is essential for the
-blockchain rests on illustrating a few properties of Proof-Of-Work and
-the blockchain that are not immediately obvious and sometimes
-are counter-intuitive. These are listed below.</p>
+<p>This explanation rests on illustrating a few interesting properties of
+Proof-Of-Work and the blockchain that are not immediately obvious and
+sometimes are rather counter-intuitive. These are listed below.</p>
 
 <p>Having understood each of these properties, one should conclude that
 Proof-Of-Work is really a mechanism which accomplishes a distributed
 and decentralized system of timing, i.e. a clock.</p>
-
-<h2 id="proof-of-work-recap">Proof-Of-Work Recap</h2>
-
-<p>Very briefly, the Bitcoin Proof-Of-Work is a value whose
-<a href="https://en.wikipedia.org/wiki/SHA-2">SHA-2</a> hash
-conforms to a certain requirement which makes such a value difficult
-to find. The difficulty is established by requiring that the hash is
-less than a specific number, the smaller the number, the more rare the
-input value and the higher the difficulty of finding it.</p>
-
-<p>It is called “Proof Of Work” because it is known that a value with
-such a hash is extremely rare, which means that finding such a value
-requires a lot of trial and error, i.e. “work”. Work in turn implies
-<em>time</em>.</p>
-
-<p>By varying the requirement, we can vary the difficulty and thus the
-probability of such a hash being found. The Bitcoin Difficulty adjusts
-dynamically so that a proper hash is found on average once every ten
-minutes.</p>
 
 <h2 id="the-decentralized-ledger-time-ordering-problem">The Decentralized Ledger Time Ordering Problem</h2>
 
@@ -181,20 +162,42 @@ slightly wrong most of time due to network delays as well as
 the effects of relativity). Paradoxically, relying on a timestamp to
 determine event order is not possible in a decentralized system.</p>
 
-<h2 id="timing-is-the-root-problem">Timing is the Root Problem</h2>
-
-<p>It must be stressed that the <em>impossibility of ordering by time</em> was “the problem” that
-precluded a decentralized ledger from ever being possible until
-Satoshi Nakamoto invented a <a href="https://bitcoin.org/bitcoin.pdf">solution</a>.
-There are many other technical solutions that
-play into the blockchain, but timing is fundamental and paramount.
-Without timing there is no blockchain.</p>
-
 <p>This problem is well described in
 <a href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport’s</a> 1978 paper
 <a href="https://amturing.acm.org/p558-lamport.pdf">“Time, Clocks, and the Ordering of Events in a Distributed System”</a>
 which doesn’t actually provide a comprehensive solution other than
-“properly synchronized physical clocks”.</p>
+“properly synchronized physical clocks”. In 1982 Lamport also
+described the <a href="https://people.eecs.berkeley.edu/~luca/cs174/byzantine.pdf">“Byzantine Generals Problem”</a>,
+and Satoshi in one of his first emails <a href="http://satoshi.nakamotoinstitute.org/emails/cryptography/11/">explains</a>,
+explains how Proof-Of-Work is a solution.</p>
+
+<h2 id="timing-is-the-root-problem">Timing is the Root Problem</h2>
+
+<p>It must be stressed that the <em>impossibility of ordering by time</em> was the unsolved problem that
+precluded a decentralized ledger from ever being possible until
+Satoshi Nakamoto invented a <a href="https://bitcoin.org/bitcoin.pdf">solution</a>.
+There are many other technical details that
+play into the blockchain, but timing is fundamental and paramount.
+Without timing there is no blockchain.</p>
+
+<h2 id="proof-of-work-recap">Proof-Of-Work Recap</h2>
+
+<p>Very briefly, the Bitcoin Proof-Of-Work is a value whose
+<a href="https://en.wikipedia.org/wiki/SHA-2">SHA-2</a> hash
+conforms to a certain requirement which makes such a value difficult
+to find. The difficulty is established by requiring that the hash is
+less than a specific number, the smaller the number, the more rare the
+input value and the higher the difficulty of finding it.</p>
+
+<p>It is called “Proof Of Work” because it is known that a value with
+such a hash is extremely rare, which means that finding such a value
+requires a lot of trial and error, i.e. “work”. Work in turn implies
+<em>time</em>.</p>
+
+<p>By varying the requirement, we can vary the difficulty and thus the
+probability of such a hash being found. The Bitcoin Difficulty adjusts
+dynamically so that a proper hash is found on average once every ten
+minutes.</p>
 
 <h2 id="nothing-happens-between-blocks">Nothing Happens Between Blocks</h2>
 
