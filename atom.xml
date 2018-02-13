@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-13T15:18:09-05:00</updated>
+  <updated>2018-02-13T15:20:34-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -18,12 +18,11 @@
     <link href="http://grisha.org/blog/2018/01/23/explaining-proof-of-work/"/>
     <updated>2018-01-23T11:41:00-05:00</updated>
     <id>http://grisha.org/blog/2018/01/23/explaining-proof-of-work</id>
-    <content type="html"><![CDATA[<p>If you are confused about what role Proof-Of-Work plays in the Bitcoin
-blockchain, you’ve come to the right place. This is an explanation
-that I wish was more commonly known. It focuses on the one feature of
-Proof-Of-Work that is essential and argues that other features often
-talked about such as security are secondary side-effects, useful, but
-not essential.</p>
+    <content type="html"><![CDATA[<p>This is an explanation of the key function on Proof-Of-Work in the
+Bitcoin blockchain.  It focuses on the one feature of Proof-Of-Work
+that is essential and show that any other features often talked about
+such as security are secondary side-effects, useful, but not
+essential.</p>
 
 <p>Note that this write up isn’t about Proof-Of-Work <em>per se</em>, it explains why the
 blockchain needs it. If you do not know anything about Proof-Of-Work,
