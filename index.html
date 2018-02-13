@@ -220,12 +220,14 @@ has a 50/50 chance of either outcome regardless of what happened in
 the past.</p>
 
 <p>Memorylessness is required for the problem to be <em>progress-free</em>.
-Progress-free means that as miners try to solve blocks iterating
-over <a href="https://en.bitcoin.it/wiki/Nonce">nonces</a>, each attempt is a
+Progress-free means that as miners try to solve blocks iterating over
+<a href="https://en.bitcoin.it/wiki/Nonce">nonces</a>, each attempt is a
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
-getting any “closer” to a solution i.e. making no progress.</p>
+getting any “closer” to a solution i.e. making no progress. A miner
+who’s been looking for a solution for a year isn’t more likely to
+solve a block than a miner who started a nanosecond ago.</p>
 
 <p>The probability of finding the solution given a specific difficulty in
 a given period of time is therefore determined <em>solely by the speed at
