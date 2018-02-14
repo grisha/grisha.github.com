@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T09:57:31-05:00</updated>
+  <updated>2018-02-14T09:59:13-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -24,13 +24,13 @@ that is essential and shows that other features often talked about
 such as security are secondary side-effects, useful, but not
 essential.</p>
 
-<p>Note that this write up isn’t about Proof-of-Work <em>per se</em>, it explains why the
-blockchain needs it. If you do not know anything about Proof-of-Work,
+<p>Note that this write up isn’t about Proof-of-Work <em>per se</em>, it explains how the
+blockchain takes advantage of it. If you do not know anything about Proof-of-Work,
 then <a href="https://en.bitcoin.it/wiki/Proof_of_work">this</a> link might be a
 good start.</p>
 
 <p>This explanation rests on illustrating a few interesting properties of
-Proof-of-Work and the blockchain that are not immediately obvious and
+how Proof-of-Work is used in the blockchain that are not immediately obvious and
 sometimes are rather counter-intuitive. Having understood each of
 these properties, one should conclude that Proof-of-Work is primarily a
 mechanism which accomplishes a distributed and decentralized system of
