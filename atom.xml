@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T12:34:59-05:00</updated>
+  <updated>2018-02-14T12:37:41-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -62,6 +62,10 @@ is a “trusted third party” (which on top of everything is
 slightly wrong most of time due to network delays as well as
 the effects of relativity). Paradoxically, relying on a timestamp to
 determine event order is not possible in a decentralized system.</p>
+
+<p>The “time” we are interested in is not the year, month, day, etc. that
+we are used to. What we need is a mechanism by which we can verify that
+one event took place before another or perhaps concurrently.</p>
 
 <p>This problem is well described in
 <a href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport’s</a> 1978 paper
