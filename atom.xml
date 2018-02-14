@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T09:51:37-05:00</updated>
+  <updated>2018-02-14T09:54:29-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -210,9 +210,9 @@ global hashrate listed on many sites is known not because every miner
 registered at some “miners registration office” where they report
 their hash rate periodically. No such thing exists.</p>
 
-<p>The hash rate is know because for a solution of a specific difficulty
+<p>The hash rate is known because for a solution of a specific difficulty
 to be found in 10 minutes, on average this many attempts
-(10<sup>21</sup> as of this writing) had to have been made by someone
+(~10<sup>21</sup> as of this writing) had to have been made by someone
 somewhere.</p>
 
 <p>We do not know who these participants are, they never announced that
