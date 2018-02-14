@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T12:26:26-05:00</updated>
+  <updated>2018-02-14T12:28:05-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -262,7 +262,7 @@ the ticks of this clock. Using the blocks addresses this issue.</p>
 <p>This is what Proof-of-Work does for the blockchain. It is not a
 “lottery” where miners win the right to solve a block, nor is it some
 peculiar conversion of real energy into a valuable concept, those
-things are secondary.</p>
+are all red herrings.</p>
 
 <p>For example the lottery and the miner’s reward aspect is what
 encourages miners to participate, but it isn’t what makes the
