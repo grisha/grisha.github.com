@@ -57,6 +57,14 @@ The "time" we are interested in is not the year, month, day, etc. that
 we are used to. What we need is a mechanism by which we can verify that
 one event took place before another or perhaps concurrently.
 
+First though, for the notions of before and after to be applicable, a
+_point in time_ needs to be established. Establishing a point in time
+may seem theoretically impossible at first because there is no
+technology accurate enough to measure a
+[Planck](https://en.wikipedia.org/wiki/Planck_time).  But as you'll
+see, Bitcoin works around this by creating its own notion of time
+where precise points in time are in fact possible.
+
 This problem is well described in
 [Leslie Lamport's](https://en.wikipedia.org/wiki/Leslie_Lamport) 1978 paper
 ["Time, Clocks, and the Ordering of Events in a Distributed System"](https://amturing.acm.org/p558-lamport.pdf)
@@ -251,6 +259,10 @@ this unambiguosly because the block was part of that mechanism.
 To put it another way, if blocks weren't the input to the SHA256
 function, we'd still have a distributed clock, but we couldn't tie blocks to
 the ticks of this clock. Using blocks as input addresses this issue.
+
+Noteworthy, our Proof-of-Work clock only provides us with ticks. There
+is no way tell order from the ticks, this is what the Merkle tree is
+for.
 
 ## What About the Distributed Consensus? ##
 
