@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Blockchain Proof-Of-Work is a Decentralized Clock - Gregory Trubetskoy</title>
+  <title>Blockchain Proof-of-Work is a Decentralized Clock - Gregory Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="This is an explanation of the key function on Proof-Of-Work in the
-Bitcoin blockchain. It focuses on the one feature of Proof-Of-Work
+  <meta name="description" content="This is an explanation of the key function on Proof-of-Work in the
+Bitcoin blockchain. It focuses on the one feature of Proof-of-Work
 that is &hellip;">
   
 
@@ -99,7 +99,7 @@ that is &hellip;">
   
   <header>
     
-      <h1 class="entry-title">Blockchain Proof-Of-Work Is a Decentralized Clock</h1>
+      <h1 class="entry-title">Blockchain Proof-of-Work Is a Decentralized Clock</h1>
     
     
       <p class="meta">
@@ -124,21 +124,21 @@ that is &hellip;">
   </header>
 
 
-<div class="entry-content"><p>This is an explanation of the key function on Proof-Of-Work in the
-Bitcoin blockchain.  It focuses on the one feature of Proof-Of-Work
+<div class="entry-content"><p>This is an explanation of the key function on Proof-of-Work in the
+Bitcoin blockchain.  It focuses on the one feature of Proof-of-Work
 that is essential and shows that other features often talked about
 such as security are secondary side-effects, useful, but not
 essential.</p>
 
-<p>Note that this write up isn’t about Proof-Of-Work <em>per se</em>, it explains why the
-blockchain needs it. If you do not know anything about Proof-Of-Work,
+<p>Note that this write up isn’t about Proof-of-Work <em>per se</em>, it explains why the
+blockchain needs it. If you do not know anything about Proof-of-Work,
 then <a href="https://en.bitcoin.it/wiki/Proof_of_work">this</a> link might be a
 good start.</p>
 
 <p>This explanation rests on illustrating a few interesting properties of
-Proof-Of-Work and the blockchain that are not immediately obvious and
+Proof-of-Work and the blockchain that are not immediately obvious and
 sometimes are rather counter-intuitive. Having understood each of
-these properties, one should conclude that Proof-Of-Work is primarily a
+these properties, one should conclude that Proof-of-Work is primarily a
 mechanism which accomplishes a distributed and decentralized system of
 timing, i.e. a clock.</p>
 
@@ -167,7 +167,7 @@ which doesn’t actually provide a comprehensive solution other than
 “properly synchronized physical clocks”. In 1982 Lamport also
 described the <a href="https://people.eecs.berkeley.edu/~luca/cs174/byzantine.pdf">“Byzantine Generals Problem”</a>,
 and Satoshi in one of his first emails <a href="http://satoshi.nakamotoinstitute.org/emails/cryptography/11/">explains</a>,
-how Proof-Of-Work is a solution, though the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin paper</a> states “To
+how Proof-of-Work is a solution, though the <a href="https://bitcoin.org/bitcoin.pdf">Bitcoin paper</a> states “To
 implement a distributed <em>timestamp server</em> on a peer-to-peer basis, we
 will need to use a proof-of-work system”, suggesting that it
 primarily solves the issue of timestamping.</p>
@@ -180,9 +180,9 @@ Satoshi Nakamoto invented a solution. There are many other technical details tha
 play into the blockchain, but timing is fundamental and paramount.
 Without timing there is no blockchain.</p>
 
-<h2 id="proof-of-work-recap">Proof-Of-Work Recap</h2>
+<h2 id="proof-of-work-recap">Proof-of-Work Recap</h2>
 
-<p>Very briefly, the Bitcoin Proof-Of-Work is a value whose
+<p>Very briefly, the Bitcoin Proof-of-Work is a value whose
 <a href="https://en.wikipedia.org/wiki/SHA-2">SHA-2</a> hash
 conforms to a certain requirement which makes such a value difficult
 to find. The difficulty is established by requiring that the hash is
@@ -246,7 +246,7 @@ to take 10 minutes on average to find a solution.</p>
 
 <p>Of course if you find a conforming hash but your input wasn’t a valid
 block, such a solution cannot be added to the blockchain, but it is
-still Proof-Of-Work (albeit useless).</p>
+still Proof-of-Work (albeit useless).</p>
 
 <h2 id="the-difficulty-is-intergalactic">The Difficulty is Intergalactic</h2>
 
@@ -344,7 +344,7 @@ independent of one another.</p>
 <p>It must be the hash of a block (the block header, to be precise). As
 we mentioned, the input doesn’t matter, but if it is an actual block,
 then whenever a solution is found, it happened at the tick of our
-Proof-Of-Work clock. Not before, not after, but exactly at. We know
+Proof-of-Work clock. Not before, not after, but exactly at. We know
 this unambiguosly because the block was part of that mechanism.</p>
 
 <p>To put it another way, if blocks weren’t the input to the SHA256
@@ -353,7 +353,7 @@ the ticks of this clock. Using the blocks addresses this issue.</p>
 
 <h2 id="and-that-is-it">And that is it</h2>
 
-<p>This is what Proof-Of-Work does for the blockchain. It is not a
+<p>This is what Proof-of-Work does for the blockchain. It is not a
 “lottery” where miners win the right to solve a block, nor is it some
 peculiar conversion of real energy into a valuable concept, those
 things are secondary.</p>
@@ -361,8 +361,8 @@ things are secondary.</p>
 <p>For example the lottery and the miner’s reward aspect is what
 encourages miners to participate, but it isn’t what makes the
 blockchain possible. Blocks are a Merkle tree, but again, that has
-nothing to do with Proof-Of-Work, it cryptographically reinforces
-recording of the block ordering. Proof-Of-Work is also the mechanism
+nothing to do with Proof-of-Work, it cryptographically reinforces
+recording of the block ordering. Proof-of-Work is also the mechanism
 by which blocks become effectively immutable, and that’s a nice
 side-effect which makes Segregated Witness possible, but it could just
 as well be done by preserving the signatures (witness), so this too is
@@ -370,15 +370,15 @@ secondary.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>The Bitcoin blockchain Proof-Of-Work is simply a distributed, decentralized clock.</p>
+<p>The Bitcoin blockchain Proof-of-Work is simply a distributed, decentralized clock.</p>
 
 <p>If you understand this explanation, then you should have a much better
-grasp of how Proof-Of-Work compares to <a href="https://en.wikipedia.org/wiki/Proof-of-stake">Proof-Of-Stake</a>,
+grasp of how Proof-of-Work compares to <a href="https://en.wikipedia.org/wiki/Proof-of-stake">Proof-of-Stake</a>,
 and it should
 be apparent that the two are not comparable: Proof-Of-Stake is about
-(randomly distributed) authority, while Proof-Of-Work is a clock.</p>
+(randomly distributed) authority, while Proof-of-Work is a clock.</p>
 
-<p>In the context of the blockchain, Proof-Of-Work is probably a
+<p>In the context of the blockchain, Proof-of-Work is probably a
 misnomer. The term is a legacy from the
 <a href="https://en.wikipedia.org/wiki/Hashcash">Hashcash</a> project, where it
 indeed served to prove work. In the blockchain it is primarily about
@@ -387,7 +387,7 @@ difficulty, one knows it must have taken time. The method by which the
 delay is accomplished is “work”, but the hash is primarily interesting
 because it is a proof of <em>time</em>.</p>
 
-<p>The fact that Proof-Of-Work is all about time rather than work also
+<p>The fact that Proof-of-Work is all about time rather than work also
 suggests that there may be other similar statistical challenges that
 are time-consuming but require less energy. It may also mean that the
 Bitcoin hashrate is excessive and that the Bitcoin clock we described
@@ -490,7 +490,7 @@ review and suggestions for the above text.</p>
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-Of-Work is a Decentralized Clock</a>
+        <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
       </li>
     
       <li class="post">
