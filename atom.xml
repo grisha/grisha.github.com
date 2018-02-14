@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T17:06:38-05:00</updated>
+  <updated>2018-02-14T18:10:56-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -67,6 +67,14 @@ determine event order is not possible in a decentralized system.</p>
 <p>The “time” we are interested in is not the year, month, day, etc. that
 we are used to. What we need is a mechanism by which we can verify that
 one event took place before another or perhaps concurrently.</p>
+
+<p>First though, for the notions of before and after to be applicable, a
+<em>point in time</em> needs to be established. Establishing a point in time
+may seem theoretically impossible at first because there is no
+technology accurate enough to measure a
+<a href="https://en.wikipedia.org/wiki/Planck_time">Planck</a>.  But as you’ll
+see, Bitcoin works around this by creating its own notion of time
+where precise points in time are in fact possible.</p>
 
 <p>This problem is well described in
 <a href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport’s</a> 1978 paper
@@ -262,6 +270,10 @@ this unambiguosly because the block was part of that mechanism.</p>
 <p>To put it another way, if blocks weren’t the input to the SHA256
 function, we’d still have a distributed clock, but we couldn’t tie blocks to
 the ticks of this clock. Using blocks as input addresses this issue.</p>
+
+<p>Noteworthy, our Proof-of-Work clock only provides us with ticks. There
+is no way tell order from the ticks, this is what the Merkle tree is
+for.</p>
 
 <h2 id="what-about-the-distributed-consensus">What About the Distributed Consensus?</h2>
 
