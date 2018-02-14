@@ -79,7 +79,8 @@ primarily solves the issue of timestamping.
 
 ## Timing is the Root Problem ##
 
-It must be stressed that the _impossibility of ordering by time_ was the unsolved problem that
+It must be stressed that the _impossibility of associating events with points in time_
+in distributed systems was the unsolved problem that
 precluded a decentralized ledger from ever being possible until
 Satoshi Nakamoto invented a solution. There are many other technical details that
 play into the blockchain, but timing is fundamental and paramount.
