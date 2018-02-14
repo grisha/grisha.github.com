@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T10:29:44-05:00</updated>
+  <updated>2018-02-14T12:07:42-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -40,6 +40,11 @@ Proof-of-Work is primarily a mechanism which accomplishes a
 distributed and decentralized system of timing, i.e. a clock.</p>
 
 <h2 id="the-decentralized-ledger-time-ordering-problem">The Decentralized Ledger Time Ordering Problem</h2>
+
+<p>Before describing the solution, let us focus on the problem. Much of
+the literature around Proof-of-Work is so confusing because it
+attempts to explain the solution without first identifying the
+problem.</p>
 
 <p>Any ledger absolutely needs order. One cannot spend money that has not
 been received, nor can one spend money that is already
