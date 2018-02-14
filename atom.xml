@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-13T21:10:20-05:00</updated>
+  <updated>2018-02-13T21:34:00-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -193,7 +193,7 @@ the largest prime, you only need to announce when you find one. If no
 one ever looks for the largest prime, then it is never going to be
 found. Thus, participation (i.e. an attempt to find one), even if it’s
 in total secrecy, still affects the outcome, as long as the final
-discovery is publicized.</p>
+discovery (if found at all) is publicized.</p>
 
 <p>Taking advantage of this mind-boggling statistical phenomenon whereby
 any participation, even in complete secrecy, affects the outcome <em>is</em>
