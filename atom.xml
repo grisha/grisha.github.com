@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T12:07:42-05:00</updated>
+  <updated>2018-02-14T12:24:27-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -233,9 +233,13 @@ continues to be solved.</p>
 <h2 id="work-is-a-clock">Work is a Clock</h2>
 
 <p>And there is the crux of it: The difficulty in finding a conforming
-hash acts as <em>a clock</em>. It doesn’t matter that this clock is
-imprecise. What matters is that the state of the chain can be tied
-unambiguously to the ticks of such a clock.</p>
+hash acts as <em>a clock</em>. A universal clock, if you will, because there
+is only one such clock in the universe, and thus there is nothing to
+sync and anyone can “look” at it.</p>
+
+<p>It doesn’t matter that this clock is imprecise. What matters is that
+the state of the chain can be tied unambiguously to the ticks of such
+a clock.</p>
 
 <p>This clock is operated by the multi-exahash rate of an unknown
 number of collective participants spread across the planet,
