@@ -1,32 +1,39 @@
 ---
 layout: post
-title: "Blockchain Proof-Of-Work is a Decentralized Clock"
+title: "Blockchain Proof-of-Work is a Decentralized Clock"
 date: 2018-01-23 11:41
 comments: true
 categories:
 published: true
 ---
 
-This is an explanation of the key function on Proof-Of-Work in the
-Bitcoin blockchain.  It focuses on the one feature of Proof-Of-Work
+This is an explanation of the key function on Proof-of-Work in the
+Bitcoin blockchain.  It focuses on the one feature of Proof-of-Work
 that is essential and shows that other features often talked about
 such as security are secondary side-effects, useful, but not
 essential.
 
-Note that this write up isn't about Proof-Of-Work _per se_, it explains why the
-blockchain needs it. If you do not know anything about Proof-Of-Work,
+Note that this write up isn't about Proof-of-Work _per se_, it explains how the
+blockchain takes advantage of it. If you do not know anything about Proof-of-Work,
 then [this](https://en.bitcoin.it/wiki/Proof_of_work) link might be a
 good start.
 
 This explanation rests on illustrating a few interesting properties of
-Proof-Of-Work and the blockchain that are not immediately obvious and
-sometimes are rather counter-intuitive. These are listed below.
+how Proof-of-Work is used in the blockchain that are not immediately
+obvious and sometimes are rather counter-intuitive, for example how
+participants collectively solve a problem without _ever
+communicating_.
 
 Having understood each of these properties, one should conclude that
-Proof-Of-Work is really a mechanism which accomplishes a distributed
-and decentralized system of timing, i.e. a clock.
+Proof-of-Work is primarily a mechanism which accomplishes a
+distributed and decentralized system of timing, i.e. a clock.
 
 ## The Decentralized Ledger Time Ordering Problem ##
+
+Before describing the solution, let us focus on the problem. Much of
+the literature around Proof-of-Work is so confusing because it
+attempts to explain the solution without first identifying the
+problem.
 
 Any ledger absolutely needs order. One cannot spend money that has not
 been received, nor can one spend money that is already
@@ -38,11 +45,17 @@ the world, and no central party is responsible for organizing the
 list, how can it be done? For example transactions could include
 timestamps, but how could timestamps be trusted?
 
-Time is but a human concept, and any source of it, such as an atomic
-clock, is a "trusted third party" (which on top of everything is
+Time is but a [human concept](http://www.preposterousuniverse.com/blog/2015/04/03/the-reality-of-time/),
+and any source of it, such as an atomic clock,
+is a "trusted third party". Which, on top of everything, is
 slightly wrong most of time due to network delays as well as
-the effects of relativity). Paradoxically, relying on a timestamp to
+the [effects of Relativity](http://www.astronomy.ohio-state.edu/~pogge/Ast162/Unit5/gps.html).
+Paradoxically, relying on a timestamp to
 determine event order is not possible in a decentralized system.
+
+The "time" we are interested in is not the year, month, day, etc. that
+we are used to. What we need is a mechanism by which we can verify that
+one event took place before another or perhaps concurrently.
 
 This problem is well described in
 [Leslie Lamport's](https://en.wikipedia.org/wiki/Leslie_Lamport) 1978 paper
@@ -51,20 +64,22 @@ which doesn't actually provide a comprehensive solution other than
 "properly synchronized physical clocks". In 1982 Lamport also
 described the ["Byzantine Generals Problem"](https://people.eecs.berkeley.edu/~luca/cs174/byzantine.pdf),
 and Satoshi in one of his first emails [explains](http://satoshi.nakamotoinstitute.org/emails/cryptography/11/),
-explains how Proof-Of-Work is a solution.
+how Proof-of-Work is a solution, though the [Bitcoin paper](https://bitcoin.org/bitcoin.pdf) states "To
+implement a distributed _timestamp server_ on a peer-to-peer basis, we
+will need to use a proof-of-work system", suggesting that it
+primarily solves the issue of timestamping.
 
 ## Timing is the Root Problem ##
 
 It must be stressed that the _impossibility of ordering by time_ was the unsolved problem that
 precluded a decentralized ledger from ever being possible until
-Satoshi Nakamoto invented a [solution](https://bitcoin.org/bitcoin.pdf).
-There are many other technical details that
+Satoshi Nakamoto invented a solution. There are many other technical details that
 play into the blockchain, but timing is fundamental and paramount.
 Without timing there is no blockchain.
 
-## Proof-Of-Work Recap ##
+## Proof-of-Work Recap ##
 
-Very briefly, the Bitcoin Proof-Of-Work is a value whose
+Very briefly, the Bitcoin Proof-of-Work is a value whose
 [SHA-2](https://en.wikipedia.org/wiki/SHA-2) hash
 conforms to a certain requirement which makes such a value difficult
 to find. The difficulty is established by requiring that the hash is
@@ -97,20 +112,22 @@ This is a property that is particularly counter-intuitive for us humans.
 The best example of memoryless-ness is a coin toss. If a coin comes up
 heads 10 times in a row, does it mean that the next toss is more
 likely to be tails? Our intuition says yes, but in reality each toss
-has a 50/50 chance of either outcome regardless of what happened in
-the past.
+has a 50/50 chance of either outcome regardless of what happened immediately
+prior.
 
 Memorylessness is required for the problem to be _progress-free_.
-Progress-free means that as miners try to solve blocks iterating
-over [nonces](https://en.bitcoin.it/wiki/Nonce), each attempt is a
+Progress-free means that as miners try to solve blocks iterating over
+[nonces](https://en.bitcoin.it/wiki/Nonce), each attempt is a
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
-getting any "closer" to a solution i.e. making no progress.
+getting any "closer" to a solution i.e. making no progress. A miner
+who's been looking for a solution for a year isn't more likely to
+solve a block than a miner who started a nanosecond ago.
 
 The probability of finding the solution given a specific difficulty in
 a given period of time is therefore determined _solely by the speed at
-which all participants can crunch through the hashes_. Not the prior
+which all participants can iterate through the hashes_. Not the prior
 history, not the data, just the hashrate.
 
 The hashrate in turn is a function of the number of participants and
@@ -126,7 +143,7 @@ to take 10 minutes on average to find a solution.
 
 Of course if you find a conforming hash but your input wasn't a valid
 block, such a solution cannot be added to the blockchain, but it is
-still Proof-Of-Work (albeit useless).
+still Proof-of-Work (albeit useless).
 
 ## The Difficulty is Intergalactic ##
 
@@ -168,9 +185,9 @@ you actually found a solution), others didn't need to know about it,
 but your attempt _did_ affect the outcome. For the whole universe, no
 less.
 
-If the above still seems suspicious, a good analogy might
-be the problem of finding large prime numbers. Finding the largest
-prime number is hard and once one is found, it becomes "discovered" or
+If the above still seems suspicious, a good analogy might be the
+problem of finding large prime numbers. Finding the largest prime
+number is hard and once one is found, it becomes "discovered" or
 "known". There is an infinite number of prime numbers, but only one
 instance of each number in the universe. Therefore whoever attempts to
 find the largest prime is working on the same problem, not a separate
@@ -178,7 +195,8 @@ instance of it. You do not need to tell anyone you decided to look for
 the largest prime, you only need to announce when you find one. If no
 one ever looks for the largest prime, then it is never going to be
 found. Thus, participation (i.e. an attempt to find one), even if it's
-in total secrecy, still affects the outcome.
+in total secrecy, still affects the outcome, as long as the final
+discovery (if found at all) is publicized.
 
 Taking advantage of this mind-boggling statistical phenomenon whereby
 any participation, even in complete secrecy, affects the outcome _is_
@@ -186,43 +204,66 @@ what makes Satoshi's invention so remarkably brilliant.
 
 It is noteworthy that since SHA is progress-free, each attempt could be
 thought of as a participant joining the effort and immediately
-leaving. Thus miners join and leave, trillions of times per second.
+leaving. Thus miners join and leave, quintillions of times per second.
+
+## The Participation is Revealed in Statistics ##
+
+The magical secret participation property also works in reverse. The
+global hashrate listed on many sites is known not because every miner
+registered at some "miners registration office" where they report
+their hash rate periodically. No such thing exists.
+
+The hash rate is known because for a solution of a specific difficulty
+to be found in 10 minutes, on average this many attempts
+(~10<sup>21</sup> as of this writing) had to have been made by someone
+somewhere.
+
+We do not know who these participants are, they never announced that
+they are working, those who did not find a solution (which is
+practically all of them) never told anyone they were working, their
+location could have been anywhere in the universe, and yet we know
+with absolute certainty that they exist. Simply because the problem
+continues to be solved.
 
 ## Work is a Clock ##
 
 And there is the crux of it: The difficulty in finding a conforming
-hash acts as _a clock_. It doesn't matter that this clock is
-imprecise. What matters is that the state of the chain can be tied
-unambiguously to the ticks of such a clock.
+hash acts as _a clock_. A universal clock, if you will, because there
+is only one such clock in the universe, and thus there is nothing to
+sync and anyone can "look" at it.
 
-This clock is operated by the multi-terahash rate of an unknown
+It doesn't matter that this clock is imprecise. What matters is that
+the this is the same clock for everyone and that the state of the
+chain can be tied unambiguously to the ticks of this clock.
+
+This clock is operated by the multi-exahash rate of an unknown
 number of collective participants spread across the planet,
-independent of one another.
+completely independent of one another.
 
 ## Last Piece of the Puzzle ##
 
-It must be the hash of a block (the block header, to be precise). As
+The solution must be the hash of a block (the block header, to be precise). As
 we mentioned, the input doesn't matter, but if it is an actual block,
 then whenever a solution is found, it happened at the tick of our
-Proof-Of-Work clock. Not before, not after, but exactly at. We know
+Proof-of-Work clock. Not before, not after, but _exactly at_. We know
 this unambiguosly because the block was part of that mechanism.
 
 To put it another way, if blocks weren't the input to the SHA256
 function, we'd still have a distributed clock, but we couldn't tie blocks to
-the ticks of this clock. Using the blocks addresses this issue.
+the ticks of this clock. Using blocks as input addresses this issue.
 
 ## And that is it ##
 
-This is what Proof-Of-Work does for the blockchain. It is not a
+This is what Proof-of-Work does for the blockchain. It is not a
 "lottery" where miners win the right to solve a block, nor is it some
 peculiar conversion of real energy into a valuable concept, those
-things are secondary.
+are all red herrings.
 
 For example the lottery and the miner's reward aspect is what
 encourages miners to participate, but it isn't what makes the
 blockchain possible. Blocks are a Merkle tree, but again, that has
-nothing to do with Proof-Of-Work, it cryptographically reinforces
-recording of the block ordering. Proof-Of-Work is also the mechanism
+nothing to do with Proof-of-Work, it cryptographically reinforces
+recording of the block ordering. Proof-of-Work is also the mechanism
 by which blocks become effectively immutable, and that's a nice
 side-effect which makes Segregated Witness possible, but it could just
 as well be done by preserving the signatures (witness), so this too is
@@ -230,19 +271,33 @@ secondary.
 
 ## Conclusion ##
 
-The Bitcoin blockchain Proof-Of-Work is simply a distributed, decentralized clock.
+The Bitcoin blockchain Proof-of-Work is simply a distributed, decentralized clock.
 
 If you understand this explanation, then you should have a much better
-grasp of how Proof-Of-Work compares to [Proof-Of-Stake](https://en.wikipedia.org/wiki/Proof-of-stake),
+grasp of how Proof-of-Work compares to [Proof-of-Stake](https://en.wikipedia.org/wiki/Proof-of-stake),
 and it should
 be apparent that the two are not comparable: Proof-Of-Stake is about
-(randomly distributed) authority, while Proof-Of-Work is a clock.
+(randomly distributed) authority, while Proof-of-Work is a clock.
 
-Proof-Of-Work is probably a misnomer. It is not about proving work, it
-is about verifiably taking time. When I see a hash that satisfies the
-difficulty, I know it must have taken time. The method by which the
-delay is accomplished is "work", but the hash is a proof of _time_,
-not work.
+In the context of the blockchain, Proof-of-Work is probably a
+misnomer. The term is a legacy from the
+[Hashcash](https://en.wikipedia.org/wiki/Hashcash) project, where it
+indeed served to prove work. In the blockchain it is primarily about
+verifiably taking time. When one sees a hash that satisfies the
+difficulty, one knows it must have taken time. The method by which the
+delay is accomplished is "work", but the hash is primarily interesting
+because it is a proof of _time_.
 
-Figuring out a way to pace ticks without work is a trillion dollar
+The fact that Proof-of-Work is all about time rather than work also
+suggests that there may be other similar statistical challenges that
+are time-consuming but require less energy. It may also mean that the
+Bitcoin hashrate is excessive and that the Bitcoin clock we described
+above could operate as reliably on a fraction of the hashrate, but it
+is the incentive structure that drives up the energy consumption.
+
+Figuring out a way to pace ticks with less work is a trillion dollar
 problem, if you find one, please do let me know!
+
+P.S. Special thanks to [Sasha Trubetskoy](http://sashat.me) of
+[UChicago Statistics](https://galton.uchicago.edu/)
+for the review and suggestions for the above text.
