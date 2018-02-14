@@ -252,6 +252,21 @@ To put it another way, if blocks weren't the input to the SHA256
 function, we'd still have a distributed clock, but we couldn't tie blocks to
 the ticks of this clock. Using blocks as input addresses this issue.
 
+## What About the Distributed Consensus? ##
+
+Consensus means agreement. What all participants have no choice but to
+agree on is that _the clock has ticked_. Also that everyone knows the
+tick and the data attached to it. And this, in fact, does solve the
+Byzantine Generals Problem, as Satoshi explained in an email
+referenced earlier.
+
+There is a separate consensus in a rare but common case of two
+consecutive ticks being associated with conflicting blocks. The
+conflict is resolved by what block will be associated with the next
+tick, rendering one of the disputed blocks "orphan". How the chain will
+continue is a matter of chance, and so this too could probably be
+indirectly attributed to the Proof-of-Work clock.
+
 ## And that is it ##
 
 This is what Proof-of-Work does for the blockchain. It is not a
@@ -263,11 +278,13 @@ For example the lottery and the miner's reward aspect is what
 encourages miners to participate, but it isn't what makes the
 blockchain possible. Blocks are a Merkle tree, but again, that has
 nothing to do with Proof-of-Work, it cryptographically reinforces
-recording of the block ordering. Proof-of-Work is also the mechanism
-by which blocks become effectively immutable, and that's a nice
-side-effect which makes Segregated Witness possible, but it could just
-as well be done by preserving the signatures (witness), so this too is
-secondary.
+recording of the block ordering. The Merkle tree also makes the
+previous ticks "more certain", "less deniable" or simply more secure.
+
+Proof-of-Work is also the mechanism by which blocks become effectively
+immutable, and that's a nice side-effect which makes Segregated
+Witness possible, but it could just as well be done by preserving the
+signatures (witness), so this too is secondary.
 
 ## Conclusion ##
 
