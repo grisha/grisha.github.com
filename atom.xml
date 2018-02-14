@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-14T12:37:41-05:00</updated>
+  <updated>2018-02-14T12:44:04-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -58,9 +58,10 @@ timestamps, but how could timestamps be trusted?</p>
 
 <p>Time is but a <a href="http://www.preposterousuniverse.com/blog/2015/04/03/the-reality-of-time/">human concept</a>,
 and any source of it, such as an atomic clock,
-is a “trusted third party” (which on top of everything is
+is a “trusted third party”. Which, on top of everything, is
 slightly wrong most of time due to network delays as well as
-the effects of relativity). Paradoxically, relying on a timestamp to
+the effects of <a href="http://www.astronomy.ohio-state.edu/~pogge/Ast162/Unit5/gps.html">Relativity</a>.
+Paradoxically, relying on a timestamp to
 determine event order is not possible in a decentralized system.</p>
 
 <p>The “time” we are interested in is not the year, month, day, etc. that
