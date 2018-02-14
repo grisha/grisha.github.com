@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-02-13T21:34:00-05:00</updated>
+  <updated>2018-02-13T21:34:32-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -210,7 +210,7 @@ hash acts as <em>a clock</em>. It doesn’t matter that this clock is
 imprecise. What matters is that the state of the chain can be tied
 unambiguously to the ticks of such a clock.</p>
 
-<p>This clock is operated by the multi-terahash rate of an unknown
+<p>This clock is operated by the multi-exahash rate of an unknown
 number of collective participants spread across the planet,
 independent of one another.</p>
 
