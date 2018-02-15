@@ -208,8 +208,9 @@ in total secrecy, still affects the outcome, as long as the final
 discovery (if found at all) is publicized.
 
 Taking advantage of this mind-boggling statistical phenomenon whereby
-any participation, even in complete secrecy, affects the outcome _is_
-what makes Satoshi's invention so remarkably brilliant.
+any participation affects the outcome even if in complete secrecy and
+without success, _is_ what makes Satoshi's invention so remarkably
+brilliant.
 
 It is noteworthy that since SHA is progress-free, each attempt could be
 thought of as a participant joining the effort and immediately
