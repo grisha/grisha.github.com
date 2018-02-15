@@ -130,9 +130,9 @@ Progress-free means that as miners try to solve blocks iterating over
 stand-alone event and the probability of finding a solution is
 constant at each attempt, regardless of how much work has been done in
 the past. In other words at each attempt the participant is not
-getting any "closer" to a solution i.e. making no progress. A miner
+getting any "closer" to a solution or is making no progress. And a miner
 who's been looking for a solution for a year isn't more likely to
-solve a block than a miner who started a nanosecond ago.
+solve a block at the next attempt than a miner who started a second ago.
 
 The probability of finding the solution given a specific difficulty in
 a given period of time is therefore determined _solely by the speed at
@@ -142,7 +142,7 @@ history, not the data, just the hashrate.
 The hashrate in turn is a function of the number of participants and
 the speed of the equipment used to calculate the hash.
 
-## The SHA Input Is Irrelevant ##
+## The SHA Input is Irrelevant ##
 
 In the Bitcoin blockchain the input is a block header.
 But if we just fed it random values, the probability of finding a
