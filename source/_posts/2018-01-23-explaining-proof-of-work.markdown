@@ -41,7 +41,7 @@ spent. Blockchain transactions (or blocks containing them) must be
 ordered, unambiguously, and without the need for a trusted third
 party.
 
-Even if the blockchain was not a ldger but just data, e.g. a log of
+Even if the blockchain was not a ledger but just data like a log of
 some sort, for every node to have an identical copy of the blockchain,
 order is required. A blockchain in a different order is a different
 blockchain.
