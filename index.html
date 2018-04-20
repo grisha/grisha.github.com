@@ -389,7 +389,7 @@ function, we’d still have a distributed clock, but we couldn’t tie blocks to
 the ticks of this clock. Using blocks as input addresses this issue.</p>
 
 <p>Noteworthy, our Proof-of-Work clock only provides us with ticks. There
-is no way tell order from the ticks, this is what the Merkle tree is
+is no way tell order from the ticks, this is what the hash chain is
 for.</p>
 
 <h2 id="what-about-the-distributed-consensus">What About the Distributed Consensus?</h2>
@@ -416,9 +416,9 @@ are all red herrings.</p>
 
 <p>For example the lottery and the miner’s reward aspect is what
 encourages miners to participate, but it isn’t what makes the
-blockchain possible. Blocks are a Merkle tree, but again, that has
+blockchain possible. Blocks hashes form a chain, but again, that has
 nothing to do with Proof-of-Work, it cryptographically reinforces
-recording of the block ordering. The Merkle tree also makes the
+recording of the block ordering. The hash chain also makes the
 previous ticks “more certain”, “less deniable” or simply more secure.</p>
 
 <p>Proof-of-Work is also the mechanism by which blocks become effectively
