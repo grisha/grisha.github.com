@@ -355,7 +355,7 @@ func InitDb(cfg Config) (*pgDb, error) {
 }
 {% endcodeblock %}
 
-Out `InitDb()` creates an instance of a `pgDb`, which is our Postgres
+Our `InitDb()` creates an instance of a `pgDb`, which is our Postgres
 implementation of the `model.db` interface. It keeps all that we need
 to communicate with the database, including the prepared statements,
 and exports the necessary methods to satisfy the interface.

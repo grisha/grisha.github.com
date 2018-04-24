@@ -229,7 +229,7 @@ Go specifically does not support objects, which is what the O in ORM
 stands for.
 
 I know that writing SQL by hand instead of relying on
-`User.find(:all).filter...` convenience provided to by the likes of
+`User.find(:all).filter...` convenience provided by the likes of
 ActiveRecord is unheard of in some communities, but I think this
 attitude needs to change. SQL is an amazing language. Dealing with SQL
 directly is not that hard, and quite liberating, as well as incredibly

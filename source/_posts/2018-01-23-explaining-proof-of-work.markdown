@@ -164,7 +164,7 @@ still Proof-of-Work (albeit useless).
 
 Curiously, the difficulty is *universal*, meaning it spans the entire
 universe. We could have miners on Mars helping out, they do not need
-know or communicate with the Earth miners, the problem would still be
+to know, or communicate with the Earth miners, the problem would still be
 solved every 10 minutes. (Ok, they'll need to somehow tell the Earth
 people that they solved it if they do, or else we'll never know about
 it.)
@@ -269,7 +269,7 @@ function, we'd still have a distributed clock, but we couldn't tie blocks to
 the ticks of this clock. Using blocks as input addresses this issue.
 
 Noteworthy, our Proof-of-Work clock only provides us with ticks. There
-is no way tell order from the ticks, this is what the Merkle tree is
+is no way tell order from the ticks, this is what the hash chain is
 for.
 
 ## What About the Distributed Consensus? ##
@@ -296,9 +296,9 @@ are all red herrings.
 
 For example the lottery and the miner's reward aspect is what
 encourages miners to participate, but it isn't what makes the
-blockchain possible. Blocks are a Merkle tree, but again, that has
+blockchain possible. Blocks hashes form a chain, but again, that has
 nothing to do with Proof-of-Work, it cryptographically reinforces
-recording of the block ordering. The Merkle tree also makes the
+recording of the block ordering. The hash chain also makes the
 previous ticks "more certain", "less deniable" or simply more secure.
 
 Proof-of-Work is also the mechanism by which blocks become effectively
