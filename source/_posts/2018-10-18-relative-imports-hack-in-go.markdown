@@ -12,8 +12,8 @@ Github or move/rename your top level directory, all your import
 statements need to be adjusted.
 
 There is a simple hack to accomplish relative imports by using the
-`vendor` directory and symlinks. If you have a package called `mypkg`,
-then the following should work:
+`vendor` directory and symlinks. If you have a package directory
+called `mypkg`, then the following should work:
 
 {% codeblock lang:sh %}
 
