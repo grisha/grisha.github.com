@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-10-18T13:10:35-04:00</updated>
+  <updated>2018-10-18T13:28:44-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -51,7 +51,7 @@ called <code>mypkg</code>, then the following should work:</p>
 </span><span class="line"><span class="p">)</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>I cannot think of any downsides to doing this, if you know of any,
+<p>I cannot think of any downsides to this approach, if you know of any,
 please do comment!</p>
 ]]></content>
   </entry>
