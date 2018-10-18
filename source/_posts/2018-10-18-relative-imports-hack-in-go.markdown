@@ -18,7 +18,7 @@ then the following should work:
 {% codeblock lang:sh %}
 
 $ mkdir -p vendor/relative
-$ ln -s ../../mypackage vendor/relative/mypkg
+$ ln -s ../../mypkg vendor/relative/mypkg
 
 {% endcodeblock %}
 
