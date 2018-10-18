@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="This post attempts to explain how a relational database can be
-implemented atop a key/value store, a subject that I’ve long found
-rather mysterious. &hellip;">
+  <meta name="description" content="I’ve decided to check out
+Impala
+last week and here’s some notes on how that went. First thoughts I was very impressed with how easy it was to &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,229 @@ rather mysterious. &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/23/checking-out-cloudera-impala/">Checking Out Cloudera Impala</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-23T12:43:00-04:00" pubdate data-updated="true">May 23<span>rd</span>, 2013</time>
+        
+         | <a href="/blog/2013/05/23/checking-out-cloudera-impala/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I’ve decided to check out
+<a href="http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/">Impala</a>
+last week and here’s some notes on how that went.</p>
+
+<h2 id="first-thoughts">First thoughts</h2>
+
+<p>I was very impressed with how easy it was to install, even considering
+our unusual set up (see below). In my simple ad-hoc tests Impala
+performed orders of magnitude faster than Hive. So far it seems solid
+down to the little details, like the shell prompt with a fully
+functional libreadline and column headers nicely formatted.</p>
+
+<h2 id="installing">Installing</h2>
+
+<p>The first problem I encountered was that we use Cloudera
+<a href="http://www.cloudera.com/content/cloudera-content/cloudera-docs/CDHTarballs/3.25.2013/CDH4-Downloadable-Tarballs/CDH4-Downloadable-Tarballs.html">tarballs</a>
+in our set up, but Impala is only available as a package (RPM in our
+case). I tried compiling it from
+<a href="https://github.com/cloudera/impala">source</a>, but it’s not a trivial
+compile - it requires <a href="http://llvm.org/">LLVM</a> (which is way cool,
+BTW) and has a bunch of dependencies, it didn’t work out-of-the-box
+for me so I’ve decided to take an alternative route (I will definitely get it compiled some weekend soon). </p>
+
+<p>Retreiving contents of an RPM is trivial (because it’s really a cpio
+archive), and then I’d just have to “make it work”.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-server-1.0-1.p0.819.el6.x86_64.rpm
+</span><span class="line">$ mkdir impala
+</span><span class="line">$ cd impala
+</span><span class="line">$ rpm2cpio ../impala-server-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I noticed that <code>usr/bin/impalad</code> is a shell script, and it appears to
+rely on a few environment vars for configuration, so I created a shell
+script that sets them which looks approximately like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/usr/java/default
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_LOG_DIR</span><span class="o">=</span> <span class="c"># your log dir</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_PORT</span><span class="o">=</span>24000
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_HOST</span><span class="o">=</span> <span class="c"># probably namenode host or whatever</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_BACKEND_PORT</span><span class="o">=</span>22000
+</span><span class="line">
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_HOME</span><span class="o">=</span> <span class="c"># full path to usr/lib/impala from the RPM, e.g. /home/grisha/impala/usr/lib/impala</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_CONF_DIR</span><span class="o">=</span> <span class="c"># config dir, e.g. /home/grisha/impala/etc/impala&quot;</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_BIN</span><span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/sbin-retail
+</span><span class="line"><span class="nb">export </span><span class="nv">LIBHDFS_OPTS</span><span class="o">=</span>-Djava.library.path<span class="o">=</span><span class="k">${</span><span class="nv">IMPALA_HOME</span><span class="k">}</span>/lib
+</span><span class="line"><span class="nb">export </span><span class="nv">MYSQL_CONNECTOR_JAR</span><span class="o">=</span> <span class="c"># full path a mysql-connect jar</span>
+</span><span class="line">
+</span><span class="line"><span class="nb">export </span><span class="nv">HIVE_HOME</span><span class="o">=</span> <span class="c"># your hive home - note: every impala nodes needs it, just config, not the whole Hive install</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">HIVE_CONF_DIR</span><span class="o">=</span> <span class="c"># this seems redundant, my guess HIVE_HOME is enough, but whatever</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">HADOOP_CONF_DIR</span><span class="o">=</span> <span class="c"># path the hadoop config, the dir that has hdfs-site.xml, etc.</span>
+</span><span class="line">
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="o">=</span><span class="s2">&quot; -log_dir=${IMPALA_LOG_DIR} -state_store_port=${IMPALA_STATE_STORE_PORT}&quot;</span>
+</span><span class="line"><span class="nb">export </span><span class="nv">IMPALA_SERVER_ARGS</span><span class="o">=</span><span class="s2">&quot; \                                                                                                                                                                                  -log_dir=${IMPALA_LOG_DIR} \                                                                                                                                                                              -state_store_port=${IMPALA_STATE_STORE_PORT} \                                                                                                                                                            -use_statestore \                                                                                                                                                                                         -state_store_host=${IMPALA_STATE_STORE_HOST} \                                                                                                                                                            -be_port=${IMPALA_BACKEND_PORT}&quot;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>With the above environment vars set, starting Impala should amount to
+the following (you probably want to run those in separate windows, also note that
+the state store needs to be started first):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>./usr/bin/statestored <span class="k">${</span><span class="nv">IMPALA_STATE_STORE_ARGS</span><span class="k">}</span> <span class="c"># do this on IMPALA_STATE_STORE_HOST only</span>
+</span><span class="line"><span class="nv">$ </span>./usr/bin/impalad <span class="k">${</span><span class="nv">IMPALA_SERVER_ARGS</span><span class="k">}</span> <span class="c"># do this on every node</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The only problem that I encountered was that Impala needed
+short-circuit access enabled, so I had to add the following to the hdfs-site.xml:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+</pre></td><td class="code"><pre><code class="xml"><span class="line"> <span class="nt">&lt;property&gt;</span>
+</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.client.read.shortcircuit<span class="nt">&lt;/name&gt;</span>
+</span><span class="line">   <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
+</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
+</span><span class="line"> <span class="nt">&lt;property&gt;</span>
+</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.domain.socket.path<span class="nt">&lt;/name&gt;</span>
+</span><span class="line"><span class="c">&lt;!-- adjust this to your set up: --&gt;</span>
+</span><span class="line">   <span class="nt">&lt;value&gt;</span>/var/run/dfs_domain_socket_PORT.sock<span class="nt">&lt;/value&gt;</span>
+</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
+</span><span class="line"> <span class="nt">&lt;property&gt;</span>
+</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.client.file-block-storage-locations.timeout<span class="nt">&lt;/name&gt;</span>
+</span><span class="line">   <span class="nt">&lt;value&gt;</span>3000<span class="nt">&lt;/value&gt;</span>
+</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
+</span><span class="line"> <span class="nt">&lt;property&gt;</span>
+</span><span class="line"><span class="c">&lt;!-- adjust this too: --&gt;</span>
+</span><span class="line">   <span class="nt">&lt;name&gt;</span>dfs.block.local-path-access.user<span class="nt">&lt;/name&gt;</span>
+</span><span class="line">   <span class="nt">&lt;value&gt;</span><span class="c">&lt;!-- user name --&gt;</span><span class="nt">&lt;/value&gt;</span>
+</span><span class="line"> <span class="nt">&lt;/property&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Once the above works, we need <code>impala-shell</code> to test it. Again, I pulled it out of the RPM:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="xml"><span class="line">$ curl -O http://archive.cloudera.com/impala/redhat/6/x86_64/impala/1.0/RPMS/x86_64/impala-shell-1.0-1.p0.819.el6.x86_64.rpm
+</span><span class="line">$ mkdir shell ; cd shell
+</span><span class="line">$ rpm2cpio ../impala-shell-1.0-1.p0.819.el6.x86_64.rpm | cpio -idmv
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I was then able to start the shell and connect. You can connect to any Impala node (read the docs):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class="xml"><span class="line">$ ./usr/bin/impala-shell
+</span><span class="line">[localhost:21000] &gt; connect some_node;
+</span><span class="line">Connected to some_node:21000
+</span><span class="line">Server version: impalad version 1.0 RELEASE (build d1bf0d1dac339af3692ffa17a5e3fdae0aed751f)
+</span><span class="line">[some_node:21000] &gt; select count(*) from your_favorite_table;
+</span><span class="line">Query: select count(*) from your_favorite_table
+</span><span class="line">Query finished, fetching results ...
+</span><span class="line">+-----------+
+</span><span class="line">| count(*)  |
+</span><span class="line">+-----------+
+</span><span class="line">| 302052158 |
+</span><span class="line">+-----------+
+</span><span class="line">Returned 1 row(s) in 2.35s
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Ta-da! The above query takes a good few minutes in Hive, BTW.</p>
+
+<h2 id="other-notes">Other Notes</h2>
+
+<ul>
+  <li>Impala does not support custom SerDe’s so it won’t work if you’re relying on JSON. It does support Avro.</li>
+  <li>There is no support for UDF’s, so our <a href="https://github.com/livingsocial/HiveSwarm">HiveSwarm</a> is of no use.</li>
+  <li>INSERT OVERWRITE works, which is good.</li>
+  <li>LZO support works too.</li>
+  <li><em>Security Warning</em>: Everything Impala does will appear in HDFS as
+the user under which Impala is running. Be careful with this if
+you’re relying on HDFS permissions to prevent an accidental “INSERT
+OVERWRITE”, as you might inadvertently give your users superuser
+privs on HDFS via Hue, for example. (Oh did I mention Hue completely
+supports Impala too?). From what I can tell there is no way to set a
+username, this is a bit of a show-stopper for us, actually.</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -977,6 +1200,10 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2018/10/18/relative-imports-hack-in-go/">Relative Imports Hack in Golang</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
       </li>
     
@@ -990,10 +1217,6 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
     
       <li class="post">
         <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
       </li>
     
   </ul>

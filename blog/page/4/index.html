@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Back in my ISP days, we used data stored in RRDs to bill our
-customers. I wouldn’t try this with Graphite. In this write up I try
-to explain why it &hellip;">
+  <meta name="description" content="With the latest advances in PostgreSQL (and other db’s), a relational
+database begins to look like a very viable TS storage platform. In
+this write &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,277 @@ to explain why it &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL Efficiently</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-09-23T22:01:00-04:00" pubdate data-updated="true">Sep 23<span>rd</span>, 2015</time>
+        
+         | <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>With the latest advances in PostgreSQL (and other db’s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a <a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
+
+<p>A TS is a series of [timestamp, measurement] pairs, where measurement
+is typically a floating point number. These pairs (aka “data points”)
+usually arrive at a high and steady rate. As time goes on, detailed
+data usually becomes less interesting and is often consolidated into
+larger time intervals until ultimately it is expired.</p>
+
+<h2 id="the-obvious-approach">The obvious approach</h2>
+
+<p>The “naive” approach is a three-column table, like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(Let’s gloss over some details such as an index on the time column and
+choice of data type for time and value as it’s not relevant to this
+discussion.)</p>
+
+<p>One problem with this is the inefficiency of appending data. An insert
+requires a look up of the new id, locking and (usually) blocks until
+the data is synced to disk. Given the TS’s “firehose” nature, the
+database can quite quickly get overwhelmed.</p>
+
+<p>This approach also does not address consolidation and eventual
+expiration of older data points.</p>
+
+<h2 id="round-robin-database">Round-robin database</h2>
+
+<p>A better alternative is something called a <em>round-robin database</em>.  An
+RRD is a circular structure with a separately stored pointer denoting
+the last element and its timestamp.</p>
+
+<p>A everyday life example of an RRD is a week. Imagine a structure of 7
+slots, one for each day of the week. If you know today’s date and day
+of the week, you can easily infer the date for each slot. For example
+if today is Tuesday, April 1, 2008, then the Monday slot refers to
+March 31st, Sunday to March 30th and (most notably) Wednesday to March
+26.</p>
+
+<p>Here’s what a 7-day RRD of average temperature might look as of
+Tuesday, April 1:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                    <span class="o">^</span>
+</span><span class="line">                    <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
+</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
+</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
+</span><span class="line">                         <span class="o">^</span>
+</span><span class="line">                         <span class="k">last</span> <span class="n">entry</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Note how little has changed, and that the update required no
+allocation of space: all we did to record 92F on Wednesday is
+overwrite one value. Even more remarkably, the previous value
+automatically “expired” when we overwrote it, thus solving the
+eventual expiration problem without any additional operations.</p>
+
+<p>RRD’s are also very space-efficient. In the above example we specified
+the date of every slot for clarity. In an actual implementation only
+the date of the last slot needs to be stored, thus the RRD can be kept
+as a sequence of 7 numbers plus the position of the last entry and
+it’s timestamp. In Python syntax it’d look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
+
+<p>Here is a naive approach to having a round-robin table. Carrying on
+with our 7 day RRD example, it might look like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
+</span><span class="line"><span class="o">---------+--------</span>
+</span><span class="line">     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
+</span><span class="line">     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
+</span><span class="line">     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
+</span><span class="line">     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
+</span><span class="line">     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
+</span><span class="line">     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
+</span><span class="line">     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Somewhere separately we’d also need to record that the last entry is
+week_day 3 (Tuesday) and it’s 2008-04-01. Come April 2, we could
+record the temperature using:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This might be okay for a 7-slot RRD, but a more typical TS might have
+a slot per minute going back 90 days, which would require 129600
+rows. For recording data points one at a time it might be fast enough,
+but to copy the whole RRD would require 129600 UPDATE statements which
+is not very efficient.</p>
+
+<p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
+
+<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
+
+<p>An array would allow us to store the whole series in a single
+row. Sticking with the 7-day RRD example, our table would be created
+as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(Nevemind that there is no id column for now)</p>
+
+<p>We could populate the whole RRD in a single statement:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>…or record 92F for Wednesday as so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>(In PostgreSQL arrays are 1-based, not 0-based like in most
+programming languages)</p>
+
+<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
+
+<p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
+make sense to keep chunks in which our RRD is written to disk in line
+with page size, or at least smaller than one page. (PostgreSQL provides
+configuration parameters for how much of a page is used, etc, but this
+is way beyond the scope of this article).</p>
+
+<p>Having the series split into chunks also paves the way for some kind
+of a caching layer, we could have a server which waits for one row
+worth of data points to accumulate, then flushes then all at once.</p>
+
+<p>For simplicity, let’s take the above example and expand the RRD to 4
+weeks, while keeping 1 week per row. In our table definition we need
+provide a way for keeping the order of every row of the TS with a
+column named n, and while we’re at it, we might as well introduce a
+notion of an id, so as to be able to store multiple TS in the same
+table.</p>
+
+<p>Let’s start with two tables, one called rrd where we would store the
+last position and date, and another called ts which would store the
+actual data.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
+</span><span class="line">  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We could then populate the TS with fictitious data like so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>To update the data for April 2, we would:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
+
+<p>This article omits a lot of detail such as having resolution finer
+than one day, but it does describe the general idea. For an actual
+implementation of this you might want to check out a project I’ve been
+working on: <a href="https://github.com/tgres/tgres">tgres</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2339,310 +2610,6 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/10/10/mod-python-performance/">Mod_python Performance and Why It Matters Not.</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-10T13:04:00-04:00" pubdate data-updated="true">Oct 10<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/10/10/mod-python-performance/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><em>TL;DR: mod_python is faster than you think.</em></p>
-
-<p>Tonight I thought I’d spend some time looking into how the new
-<a href="http://www.modpython.org/">mod_python</a>
-fares against other frameworks of similar purpose. In this article I
-am going to show the results of my findings, and then I will explain
-<em>why it really does not matter</em>.</p>
-
-<p>I am particularly interested in the following:</p>
-
-<ul>
-  <li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
-  <li>a mod_python wsgi app, because WSGI is so popular these days.</li>
-  <li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
-  <li>uWSGI, because it claims to be super fast.</li>
-  <li>Apache serving a static file (as a point of reference).</li>
-</ul>
-
-<h1 id="the-test">The Test</h1>
-
-<p>I am testing this on a CentOS instance running inside VirtualBox on an
-early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM
-allocated to it. Granted this configuration can’t possibly be very
-performant [if there is such a word], but it should be enough to
-compare.</p>
-
-<p>Real-life performance is very much affected by issues related to
-concurrency and load. I don’t have the resources or tools to
-comprehensively test such scenarios, and so I’m just using concurrency
-of 1 and seeing how fast each of the afore-listed set ups can process
-small requests.</p>
-
-<p>I’m using mod_python 3.4.1 (pre-release), revision
-<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
-compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
-3.4, for uWSGI I use 1.9.17.1.</p>
-
-<p>The Apache configuration is pretty minimal (It could probably trimmed
-even more, but this is good enough):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
-</span><span class="line">LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
-</span><span class="line">LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
-</span><span class="line">LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
-</span><span class="line">LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
-</span><span class="line">LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
-</span><span class="line">LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
-</span><span class="line">
-</span><span class="line">ServerRoot /home/grisha/mp_test
-</span><span class="line">PidFile logs/httpd.pid
-</span><span class="line">ServerName 127.0.0.1
-</span><span class="line">Listen 8888
-</span><span class="line">MaxRequestsPerChild 1000000
-</span><span class="line">
-</span><span class="line">&lt;Location /&gt;
-</span><span class="line">      SetHandler mod_python
-</span><span class="line">      PythonHandler mp
-</span><span class="line">      PythonPath "sys.path+['/home/grisha/mp_test/htdocs']"
-</span><span class="line">&lt;/Location&gt;</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
-mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
-section, so this makes it a little bit faster.</p>
-
-<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
-above looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">mod_python</span> <span class="kn">import</span> <span class="n">apache</span>
-</span><span class="line">
-</span><span class="line"><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
-</span><span class="line">
-</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
-</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Hello World!&#39;</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">return</span> <span class="n">apache</span><span class="o">.</span><span class="n">OK</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>As the benchmark tool, I’m using the good old
-<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>ab -n 10  http://localhost:8888/
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For each test in this article I run 500 requests first as a “warm up”,
-then another 500K for the actual measurement.</p>
-
-<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line">&lt;Location /&gt;
-</span><span class="line">    PythonHandler mod_python.wsgi
-</span><span class="line">    PythonPath <span class="s2">&quot;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&quot;</span>
-</span><span class="line">    PythonOption mod_python.wsgi.application mp_wsgi
-</span><span class="line">&lt;/Location&gt;
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And the <code>mp_wsgi.py</code> file looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
-</span><span class="line">    <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;200 OK&#39;</span>
-</span><span class="line">    <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Hello World!&#39;</span>
-</span><span class="line">
-</span><span class="line">    <span class="n">response_headers</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;Content-type&#39;</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">),</span>
-</span><span class="line">                        <span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)))]</span>
-</span><span class="line">    <span class="n">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">response_headers</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">LoadModule</span> <span class="n">wsgi_module</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">mod_wsgi</span><span class="o">.</span><span class="n">so</span>
-</span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>For uWSGI (I am not an expert), I first used the following command:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
-</span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
-</span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Which yielded a pretty dismal result, so I tried using a unix socket
-<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
-the front end as described
-<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
-make uWSGI come out on top (even if proxied uWSGI is an orange among
-the apples).</p>
-
-<h3 id="the-results-requests-per-second-fastest-at-the-top">The results, requests per second, fastest at the top:</h3>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">|</span> <span class="n">uWSGI</span><span class="o">/</span><span class="n">nginx</span>         <span class="o">|</span> <span class="mi">2391</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">handler</span>  <span class="o">|</span> <span class="mi">2332</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">static</span> <span class="nb">file</span>         <span class="o">|</span> <span class="mi">2312</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_wsgi</span>            <span class="o">|</span> <span class="mi">2143</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">wsgi</span>     <span class="o">|</span> <span class="mi">1937</span> <span class="o">|</span>
-</span><span class="line"><span class="o">|</span> <span class="n">uWSGI</span> <span class="o">--</span><span class="n">http</span>        <span class="o">|</span> <span class="mi">1779</span> <span class="o">|</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>What’s interesting and unexpected at first is that uWSGI and the
-mod_python handler perform better than sending a static file, which I
-expected to be the fastest. On a second thought though it does make
-sense, once you consider that no (on average pretty expensive)
-filesystem operations are performed to serve the request.</p>
-
-<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
-expected, because the mod_python version is mostly Python, vs
-mod_wsgi’s C version.</p>
-
-<p>I think that with a little work mod_python wsgi handler could perform
-on par with uWSGI, though I’m not sure the effort would be worth
-it. Because as we all know,
-<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
-
-<h1 id="why-it-doesnt-really-matter">Why It Doesn’t Really Matter</h1>
-
-<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
-because after all, what matters more than speed?</p>
-
-<p>But let’s imagine a more real world scenario, because it’s not likely
-that all your application does is send <code>"Hello World!".</code></p>
-
-<p>To illustrate the point a little better I created a very simple Django
-app, which too sends <code>"Hello World!"</code>, only it does it using a template:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="s">&#39;World&#39;</span><span class="p">})</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Using the mod_python wsgi handler (the slowest), we can process 455
-req/s, using uWSGI (the fastest) 474. This means that by moving this
-“application” from mod_pyhton to uWSGI we would improve performance by
-a measley 5%.</p>
-
-<p>Now let’s add some database action to our so-called “application”. For
-every request I’m going to pull my user record from the Django
-auth_users table:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">User</span>
-</span><span class="line">
-</span><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-</span><span class="line">    <span class="n">grisha</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s">&#39;grisha&#39;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
-</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">grisha</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]})</span> <span class="c"># world was 5 characters</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
-req/s in uWSGI, and the difference between the two has shrunk to just
-over 3%.</p>
-
-<p>Mind you, our “application” still has less than 10 lines of code. In a
-real-world situation the difference in performance is more likely to
-amount to less than a tenth of a percent.</p>
-
-<p>Bottom line: it’s foolish to pick your web server based on speed
-alone. Factors such as your comfort level with using it, features,
-documentation, security, etc., are far more important than how fast it
-can crank out “Hello world!”.</p>
-
-<p>Last, but not least, mod_python 3.4.1 (used in this article) is
-ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -2690,6 +2657,10 @@ ready for pre-release testing, please help me <a href="https://github.com/grisha
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2018/10/18/relative-imports-hack-in-go/">Relative Imports Hack in Golang</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
       </li>
     
@@ -2703,10 +2674,6 @@ ready for pre-release testing, please help me <a href="https://github.com/grisha
     
       <li class="post">
         <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
       </li>
     
   </ul>
