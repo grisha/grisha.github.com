@@ -249,7 +249,7 @@ is only one such clock in the universe, and thus there is nothing to
 sync and anyone can "look" at it.
 
 It doesn't matter that this clock is imprecise. What matters is that
-the this is the same clock for everyone and that the state of the
+it is the same clock for everyone and that the state of the
 chain can be tied unambiguously to the ticks of this clock.
 
 This clock is operated by the multi-exahash rate of an unknown
