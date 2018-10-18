@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-10-18T13:05:01-04:00</updated>
+  <updated>2018-10-18T13:08:54-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -30,7 +30,7 @@ then the following should work:</p>
 <div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 </pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>mkdir -p vendor/relative
-</span><span class="line"><span class="nv">$ </span>ln -s ../../mypackage vendor/relative/mypkg
+</span><span class="line"><span class="nv">$ </span>ln -s ../../mypkg vendor/relative/mypkg
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 <p>And now, your Go code could do this:</p>
