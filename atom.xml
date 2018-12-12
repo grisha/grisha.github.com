@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2018-12-07T16:38:42-05:00</updated>
+  <updated>2018-12-12T08:35:08-05:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -108,8 +108,10 @@ include timestamps, but how could these timestamps be trusted?</p>
 <p>Time is but a <a href="http://www.preposterousuniverse.com/blog/2015/04/03/the-reality-of-time/">human concept</a>,
 and any source of it, such as an atomic clock,
 is a “trusted third party”. Which, on top of everything, is
-slightly wrong most of time due to network delays as well as
+<a href="https://www.youtube.com/watch?v=-6rWqJhDv7M">slightly wrong</a>  most of time due to network delays as well as
 the <a href="http://www.astronomy.ohio-state.edu/~pogge/Ast162/Unit5/gps.html">effects of Relativity</a>.
+Consider that the <a href="https://www.youtube.com/watch?v=-6rWqJhDv7M">time dilation</a> between someone in an airplane vs
+the ground, though minute, is sufficient to make ordering impossible.
 Paradoxically, relying on a timestamp to
 determine event order is not possible in a decentralized system.</p>
 
@@ -202,6 +204,10 @@ history, not the data, just the hashrate.</p>
 <p>The hashrate in turn is a function of the number of participants and
 the speed of the equipment used to calculate the hash.</p>
 
+<p>(NB: Though strictly speaking SHA is not progress-free because there is a
+finite number of hashes, the range of a 256-bit integer is so
+vast that it is practically progress-free).</p>
+
 <h2 id="the-sha-input-is-irrelevant">The SHA Input is Irrelevant</h2>
 
 <p>In the Bitcoin blockchain the input is a block header.
@@ -267,7 +273,7 @@ found. Thus, participation (i.e. an attempt to find one), even if it’s
 in total secrecy, still affects the outcome, as long as the final
 discovery (if found at all) is publicized.</p>
 
-<p>Taking advantage of this mind-boggling statistical phenomenon whereby
+<p>Taking advantage of this mind-boggling probabilistic phenomenon whereby
 any participation affects the outcome even if in complete secrecy and
 without success, <em>is</em> what makes Satoshi’s invention so remarkably
 brilliant.</p>
