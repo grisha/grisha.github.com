@@ -54,10 +54,12 @@ include timestamps, but how could these timestamps be trusted?
 Time is but a [human concept](http://www.preposterousuniverse.com/blog/2015/04/03/the-reality-of-time/),
 and any source of it, such as an atomic clock,
 is a "trusted third party". Which, on top of everything, is
-slightly wrong most of time due to network delays as well as
+[slightly wrong](https://www.youtube.com/watch?v=-6rWqJhDv7M)  most of time due to network delays as well as
 the [effects of Relativity](http://www.astronomy.ohio-state.edu/~pogge/Ast162/Unit5/gps.html).
+Even [time dilation](https://en.wikipedia.org/wiki/Time_dilation) between someone in an airplane vs
+the ground, though minute, is sufficient to make ordering impossible.
 Paradoxically, relying on a timestamp to
-determine event order is not possible in a decentralized system.
+determine event order is not possible in a decentralized geographically dispersed system.
 
 The "time" we are interested in is not the year, month, day, etc. that
 we are used to. What we need is a mechanism by which we can verify that
@@ -148,6 +150,10 @@ history, not the data, just the hashrate.
 The hashrate in turn is a function of the number of participants and
 the speed of the equipment used to calculate the hash.
 
+(NB: Though strictly speaking SHA is not progress-free because there is a
+finite number of hashes, the range of a 256-bit integer is so
+vast that it is practically progress-free.)
+
 ## The SHA Input is Irrelevant ##
 
 In the Bitcoin blockchain the input is a block header.
@@ -213,7 +219,7 @@ found. Thus, participation (i.e. an attempt to find one), even if it's
 in total secrecy, still affects the outcome, as long as the final
 discovery (if found at all) is publicized.
 
-Taking advantage of this mind-boggling statistical phenomenon whereby
+Taking advantage of this mind-boggling probabilistic phenomenon whereby
 any participation affects the outcome even if in complete secrecy and
 without success, _is_ what makes Satoshi's invention so remarkably
 brilliant.

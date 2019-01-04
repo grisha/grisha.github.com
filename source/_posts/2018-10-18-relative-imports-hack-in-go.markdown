@@ -36,5 +36,5 @@ import (
 
 {% endcodeblock %}
 
-I cannot think of any downsides to doing this, if you know of any,
+I cannot think of any downsides to this approach, if you know of any,
 please do comment!
