@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2019-06-19T13:48:16-04:00</updated>
+  <updated>2019-06-19T13:48:42-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,79 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Maestro the BigQuery Orchestrator]]></title>
+    <link href="http://grisha.org/blog/2019/06/05/maestro-is-open-source/"/>
+    <updated>2019-06-05T15:59:00-04:00</updated>
+    <id>http://grisha.org/blog/2019/06/05/maestro-is-open-source</id>
+    <content type="html"><![CDATA[<p>This blog post is mostly for the Google BigQuery nerds out there.  I
+am delighted to announce that a little project we’ve been hacking on
+for the past two years has been made open source under the Apache 2.0
+license: <a href="https://github.com/voxmedia/maestro">https://github.com/voxmedia/maestro</a>.</p>
+
+<p>Maestro is a trusty tool that imports data from our databases every
+night and runs a bunch of BigQuery SQL to generate summaries,
+analysis, recommendations, etc. If anything goes wrong, it lets us
+know by posting to Slack. It also keeps track of resource utilization
+so we can easily tell what each data transformation is costing
+us. Maestro keeps track of who created which table so that when
+there is a problem, we know whom to ask about it. All SQL changes are
+pushed to Github, so that if anything is broken, it is trivial to
+figure out what may have caused it by looking at the commit history.</p>
+
+<p>Before Maestro we had a bunch of scripts and cron jobs, and we also
+experimented with the multitude of data pipeline tools out there. The
+problem was that adding a new SQL statement always required some form
+of programming. The second problem was the interdependency management,
+i.e. how does one script know that the other thing it relies on is
+finished so it can start. Both problems are typically addressed in
+ways that are error prone and inefficient. Not to mention that each
+job  would be done differently, with varying levels of error
+management and notifications. Maestro solved all that.</p>
+
+<p>We still use scripts and cronjobs, and things like Airflow, and
+probably will be using them forever. But when it comes to periodically
+running some SQL to generate a summary table or importing another
+table from a database, Maestro is clearly the first choice.</p>
+
+<p>Maestro is a web app, though it didn’t start out this way. The first
+version was just a daemon which stored its configuration in
+Postgres. To change anything we would simply INSERT/UPDATE on the
+<code>psql</code> command line. Later we added a crude React UI. The UI leaves a
+lot to be desired, but given that the user base is mostly data
+engineers and data scientists, no one is complaining.</p>
+
+<p>Maestro requires no programming. The dependency graph is inferred by
+examining the SQL, which is how it should be. Everything is in one
+place, all errors and notifications are always consistent.</p>
+
+<p>In addition to having a UI, Maestro also has a
+<a href="https://github.com/voxmedia/maestro/tree/master/pythonlib">Python client library</a>
+making it very easy to integrate with your favorite data science packages.</p>
+
+<p>Maestro is written in Go. It is trivial to deploy - it is a single
+binary which only requires access to a database to store its
+configuration and state. The binary can be compiled with all web
+assets baked into itself and deployed in a <code>FROM scratch</code>
+Docker container only megabytes in size. Being a Go program also makes
+it quite performant when it comes to transferring data between
+databases and BigQuery.</p>
+
+<p><a href="https://github.com/voxmedia/maestro">Maestro source code</a> is in
+Github and there is quite a bit of documentation in
+<a href="https://godoc.org/github.com/voxmedia/maestro">Maestro godoc</a>, including the
+<a href="https://godoc.org/github.com/voxmedia/maestro#hdr-Getting_Started">getting started</a>
+instructions.</p>
+
+<p>The structure of the source code and the UI implementation follows the
+guidelines I set out in a series of <a href="https://grisha.org/blog/2017/04/27/simplistic-go-web-app/">previous posts</a>
+on building Golang web apps.</p>
+
+<p>Please check it out and let us know via Github issues if you have any
+questions, comments, feature suggestions, etc.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Relative Imports Hack in Golang]]></title>
@@ -5084,122 +5157,6 @@ all relational databases optimized for sequences?</p>
 All series are evenly spaced given proper resolution. An
 unevenly-spaced time series with timestamps accurate to 1 millisecond
 is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Simple Time Series App with Tgres]]></title>
-    <link href="http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres/"/>
-    <updated>2016-12-21T19:55:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres</id>
-    <content type="html"><![CDATA[<p>Did you know you can use <a href="https://github.com/tgres/tgres">Tgres</a> components
-in your code without PostgreSQL, and in
-just a dozen lines of code instrument your program with a time
-series. This example shows a complete server emulating Graphite API
-which you can use with <a href="http://grafana.org/">Grafana</a> (or any other tool).</p>
-
-<p>In this example we will be using three Tgres packages like so (in addition to
-a few standard ones, I’m skipping them here for brevity - complete source code <a href="https://gist.github.com/grisha/9561e7837cff1340b218054f36430187">gist</a>):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">import</span> <span class="p">(</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
-</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
-</span><span class="line"><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>First we need a <a href="https://godoc.org/github.com/tgres/tgres/rrd#DataSource">Data Source</a>.
-This will create a Data Source containing one Round Robin Archive with a 10 second resolution
-spanning 1000 seconds.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">step</span> <span class="o">:=</span> <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
-</span><span class="line"><span class="nx">span</span> <span class="o">:=</span> <span class="mi">100</span> <span class="o">*</span> <span class="nx">step</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">ds</span> <span class="o">:=</span> <span class="nx">rrd</span><span class="p">.</span><span class="nx">NewDataSource</span><span class="p">(</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DSSpec</span><span class="p">{</span>
-</span><span class="line">    <span class="nx">Step</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span>
-</span><span class="line">    <span class="nx">RRAs</span><span class="p">:</span> <span class="p">[]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span>
-</span><span class="line">        <span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span><span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span> <span class="nx">Span</span><span class="p">:</span> <span class="nx">span</span><span class="p">},</span>
-</span><span class="line">    <span class="p">},</span>
-</span><span class="line"><span class="p">})</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Let’s shove a bunch of data points into it. To make it look extra
-nice, we can make these points look like a sinusoid with this little
-function:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">sinTime</span><span class="p">(</span><span class="nx">t</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span> <span class="nx">span</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span> <span class="kt">float64</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">x</span> <span class="o">:=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nx">math</span><span class="p">.</span><span class="nx">Pi</span> <span class="o">/</span> <span class="nx">span</span><span class="p">.</span><span class="nx">Seconds</span><span class="p">()</span> <span class="o">*</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Unix</span><span class="p">()</span><span class="o">%</span><span class="p">(</span><span class="nx">span</span><span class="p">.</span><span class="nx">Nanoseconds</span><span class="p">()</span><span class="o">/</span><span class="mf">1e9</span><span class="p">))</span>
-</span><span class="line">    <span class="k">return</span> <span class="nx">math</span><span class="p">.</span><span class="nx">Sin</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And now for the actual population of the series:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">().</span><span class="nx">Add</span><span class="p">(</span><span class="o">-</span><span class="nx">span</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="nx">span</span><span class="o">/</span><span class="nx">step</span><span class="p">);</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
-</span><span class="line">    <span class="nx">t</span> <span class="o">:=</span> <span class="nx">start</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span> <span class="o">*</span> <span class="nx">step</span><span class="p">)</span>
-</span><span class="line">    <span class="nx">ds</span><span class="p">.</span><span class="nx">ProcessDataPoint</span><span class="p">(</span><span class="nx">sinTime</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">span</span><span class="p">),</span> <span class="nx">t</span><span class="p">)</span>
-</span><span class="line"><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>We will also need to create a <a href="https://godoc.org/github.com/tgres/tgres/dsl#NamedDSFetcher">NamedDSFetcher</a>,
-the structure which knows how to search dot-separated series names a la Graphite.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcherMap</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DataSourcer</span><span class="p">{</span><span class="s">&quot;foo.bar&quot;</span><span class="p">:</span> <span class="nx">ds</span><span class="p">})</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Finally, we need to create two http handlers which will mimic a
-Graphite server and start listening for requests:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line">
-</span><span class="line"><span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
-</span><span class="line"><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
-</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="nx">listenSpec</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now if you point Grafana at it, it will happily think it’s Graphite
-and should show you a chart like this:</p>
-
-<p><img src="http://grisha.org/images/simple-tgres00.png" /></p>
-
-<p>Note that you can use all kinds of Graphite functions at this point -
-it all “just works”.</p>
-
-<p>Enjoy!</p>
 ]]></content>
   </entry>
   
