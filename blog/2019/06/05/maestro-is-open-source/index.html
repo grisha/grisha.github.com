@@ -5,12 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>The Next Smallest Step Problem - Gregory Trubetskoy</title>
+  <title>Maestro the BigQuery Orchestrator - Gregory Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="“A journey of a thousand miles begins with a single step” Most of my journeys never begin, or cannot continue because of that one
-single step, be it &hellip;">
+  <meta name="description" content="This blog post is mostly for the Google BigQuery nerds out there. I
+am delighted to announce that a little project we’ve been hacking on
+for the past &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +20,7 @@ single step, be it &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem">
+  <link rel="canonical" href="http://grisha.org/blog/2019/06/05/maestro-is-open-source">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Gregory Trubetskoy" type="application/atom+xml">
@@ -98,7 +99,7 @@ single step, be it &hellip;">
   
   <header>
     
-      <h1 class="entry-title">The Next Smallest Step Problem</h1>
+      <h1 class="entry-title">Maestro the BigQuery Orchestrator</h1>
     
     
       <p class="meta">
@@ -114,7 +115,7 @@ single step, be it &hellip;">
   
 
 
-<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+<time datetime="2019-06-05T15:59:00-04:00" pubdate data-updated="true">Jun 5<span>th</span>, 2019</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -123,69 +124,71 @@ single step, be it &hellip;">
   </header>
 
 
-<div class="entry-content"><p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">“A journey of a thousand miles begins with a single step”</a></em></p>
+<div class="entry-content"><p>This blog post is mostly for the Google BigQuery nerds out there.  I
+am delighted to announce that a little project we’ve been hacking on
+for the past two years has been made open source under the Apache 2.0
+license: <a href="https://github.com/voxmedia/maestro">https://github.com/voxmedia/maestro</a>.</p>
 
-<p>Most of my journeys never begin, or cannot continue because of that one
-single step, be it first or next. Because it is hard, at times
-excruciatingly so.</p>
+<p>Maestro is a trusty tool that imports data from our databases every
+night and runs a bunch of BigQuery SQL to generate summaries,
+analysis, recommendations, etc. If anything goes wrong, it lets us
+know by posting to Slack. It also keeps track of resource utilization
+so we can easily tell what each data transformation is costing
+us. Maestro keeps track of who created which table so that when
+there is a problem, we know whom to ask about it. All SQL changes are
+pushed to Github, so that if anything is broken, it is trivial to
+figure out what may have caused it by looking at the commit history.</p>
 
-<p>Here I speak of software, but this applies to many other aspects of my
-life just as well.</p>
+<p>Before Maestro we had a bunch of scripts and cron jobs, and we also
+experimented with the multitude of data pipeline tools out there. The
+problem was that adding a new SQL statement always required some form
+of programming. The second problem was the interdependency management,
+i.e. how does one script know that the other thing it relies on is
+finished so it can start. Both problems are typically addressed in
+ways that are error prone and inefficient. Not to mention that each
+job  would be done differently, with varying levels of error
+management and notifications. Maestro solved all that.</p>
 
-<p>I recon it’s because I do not think in steps. I think of a
-destination.  I imagine the end-result. I can picture it with clarity
-and in great detail. I know where I need to be. But what is the next
-step to get there? And it doesn’t help that where I travel, there are
-no signs.</p>
+<p>We still use scripts and cronjobs, and things like Airflow, and
+probably will be using them forever. But when it comes to periodically
+running some SQL to generate a summary table or importing another
+table from a database, Maestro is clearly the first choice.</p>
 
-<p>The problem of deciding what to do next is so common for me that I
-even have a name for it. I call it “The Next Smallest Step”
-problem. Whenever I find myself idling, clicking over to online
-time-wasters, I pause and ask myself “What is the Next Smallest Step?
-What’s the next smallest thing I can do, right now?”</p>
+<p>Maestro is a web app, though it didn’t start out this way. The first
+version was just a daemon which stored its configuration in
+Postgres. To change anything we would simply INSERT/UPDATE on the
+<code>psql</code> command line. Later we added a crude React UI. The UI leaves a
+lot to be desired, but given that the user base is mostly data
+engineers and data scientists, no one is complaining.</p>
 
-<p>It doesn’t matter how much further this small step moves me. A
-nanometer is better than standing still. It has to be something that
-is simple enough that I can just do. Right now.</p>
+<p>Maestro requires no programming. The dependency graph is inferred by
+examining the SQL, which is how it should be. Everything is in one
+place, all errors and notifications are always consistent.</p>
 
-<p>I always plan to do big things that take days, weeks or months. But of
-all that, can I pick that one small simple and quick thing that I can
-do now?</p>
+<p>In addition to having a UI, Maestro also has a
+<a href="https://github.com/voxmedia/maestro/tree/master/pythonlib">Python client library</a>
+making it very easy to integrate with your favorite data science packages.</p>
 
-<p>Sometimes focusing on the next smallest step is so difficult that I
-pencil this question on a piece of paper, and sometimes I just type it
-on the command line or in the source code. My short version is:</p>
+<p>Maestro is written in Go. It is trivial to deploy - it is a single
+binary which only requires access to a database to store its
+configuration and state. The binary can be compiled with all web
+assets baked into itself and deployed in a <code>FROM scratch</code>
+Docker container only megabytes in size. Being a Go program also makes
+it quite performant when it comes to transferring data between
+databases and BigQuery.</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="bash"><span class="line"><span class="nv">$ </span>WHAT NEXT?
-</span><span class="line">bash: WHAT: <span class="nb">command </span>not found
-</span></code></pre></td></tr></table></div></figure></notextile></div>
+<p><a href="https://github.com/voxmedia/maestro">Maestro source code</a> is in
+Github and there is quite a bit of documentation in
+<a href="https://godoc.org/github.com/voxmedia/maestro">Maestro godoc</a>, including the
+<a href="https://godoc.org/github.com/voxmedia/maestro#hdr-Getting_Started">getting started</a>
+instructions.</p>
 
-<p>(that’s right, in CAPS)</p>
+<p>The structure of the source code and the UI implementation follows the
+guidelines I set out in a series of <a href="https://grisha.org/blog/2017/04/27/simplistic-go-web-app/">previous posts</a>
+on building Golang web apps.</p>
 
-<p>This simple question has taken me on some of the most fascinating and
-challenging journeys ever. In restrospect, I think I would not be able
-to travel any of them without repeatedly asking it of myself, over and
-over again.</p>
-
-<p>It has resulted in most productive and gratifying days of work. Some
-of my greatest projects began with this question. In many instances it
-established what I had to do for months ahead (years, even?). All
-beginning with this one small question.</p>
-
-<p>Conversely <em>not</em> asking it often enough, if at all, led to time having
-gone by without any results to show for and many a great opportunity
-lost.</p>
-
-<p>I must also note that some of my next smallest steps took days of
-thinking to figure out. Nothing wrong with that.</p>
-
-<p>And so I thought I’d share this with you, just in case you might find
-it helpful. Whenever you find yourself at an impass and progress
-has stopped, ask yourself:</p>
-
-<p>“What is the Next Smallest Step?”</p>
+<p>Please check it out and let us know via Github issues if you have any
+questions, comments, feature suggestions, etc.</p>
 </div>
 
 
@@ -208,21 +211,15 @@ has stopped, ask yourself:</p>
   
 
 
-<time datetime="2013-08-10T15:10:00-04:00" pubdate data-updated="true">Aug 10<span>th</span>, 2013</time>
+<time datetime="2019-06-05T15:59:00-04:00" pubdate data-updated="true">Jun 5<span>th</span>, 2019</time>
       
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/time-management/'>time-management</a>
-  
-</span>
 
 
     </p>
     
       <div class="sharing">
   
-  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/" >Tweet</a>
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2019/06/05/maestro-is-open-source/" data-via="humblehack" data-counturl="http://grisha.org/blog/2019/06/05/maestro-is-open-source/" >Tweet</a>
   
   
   
@@ -231,10 +228,8 @@ has stopped, ask yourself:</p>
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/08/02/hacking-on-mod-python-again/" title="Previous Post: Hacking on mod_python (again)">&laquo; Hacking on mod_python (again)</a>
+        <a class="basic-alignment left" href="/blog/2018/10/18/relative-imports-hack-in-go/" title="Previous Post: Relative Imports Hack in Golang">&laquo; Relative Imports Hack in Golang</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/" title="Next Post: Running a WSGI app on Apache should not be this hard">Running a WSGI app on Apache should not be this hard &raquo;</a>
       
     </p>
   </footer>
@@ -352,8 +347,8 @@ google_ad_type = "image";
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
-        var disqus_url = 'http://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/';
+        var disqus_identifier = 'http://grisha.org/blog/2019/06/05/maestro-is-open-source/';
+        var disqus_url = 'http://grisha.org/blog/2019/06/05/maestro-is-open-source/';
         var disqus_script = 'embed.js';
       
     (function () {

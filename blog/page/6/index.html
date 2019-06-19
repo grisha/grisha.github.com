@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="I’ve decided to check out
-Impala
-last week and here’s some notes on how that went. First thoughts I was very impressed with how easy it was to &hellip;">
+  <meta name="description" content="In a recent post
+I explained how a relational database could be backed by a key-value
+store by virtue of B-Trees. This sounded great in theory, but I &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,140 @@ last week and here’s some notes on how that went. First thoughts I was very im
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/">SQLite DB Stored in a Redis Hash</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-29T17:08:00-04:00" pubdate data-updated="true">May 29<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In a <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">recent post</a>
+I explained how a relational database could be backed by a key-value
+store by virtue of B-Trees. This sounded great in theory, but I wanted
+to see that it actually works. And so last night I wrote a 
+<a href="https://github.com/grisha/thredis/commit/2beaee3a13f0dbe0c161470da04ef8af21d78fc9">commit</a> to 
+<a href="http://thredis.org/">Thredis</a>, which does exactly that.</p>
+
+<p>If you’re not familiar with Thredis - it’s something I hacked together
+last Christmas. Thredis started out as threaded Redis, but eventually
+evolved into SQLite + Redis. Thredis uses a separate file to save
+SQLite data. But with this patch it’s no longer necessary - a SQLite
+DB is entirely stored in a Redis Hash object.</p>
+
+<p>A very neat side-effect of this little hack is that it lets a SQLite
+database be automatically replicated using Redis replication.</p>
+
+<p>I was able to code this fairly easily because SQLite provides a very nice way of
+implementing a custom <a href="http://www.sqlite.org/vfs.html">Virtual File System</a> (VFS).  </p>
+
+<p>Granted this is only proof-of-concept and not anything you should dare
+use anywhere near production, it’s enough to get a little taste, so
+let’s start an empty Thredis instance and create a SQL table:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">$ redis-cli
+</span><span class="line">redis 127.0.0.1:6379&gt; sql "create table test (a int, b text)"
+</span><span class="line">(integer) 0
+</span><span class="line">redis 127.0.0.1:6379&gt; sql "insert into test values (1, 'hello')"
+</span><span class="line">(integer) 1
+</span><span class="line">redis 127.0.0.1:6379&gt; sql "select * from test"
+</span><span class="line">1) 1) 1) "a"
+</span><span class="line">      2) "int"
+</span><span class="line">   2) 1) "b"
+</span><span class="line">      2) "text"
+</span><span class="line">2) 1) (integer) 1
+</span><span class="line">   2) "hello"
+</span><span class="line">redis 127.0.0.1:6379&gt; 
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now let’s start a slave on a different port and fire up another
+redis-client to connect to it. (This means <code>slaveof</code> is set to
+localhost:6379 and <code>slave-read-only</code> is set to false, I won’t bore you
+with a paste of the config here).</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">$ redis-cli -p 6380
+</span><span class="line">redis 127.0.0.1:6380&gt; sql "select * from test"
+</span><span class="line">1) 1) 1) "a"
+</span><span class="line">      2) "int"
+</span><span class="line">   2) 1) "b"
+</span><span class="line">      2) "text"
+</span><span class="line">2) 1) (integer) 1
+</span><span class="line">   2) "hello"
+</span><span class="line">redis 127.0.0.1:6380&gt; </span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Here you go - the DB’s replicated!</p>
+
+<p>You can also see what SQLite data looks like in Redis (not terribly exciting):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">redis 127.0.0.1:6379&gt; hlen _sql:redis_db
+</span><span class="line">(integer) 2
+</span><span class="line">redis 127.0.0.1:6379&gt; hget _sql:redis_db 0
+</span><span class="line">"SQLite format 3\x00 \x00\x01\x01\x00@  \x00\x00\x00\x02\x00\x00\x00\x02\x00\x00 ...</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Another potential benefit to this approach is that with not too much
+more tinkering the database could be backed by 
+<a href="http://redis.io/topics/cluster-spec">Redis Cluster</a>, which would give you a
+fully-functional horizontally-scalable clustered in-memory SQL
+database.  Of course, only the <em>store</em> would be distributed, not the
+query <em>processing</em>. So this would be no match to Impala and the like
+which can process queries in a distributed fasion, but still, it’s
+pretty cool for some 300 lines of code, n’est-ce pas?</p>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1198,6 +1332,10 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2019/06/05/maestro-is-open-source/">Maestro the BigQuery Orchestrator</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2018/10/18/relative-imports-hack-in-go/">Relative Imports Hack in Golang</a>
       </li>
     
@@ -1211,10 +1349,6 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
     
       <li class="post">
         <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
       </li>
     
   </ul>
