@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2019-06-20T12:36:50-04:00</updated>
+  <updated>2019-06-20T12:42:13-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -109,8 +109,9 @@ the assumption that a data processing task is more than an SQL
 statement. With this caveat in place, the dependency has to be
 specified explicitly. Ironically, the task frequently ends up being just an
 SQL statement, but because of the extra flexibility assumed by the
-tool, it must be wrapped in Python or some other language. The beauty
-of Maestro’s DAG is that it is implicit, not explicit.</p>
+tool, it must be wrapped in Python or some other language.</p>
+
+<p>The beauty of Maestro’s DAG is that it is implicit, not explicit.</p>
 ]]></content>
   </entry>
   
