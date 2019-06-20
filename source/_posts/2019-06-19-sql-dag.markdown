@@ -84,7 +84,7 @@ matter of a few clicks, there is no coding involved
 The design limitation affecting most other pipeline orchestrators is
 the assumption that a data processing task is more than an SQL
 statement. With this caveat in place, the dependency has to be
-specified explicitly. Ironically, the tast frequently ends up being just an
+specified explicitly. Ironically, the task frequently ends up being just an
 SQL statement, but because of the extra flexibility assumed by the
 tool, it must be wrapped in Python or some other language. The beauty
 of Maestro's DAG is that it is implicit, not explicit.
