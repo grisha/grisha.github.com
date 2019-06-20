@@ -51,6 +51,9 @@ place, all errors and notifications are always consistent.
 In addition to having a UI, Maestro also has a
 [Python client library](https://github.com/voxmedia/maestro/tree/master/pythonlib)
 making it very easy to integrate with your favorite data science packages.
+Maestro can also export tables as CSV to Google Cloud Storage and
+notify your other apps via HTTP when it is done. It can also export
+tables to Google Sheets for the humans.
 
 Maestro is written in Go. It is trivial to deploy - it is a single
 binary which only requires access to a database to store its
