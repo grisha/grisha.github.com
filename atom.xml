@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2019-06-20T12:30:15-04:00</updated>
+  <updated>2019-06-20T12:31:14-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,107 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Implicit SQL DAG in Maestro]]></title>
+    <link href="http://grisha.org/blog/2019/06/19/sql-dag/"/>
+    <updated>2019-06-19T17:17:00-04:00</updated>
+    <id>http://grisha.org/blog/2019/06/19/sql-dag</id>
+    <content type="html"><![CDATA[<p>Earlier I <a href="http://grisha.org/blog/2019/06/05/maestro-is-open-source/">wrote about Maestro</a>,
+a tool that we recently <a href="https://github.com/voxmedia/maestro/">open-sourced</a>.
+At first glance, Maestro may appear to be yet another data pipeline
+orchestration tool. What sets Maestro apart is that it is confined to
+SQL only.</p>
+
+<p>Maestro leverages the fact that any SQL statement declares its
+prerequisites. In other words a collection of SQL statements already is
+a <em>Directed</em> (and hopefully <em>Acyclic</em>) <em>Graph</em>.</p>
+
+<p>Here is a simple example:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="c1">-- table foo created with</span>
+</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">-- table baz created with</span>
+</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">baz</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Upon examination of above two statements, it is clear that the table
+<code>baz</code> must exist first, then the bottom statement can be executed to
+create the table <code>bar</code> and lastly we can create <code>foo</code> by running the
+first statement. We can picture the above DAG like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="text"><span class="line">  baz &lt;- bar &lt;- foo
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Here is a slightly more complicated example:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="c1">-- table foo created with</span>
+</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">-- table baz created with</span>
+</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">baz</span>
+</span><span class="line">
+</span><span class="line"><span class="c1">-- table bleh</span>
+</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span> <span class="k">JOIN</span> <span class="n">foo</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This DAG looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="text"><span class="line">  baz &lt;- bar &lt;- foo
+</span><span class="line">          ^      ^
+</span><span class="line">          |      |
+</span><span class="line">          +------+-- bleh
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>It’s a rather simple idea. The only bit of configuration that Maestro
+has to keep that SQL does not provide is the table name, because <code>foo</code>
+cannot be inferred from <code>SELECT * FROM bar</code>.</p>
+
+<p>Armed with this observation, we can now conceive of a tool which is a
+collection of SQL statements, each having a name. This tool can be
+capable of executing these statements in correct order of dependency
+absent any other configuration. And that’s what Maestro does.</p>
+
+<p>The main worry to be assuaged is that this approach is somehow
+limiting. If our data store is BigQuery, well then SQL is <em>the</em> <em>only</em>
+language it speaks. And if the data does indeed need to be processed
+outside of BigQuery with SciPy or whatever, then there are many ways
+we can invent to accomodate this without having to complicate the
+simplicity of tables defined by SQL only.</p>
+
+<p>Not only is this approach hardly limiting, on the contrary, it is
+quite empowering. To create and schedule a new table in Maestro is a
+matter of a few clicks, there is no coding involved
+(aside from the SQL statement itself, of course).</p>
+
+<p>The design limitation affecting most other pipeline orchestrators is
+the assumption that a data processing task is more than an SQL
+statement. With this caveat in place, the dependency has to be
+specified explicitly. Ironically, the tast frequently ends up being just an
+SQL statement, but because of the extra flexibility assumed by the
+tool, it must be wrapped in Python or some other language. The beauty
+of Maestro’s DAG is that it is implicit, not explicit.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Maestro the BigQuery Orchestrator]]></title>
@@ -5091,75 +5192,6 @@ we should be able to see the chart update in real time.</p>
 and having them available directly from the app without having to send
 them to a separate statsd server somewhere has been extremely useful in
 helping understand performance and other issues.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Why is there no Formal Definition of Time Series?]]></title>
-    <link href="http://grisha.org/blog/2016/12/23/time-series-what-is-it/"/>
-    <updated>2016-12-23T09:13:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/12/23/time-series-what-is-it</id>
-    <content type="html"><![CDATA[<p>If you’re reading this, chances are you may have searched for
-definition of “Time Series”. And, like me, you were probably
-disappointed by what you’ve found.</p>
-
-<p>The most popular “definition” I come across amongst our fellow
-programmer folk is that it’s “data points with timestamps”. Or something
-like that. And you can make charts from it. And that’s about it, alas.</p>
-
-<p>The word <em>time</em> suggests that is has something to do with time. At
-first it seems reasonable, I bite. The word <em>series</em> is a little more
-peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
-Most people though think “series” and “sequence” are the
-same thing, and that’s fine. But it’s a clue that <em>time series</em> is
-not a scientific term, because it would have been called
-<em>time sequence</em> most likely.</p>
-
-<p>Lets get back to the time aspect of it. Why do data points need
-timestamps? Or do they? Isn’t it the time <em>interval</em> between points
-that is most essential, rather than the absolute time? And if the data
-points are spaced equally (which conforms to the most common definiton
-of time series), then what purpose would <em>any</em> time-related
-information attached to a data point serve?</p>
-
-<p>To understand this better, picture a time chart. Of anything -
-temperature, price of bitcoin over a week, whatever. Now think - does
-the absolute time of every point provide any useful information to
-you? Does the essential meaning of the chart change depending on
-whether it shows the price of bitcoin in the year 2016 or 2098 or
-10923?</p>
-
-<p>Doesn’t it seem like “time” in “time series” is a bit of a red
-herring?</p>
-
-<p>Here is another example. Let’s say I decide to travel from
-San-Francisco to New York taking measurements of elevation above the
-sea level at every mile. I then plot that sequence on a chart where
-x-axis is distance traveled and y-axis is elevation. You would agree
-that this chart is not a “time series” by any stretch, right? But then
-if I renamed x-axis to “time traveled” (let’s assume I moved at
-constant speed), the chart wouldn’t change at all, but now it’s okay
-to call it “time series”?</p>
-
-<p>So it’s no surprise that there is no formal definition of “time
-series”.  In the end a “time series” is just a <em>sequence</em>. There are
-no timestamps required and there is nothing at all special regarding a
-dimension being time as opposed to any other unit, which is why there
-is no mathematical definition of “time series”. Time series is a
-colloquial term etymological origins of which are not known to me, but
-it’s not a thing from a scientific perspective, I’m afraid.</p>
-
-<p>Next time you hear “time series” just substitute it with “sequence” and
-see how much sense that makes. For example a “time series database” is
-a “sequence database”, i.e. database optimized for sequences. Aren’t
-all relational databases optimized for sequences?</p>
-
-<p>Something to think about over the holidays…</p>
-
-<p>Edit: Someone brought up the subject of <a href="https://en.wikipedia.org/wiki/Unevenly_spaced_time_series"><em>unevenly-spaced time series</em></a>.
-All series are evenly spaced given proper resolution. An
-unevenly-spaced time series with timestamps accurate to 1 millisecond
-is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
 ]]></content>
   </entry>
   

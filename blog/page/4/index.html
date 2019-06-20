@@ -9,10 +9,8 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="This three part write up [Part II
-Part III]
-is my attempt at a down-to-earth explanation (and Python code) of the
-Holt-Winters method for those of us &hellip;">
+  <meta name="description" content="If you haven’t read Part I
+you probably should, or the following will be hard to make sense of. All the forecasting methods we covered so far, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -97,6 +95,201 @@ Holt-Winters method for those of us &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-02-16T13:05:00-05:00" pubdate data-updated="true">Feb 16<span>th</span>, 2016</time>
+        
+         | <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>If you haven’t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
+you probably should, or the following will be hard to make sense of.</p>
+
+<p>All the forecasting methods we covered so far, including single
+exponential smoothing, were only good at predicting a single
+point. We can do better than that, but first we need to be introduced to
+a couple of new terms.</p>
+
+<h2 id="more-terminology">More terminology</h2>
+
+<h3 id="level"><em>Level</em></h3>
+
+<p>Expected value has another name, which, again varies depending on who wrote the
+text book: <em>baseline</em>, <em>intercept</em> (as in
+<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
+<em>level</em>. We will stick with “level” here.</p>
+
+<p>So level is that one predicted point that we learned how to calculate
+in Part I. But because now it’s going to be only part of calculation
+of the forcast, we can no longer refer to it as $\hat{y}$ and will instead
+use $\ell$.</p>
+
+<h3 id="trend-or-slope"><em>Trend</em> or <em>Slope</em></h3>
+
+<p>You should be familiar with
+<a href="https://en.wikipedia.org/wiki/Slope">slope</a> from your high school algebra
+class. What you might be a little rusty on is how to calculate it,
+which is important, because a series slope has an interesting
+characteristic. Slope is:</p>
+
+<script type="math/tex; mode=display">
+m = \dfrac{\Delta{y}} {\Delta{x}}
+</script>
+
+<p>where $\Delta{y}$ is the difference in the $y$ coordinates and
+$\Delta{x}$ is the difference in the $x$ coordinates, respectively,
+between two points. While in real algebraic problems $\Delta{x}$ could
+be anything, in a series, from one point to the next, it is always
+1. Which means that for a series, slope between two adjacent points
+is simply $\dfrac{\Delta{y}} {1}$ or $\Delta{y}$, or:</p>
+
+<script type="math/tex; mode=display">
+b = y_x - y_{x-1}
+</script>
+
+<p>Where $b$ is <em>trend</em>. To the best of my understanding terms “trend”
+and “slope” are interchangeable. In forecasting parlance “trend” is
+more common, and in math notation forecasters refer to it as $b$
+rather than $m$.</p>
+
+<h4 id="additive-vs-multiplicative">Additive vs Multiplicative</h4>
+
+<p>Another thing to know about trend is that instead of subtracting
+$y_{x-1}$ from $y_x$, we could divide one by the other thereby
+getting a ratio. The difference between these two approaches is
+similar to how we can say that something costs $20 more or 5%
+more. The variant of the method based on subtraction is known as
+<em>additive</em>, while the one based on division is known as
+<em>multiplicative</em>.</p>
+
+<p>Practice shows that a ratio (i.e. multiplicative) is a more stable
+predictor. The additive method, however is simpler to understand, and
+going from additive to multiplicative is trivial once you understand
+this whole thing. For this reason we will stick with the additive
+method here, leaving the multiplicative method an exercise for the
+reader.</p>
+
+<h2 id="double-exponential-smoothing">Double Exponential Smoothing</h2>
+
+<p>So now we have two components to a series: level and trend. In Part I
+we learned several methods to forecast the level, and it should follow
+that every one of these methods can be applied to the trend
+just as well. E.g. the naive method would assume that trend between
+last two points is going to stay the same, or we could average all
+slopes between all points to get an average trend, use a moving trend
+average or apply exponential smoothing.</p>
+
+<p>Double exponential smoothing then is nothing more than exponential
+smoothing applied to both level and trend. To express this in
+mathematical notation we now need three equations: one for level, one
+for the trend and one to combine the level and trend to get the
+expected $\hat{y}$.</p>
+
+<script type="math/tex; mode=display">% <![CDATA[
+
+\begin{align}
+& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
+& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
+& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
+\end{align}
+ %]]></script>
+
+<p>The first equation is from Part I, only now we’re using $\ell$ instead
+of $\hat{y}$ and on the right side the expected value becomes the sum
+of level end trend.</p>
+
+<p>The second equation introduces $\beta$, the <em>trend factor</em> (or
+coefficient). As with $\alpha$, some values of ${\beta}$ work better
+than others depending on the series.</p>
+
+<p>Similarly to single exponential smoothing, where we used the first
+observed value as the first expected, we can use the first observed
+trend as the first expected. Of course we need at least two points to
+compute the initial trend.</p>
+
+<p>Because we have a level and a trend, this method can forecast not one,
+but two data points. In Python:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
+</span><span class="line"><span class="k">def</span> <span class="nf">double_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span class="line">            <span class="n">level</span><span class="p">,</span> <span class="n">trend</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
+</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span class="line">        <span class="k">else</span><span class="p">:</span>
+</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+</span><span class="line">        <span class="n">last_level</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
+</span><span class="line">        <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">-</span><span class="n">last_level</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
+</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
+</span><span class="line">
+</span><span class="line"><span class="c"># &gt;&gt;&gt; double_exponential_smoothing(series, alpha=0.9, beta=0.9)</span>
+</span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And here is a picture of double exponential smoothing in action (the
+green dotted line).</p>
+
+<p><img src="/images/hw03.png" /></p>
+
+<h2 id="quick-review">Quick Review</h2>
+
+<p>We’ve learned that a data point in a series can be represented as a
+level and a trend, and we have learned how to appliy exponential
+smoothing to each of them to be able to forecast not one, but two
+points.</p>
+
+<p>In <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
+we’ll finally talk about triple exponential smoothing.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2650,209 +2843,6 @@ mentioned SSL/TLS.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My Thoughts on WSGI</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/10/26/my-thoughts-on-wsgi/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>I’m not very fond of it. Here is why.</p>
-
-<h2 id="cgi-origins">CGI Origins</h2>
-
-<p>WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
-there in the name.</p>
-
-<p>CGI solved a very important problem using the very limited tools at
-hand available at the time. Though CGI wasn’t a standard, it was
-ubiquitous in the early days of the WWW, despite its inherent slowness
-and other limitations. It became popular because it worked with any
-language, was easy to turn on and provided such a thick wall of
-isolation that admins could turn it on for their users without too much concern
-for problems caused by user-generated CGI scripts.</p>
-
-<p>There is now an RFC (<a href="http://www.ietf.org/rfc/rfc3875">RFC3875</a>)
-describing CGI, but I hazard that
-<a href="http://ken.coar.org/">Ken Coar</a> wrote the RFC not because he thought CGI was great, but rather
-out of discontent with the present state of affairs - everyone was
-using CGI, yet there never was a formal document describing it.</p>
-
-<p>So if I were to attempt to unite all Python web applications under the
-same standard, CGI wouldn’t be the first thing I would consider. There are
-other efforts at solving the same problem in more elegant ways which
-could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
-
-<h2 id="headers">Headers</h2>
-
-<p>CGI dictated that HTTP headers be passed to the CGI script by way of
-<a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
-same environment that contain your <code>$PATH</code> and <code>$TERM</code>.  (Note this
-also explains the origin of the term <em>environment</em> in WSGI - in HTTP
-there is no <em>request environment</em>, there is simply a <em>request</em>). So as
-to not clash with any other environment variables, CGI would prepend
-<code>HTTP_</code> to every header name. It also swapped dashes with underscores
-because dashes are not allowed in shell variable names. And because
-environment variables in DOS and Unix are typically case-insensitive,
-they were capitalized. Thus <code>"content-type"</code> would become <code>"HTTP_CONTENT_TYPE"</code>.</p>
-
-<p>And how much sense applying the same transformation make in the realm
-in which WSGI operates? The headers are typically read by the
-webserver and stored in some kind of a structure, which ought to be
-directly accessible so the application can get headers in the
-original, unmodified format. For example in Apache this would be the
-<code>req.headers_in</code> table.  What is the benefit of combing through that
-structure converting every key to some capitalized HTTP_ string at
-every request? Why are WSGI developers forced to use
-<code>env['HTTP_CONTENT_LENGTH']</code> rather than <code>env['Content-length']</code>?</p>
-
-<p>Another thing about the environment is that the WSGI standard states
-that it must be a real Python dictionary, thereby dictating that a
-memory allocation happen to satisfy this requirement, <em>at every
-request</em>.</p>
-
-<h2 id="startresponse">start_response()</h2>
-
-<p>In order to be able to write anything to the client a WSGI application
-must envoke the start_response() function passed to it which would
-return a write() method.</p>
-
-<p>Ten points for cuteness here, but the practicality of this solution
-eludes me. This is certainly a clever way to make the fact that the start
-of a response is an irreversible action in HTTP because the headers are
-sent first, but seriosly - do programmers who code at this level not
-know it? Why can’t the header sending part happen implicitly at the
-first write(), and why can’t an application write without sending any
-headers?</p>
-
-<p>There is also another problem here - function calls are relatively
-expensive in Python. The requirement that the app must beg for the
-write object every time introduces a completely unnecessary function
-call.</p>
-
-<p>The request object with a write() method should simply be passed
-in. This is how it has always worked in mod_python (cited in PEP3333 a
-number of times!).</p>
-
-<h2 id="error-handling">Error handling</h2>
-
-<p>First, I must confess that after re-reading the section of the PEP3333
-describing the <code>exc_info</code> argument several times I still can’t say I
-grok what it’s saying. Looking at some implementations out there I am
-releived to know I am not the only one.</p>
-
-<p>But the gist of it that an exception can be supplied along with some
-headers. It seems to me there is confusion between HTTP errors and
-Python errors here, the two are not related. What is the expected
-outcome of passing a Python exception to an HTTP server? The server
-would probably convert it to a 500 Internal Server Error (well it only
-has so many possibilities to chose from), and what’s the point of that?</p>
-
-<p>Wouldn’t the outcome be same if the application simply raised an
-exception?</p>
-
-<p>If the spec wanted to provide means for the application Python errors
-to somehow map to HTTP errors, why not define a special exception
-class which could be used to send HTTP errors? What was wrong with
-mod_python’s:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">raise apache.SERVER_RETURN, apache.HTTP_INTERNAL_SERVER_ERROR</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I think it’s simple and self-explanatory.</p>
-
-<h2 id="other-things">Other things</h2>
-
-<p>What is <code>wsgi.run_once</code>, why does it matter and why should the web
-server provide it? What would be a good use case for such a thing?</p>
-
-<p>There is a long section describing “middleware”. Middleware is a
-wrapper, an example of the <a href="http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm">pipeline design pattern</a>
-and there doesn’t seem to be anything special with this concept that
-the WSGI spec should even mention it. (I also object to the term
-“middleware” - my intuition suggests it’s a layer between “hardware”
-and “software”, not a wrapper.)</p>
-
-<h2 id="scriptname-and-pathinfo">SCRIPT_NAME and PATH_INFO</h2>
-
-<p>Perhaps the most annoying part of CGI were these two mis-understood
-variables, and sadly WSGI uses them too.</p>
-
-<p>Remember that in CGI we always had a script. A typical CGI script
-resided somewhere on the filesystem to which the request URI maps. As
-part of serving the request the server traversed the URI mapping each
-element to an element of the filesystem path to locate the
-script. Once the script was found, the portion of the URI used thus far
-was assigned to the SCRIPT_NAME variable, while the remainder of the
-URI got assigned to PATH_INFO.</p>
-
-<p>But where is <em>the script</em> in WSGI? Is my Python module the script?
-What relatioship does there exist between the request URI and the
-(non-existent) script?</p>
-
-<h2 id="bottom-line">Bottom line</h2>
-
-<p>I am not convinced that there should be a universal standard for
-Python web applications to begin with. I think that what we refer to
-as “web applications” is still not very well understood by us
-programmers.</p>
-
-<p>But if we are to have one, I think that WSGI approach is not the right
-one. It brings the world of Python web development to the lowest
-common denominator - CGI and introduces some problems of its own on
-top of it.</p>
-
-<h2 id="other-notes">Other notes</h2>
-
-<h3 id="what-is-the-gateway-in-cgi">What is the Gateway in CGI</h3>
-
-<p>I did some digging into the etymology of “Common Gateway Interface”,
-because I wanted to know what the original author (Rob McCool) meant
-by it when he came up with it. From reading <a href="http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html">this</a>
-it’s apparent that he saw it as the Web daemon’s gateway to an outside
-program:</p>
-
-<p>“For example, let’s say that you wanted to “hook up” your Unix
-database to the World Wide Web, to allow people from all over the
-world to query it. Basically, you need to create a CGI program that
-the Web daemon will execute to transmit information to the database
-engine, and receive the results back again and display them to the
-client. This is an example of a gateway, and this is where CGI,
-currently version 1.1, got its origins.”</p>
-
-<p>I always perceived it the other way around, I thought the “gateway”
-was a gateway to the web server. I think that when Phillip J. Eby
-first proposed the name WSGI he was under the same misperception as I.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -2898,6 +2888,10 @@ first proposed the name WSGI he was under the same misperception as I.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2019/06/19/sql-dag/">Implicit SQL DAG in Maestro</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2019/06/05/maestro-is-open-source/">Maestro the BigQuery Orchestrator</a>
       </li>
     
@@ -2911,10 +2905,6 @@ first proposed the name WSGI he was under the same misperception as I.</p>
     
       <li class="post">
         <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
       </li>
     
   </ul>
