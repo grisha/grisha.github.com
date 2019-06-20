@@ -1,0 +1,90 @@
+---
+layout: post
+title: "Implicit SQL DAG in Maestro"
+date: 2019-06-19 17:17
+comments: true
+categories:
+published: false
+---
+
+Earlier I [wrote about Maestro](/blog/2019/06/05/maestro-is-open-source/),
+a tool that we recently [open-sourced](https://github.com/voxmedia/maestro/).
+At first glance, Maestro may appear to be yet another data pipeline
+orchestration tool. What sets Maestro apart is that it is confined to
+SQL only.
+
+Maestro leverages the fact that any SQL statement declares its
+prerequisites. In other words a collection of SQL statements already is
+a _Directed_ (and hopefully _Acyclic_) _Graph_.
+
+Here is a simple example:
+
+``` sql
+-- table foo created with
+SELECT * FROM bar
+
+-- table baz created with
+SELECT * FROM baz
+```
+
+Upon examination of above two statements, it is clear that the table
+`baz` must exist first, then the bottom statement can be executed to
+create the table `bar` and lastly we can create `foo` by running the
+first statement. We can picture the above DAG like this:
+
+``` text
+  baz <- bar <- foo
+```
+
+Here is a slightly more complicated example:
+
+``` sql
+-- table foo created with
+SELECT * FROM bar
+
+-- table baz created with
+SELECT * FROM baz
+
+-- table bleh
+SELECT * FROM bar JOIN foo
+
+```
+
+This DAG looks like this:
+
+``` text
+
+  baz <- bar <- foo
+          ^      ^
+          |      |
+          +------+-- bleh
+```
+
+It's a rather simple idea. The only bit of configuration that Maestro
+has to keep that SQL does not provide is the table name, because `foo`
+cannot be inferred from `SELECT * FROM bar`.
+
+Armed with this observation, we can now conceive of a tool which is a
+collection of SQL statements, each having a name. This tool can be
+capable of executing these statements in correct order of dependency
+absent any other configuration. And that's what Maestro does.
+
+The main worry to be assuaged is that this approach is somehow
+limiting. If our data store is BigQuery, well then SQL is _the_ _only_
+language it speaks. And if the data does indeed need to be processed
+outside of BigQuery with SciPy or whatever, then there are many ways
+we can invent to accomodate this without having to complicate the
+simplicity of tables defined by SQL only.
+
+Not only is this approach hardly limiting, on the contrary, it is
+quite empowering. To create and schedule a new table in Maestro is a
+matter of a few clicks, there is no coding involved
+(aside from the SQL statement itself, of course).
+
+The design limitation affecting most other pipeline orchestrators is
+the assumption that a data processing task is more than an SQL
+statement. With this caveat in place, the dependency has to be
+specified explicitly. Ironically, the tast frequently ends up being just an
+SQL statement, but because of the extra flexibility assumed by the
+tool, it must be wrapped in Python or some other language. The beauty
+of Maestro's DAG is that it is implicit, not explicit.
