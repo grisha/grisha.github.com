@@ -5,11 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Category: test - Gregory Trubetskoy</title>
+  <title>Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl. - Gregory Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Category: test">
+  <meta name="description" content="When doing computing that requires data to be local to the machine,
+e.g. model training on a GPU, data may be downloaded from tables in
+BigQuery or &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +20,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.orgblog/categories/test">
+  <link rel="canonical" href="http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Gregory Trubetskoy" type="application/atom+xml">
@@ -93,36 +95,194 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Category: Test</h1>
+    
+      <h1 class="entry-title">Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2020-05-08T12:22:00-04:00" pubdate data-updated="true">May 8<span>th</span>, 2020</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives" class="category">
 
 
+<div class="entry-content"><p>When doing computing that requires data to be local to the machine,
+e.g. model training on a GPU, data may be downloaded from tables in
+BigQuery or similar SQL-centric environments such as Hadoop/Hive. (The
+<a href="https://github.com/grisha/bq_etl">project</a> I describe here is
+BigQuery-specific for now, but the concept applies and can be extended
+to any such tool).</p>
 
-  
-  <h2>2013</h2>
+<p>There is always the question of when does one bring data out of
+BigQuery and how much more data transformation is acceptible
+afterwards. I believe that the correct answer is a rather strong
+“none”: all possible data transformation should be done <em>before</em> the
+data leave BigQuery.</p>
 
-<article>
-  
-<h1><a href="/blog/2013/03/25/how-does-this-work/">Testing out Octopress</a></h1>
-<time datetime="2013-03-25T11:46:00-04:00" pubdate><span class='month'>Mar</span> <span class='day'>25</span> <span class='year'>2013</span></time>
+<p>Reality is oft otherwise. Once information is downloaded to local
+storage, it is much easier to load up a Pandas dataframe for a quick
+tweak.  Even though the proper fix would be to correct the SQL and run
+it again, it is just too convenient to adjust data locally. Once a
+dataset has been corrected locally, possibly multiple times as part of
+development iteration, it becomes critically important to somehow keep
+track of which files result from which code version. You can hopefully
+see how this is gradually becoming a data nightmare.</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/test/'>test</a></span>
-</footer>
+<p>Data monkey patching is difficult to track because the place in code
+where it happens usually is not in any way tied to the SQL statement
+for which it is correcting. The SQL defining the original data may be
+in a different code base or in none at all.</p>
 
+<p>Here is my simple solution. It starts with a few requirements:</p>
 
-</article>
+<blockquote>
+  <ul>
+    <li>Each SQL statement should be in its own .sql file.</li>
+  </ul>
+</blockquote>
 
+<p>This makes it possible to view and edit this code as what it is - SQL,
+not a string in Python code.</p>
+
+<blockquote>
+  <ul>
+    <li>The name and the content of the .sql file should dictate the name
+of the output table.</li>
+  </ul>
+</blockquote>
+
+<p>The simplest way to do this is with a short hash of the contents
+appended to the table name. Once that is true, the .sql file becomes a
+complete description of the output table. If the SQL file is altered,
+it would result in a different table.</p>
+
+<blockquote>
+  <ul>
+    <li>There should be no need to use external tools to keep track of
+the state.</li>
+  </ul>
+</blockquote>
+
+<p>You do not need MLFlow or Redis to know what the SQL has been
+executed - the mere table’s existence in BigQuery is evidence of it.</p>
+
+<blockquote>
+  <ul>
+    <li>The location of  any GCS extracts from this table should uniquely match the table name.</li>
+  </ul>
+</blockquote>
+
+<p>If the blob(s) exist, it means that the extract has been performed.</p>
+
+<blockquote>
+  <ul>
+    <li>The local filename should still depend on the original .sql file.</li>
+  </ul>
+</blockquote>
+
+<p>Which makes it easy to check whether the data has been downloaded to
+local storage.</p>
+
+<p>Note that given the above scheme, if the name or the content of the
+.sql file changes, so does the table name, the GCS extract name and
+the local file name.</p>
+
+<p>Given the above few constraints, we can now answer the questions of
+“Should this SQL be executed or has it already been done?”, “Should
+this table be extracted to GCS?” and “Should this GCS data be
+downloaded?” and optionally forego these steps if they are already
+done.</p>
+
+<blockquote>
+  <ul>
+    <li>The order of execution of .sql files should be inferred from the
+SQL itself.</li>
+  </ul>
+</blockquote>
+
+<p>Last but no the least, if we have multiple SQL statements to be
+executed, what dictates the order of execution? It turns out that SQL
+statements do not need to be executed in any particular order <em>unless</em>
+the output of one is input to another. As I have <a href="/blog/2016/11/14/table-names-from-sql/">written about before</a>,
+this is best inferred
+from the SQL itself and does not need to be explicitely
+specified.</p>
+
+<p>Last week I put together a simplistic little package that does all of
+the above. See it on Github at <a href="https://github.com/grisha/bq_etl">https://github.com/grisha/bq_etl</a>.</p>
+
+<p>It was written to serve my specific needs and for this reason it is
+very bare-bones, but that’s not to say I’m not open to comments,
+issues and pull requests to make it better!</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Gregory Trubetskoy</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2020-05-08T12:22:00-04:00" pubdate data-updated="true">May 8<span>th</span>, 2020</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/" data-via="humblehack" data-counturl="http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2019/06/19/sql-dag/" title="Previous Post: Implicit SQL DAG in Maestro">&laquo; Implicit SQL DAG in Maestro</a>
+      
+      
+    </p>
+  </footer>
 </article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
 
 </div>
 
@@ -229,7 +389,10 @@ google_ad_type = "image";
       var disqus_shortname = 'grisha';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/';
+        var disqus_url = 'http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

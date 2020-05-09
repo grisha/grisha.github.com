@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Apparently Impala has two versions of source code, one internal to
-Cloudera, the other available on Github. I’m presuming that code gets
-released to &hellip;">
+  <meta name="description" content="Here&#8217;s a KISS solution to all your password reuse
+problems. It requires remembering only *one* strong password, lets you
+have a virtually &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,173 @@ released to &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/31/simple-solution-to-password-reuse/">Simple Solution to Password Reuse</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-31T17:12:00-04:00" pubdate data-updated="true">May 31<span>st</span>, 2013</time>
+        
+         | <a href="/blog/2013/05/31/simple-solution-to-password-reuse/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>
+Here&#8217;s a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
+problems. It requires remembering only *one* strong password, lets you
+have a virtually limitless number of passwords, and, most importantly,
+does NOT store anything anywhere or transfer anything over the
+network (100% browser-side Javascript).
+</p>
+
+<script type="text/javascript" src="/javascripts/sha.js"></script>
+
+<script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
+
+<script type="text/javascript">
+function calc_pw(n) {
+  try {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var keyword = document.getElementById("keyword"+n);
+    var pw = document.getElementById("pw"+n);
+    var strength = document.getElementById("strength");
+    var hmacObj = new jsSHA(pw_phrase.value, "TEXT");
+    pw.value = hmacObj.getHMAC(keyword.value, "TEXT", "SHA-512", "B64").substring(5,15);
+    if (pw.value.search('!') === -1) pw.value = pw.value + '!'
+    if (pw.value.search(/[0-9]/) === -1) pw.value = pw.value + '0'
+  } catch(e) {
+    pw.value = "ERROR: " + e;
+  }
+}
+function pw_strength() {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var score = zxcvbn(pw_phrase.value).score;
+    if (score == '0') {strength.value = 'Very Weak'; strength.style.color = 'red'; }
+    else if (score == '1') {strength.value = 'Weak'; strength.style.color = 'red'; }
+    else if (score == '2') {strength.value = 'So so'; strength.style.color = 'orange'; }
+    else if (score == '3') {strength.value = 'Okay'; strength.style.color = 'blue'; }
+    else if (score == '4') {strength.value = 'Strong'; strength.style.color = 'green'; }
+    else strength.value = '';
+}
+function check_pw2_same() {
+  var pw_phrase = document.getElementById("pw_phrase");
+  var pw_phrase2 = document.getElementById("pw_phrase2");
+  var pw_same = document.getElementById("pw_same");
+  if (pw_phrase.value === pw_phrase2.value)
+    pw_same.value = 'Correct';
+  else
+    pw_same.value = 'Incorrect';
+}
+function clear_all() {
+  document.getElementById("pw_phrase").value = '';
+  document.getElementById("pw_phrase2").value = '';
+  document.getElementById("strength").value = '';
+  document.getElementById("pw_same").value = '';
+  document.getElementById("keyword1").value = 'amazon';
+  document.getElementById("keyword2").value = 'gmail';
+  document.getElementById("keyword3").value = 'yahoo';
+  document.getElementById("keyword4").value = 'foo';
+  document.getElementById("keyword5").value = 'bar';
+  document.getElementById("pw1").value = '';
+  document.getElementById("pw2").value = '';
+  document.getElementById("pw3").value = '';
+  document.getElementById("pw4").value = '';
+  document.getElementById("pw5").value = '';
+}
+</script>
+
+<form action="#" method="get">
+<fieldset style="margin: 3px 0px; border: 1px solid #000000; padding: 10px;">
+<legend>Stupid Simple Password Generator</legend>
+<h3>Step 1:</h3>
+<p>
+Think of a phrase you will always remember. Keep typing until the text
+on the right says &#8220;strong&#8221;. Punctuation, spaces, unusual words and
+mixed case while not required, are generally a good idea. The most
+important thing is that the script considers it <span style="color: green; font-weight: bold;">strong</span>.
+</p>
+
+<p> Make sure this passphrase is impossible to guess by people who
+know you, e.g. don&#8217;t pick quotes from your favorite song or
+movie. Don&#8217;t <em>ever</em> write it down or save it on your computer in any way or form!
+<table border="0">
+<tr><th>Passphrase: </th><td><input type="password" size="60" name="pw_phrase" id="pw_phrase" style="margin-right: 1em; margin-left: 1em;" onkeyup="pw_strength()" />
+<th>Strength: </th><td><input tpye="text" size="10" name="strength" id="strength" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
+<tr><th>Verify: </th><td><input type="password" size="60" name="pw_phrase2" id="pw_phrase2" style="margin-right: 1em; margin-left: 1em;" onkeyup="check_pw2_same()" />
+<th>Correct: </th><td><input tpye="text" size="10" name="pw_same" id="pw_same" style="font-weight: bold; margin-left: 1em;" readonly="" /></td>
+
+
+
+<h3>Step 2:</h3>
+<p> Think of a short keyword describing a password, e.g. &#8220;amazon&#8221;,
+&#8220;gmail&#8221;, etc. This word has to be easy to remember and there is no need for
+it to be unique or hard to guess.</p>
+
+<table border="0">
+<tr><th>Keyword</th><th>Password</th></tr>
+<tr><td><input type="text" size="30" name="keyword1" id="keyword1" value="gmail" onkeyup="calc_pw(1)" /></td><td><input type="text" size="30" name="pw1" id="pw1" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword2" id="keyword2" value="gmail" onkeyup="calc_pw(2)" /></td><td><input type="text" size="30" name="pw2" id="pw2" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword3" id="keyword3" value="gmail" onkeyup="calc_pw(3)" /></td><td><input type="text" size="30" name="pw3" id="pw3" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword4" id="keyword4" value="gmail" onkeyup="calc_pw(4)" /></td><td><input type="text" size="30" name="pw4" id="pw4" style="margin-left: 1em;" readonly="" /></td></tr>
+<tr><td><input type="text" size="30" name="keyword5" id="keyword5" value="gmail" onkeyup="calc_pw(5)" /></td><td><input type="text" size="30" name="pw5" id="pw5" style="margin-left: 1em;" readonly="" /></td></tr>
+</table>
+<br />
+<p>That&#8217;s it! You can regenerate any of the passwords above at any time by coming back to this page, all you need to know is the passphrase (and the keywords).</p>
+
+
+
+
+<span style="font-size: 12px">Fine print: This is a proof-of-concept, use at your own risk!</span>
+<body onload="clear_all()"></body>
+
+
+<h2>How does it work?</h2>
+
+First, credits where they are due: This page uses <a href="https://github.com/Caligatio/">Brian Turek&#8217;s</a>
+excellent <a href="https://github.com/Caligatio/jsSHA">jsSHA</a> Javascript SHA lib and
+<a href="https://github.com/lowe">Dan Wheeler&#8217;s</a> amazing <a href="https://github.com/lowe/zxcvbn">zxcvbn</a>
+password strength checking lib.
+
+All we are doing here is computing a SHA-512 of the passphrase +
+keyword, then selecting a substring of the result. (We also append a 0
+and/or a ! to satisfy most password checker requirements for numbers
+and punctuation).
+
+If you don&#8217;t trust that generated passwords are strong, just paste
+them into the passphrase field, I assure you, no password here will
+ever be weak. (Or, rather, it is <em>extremely</em> unlikely).
+
+Some improvements could be made, but the point here is that there is
+no reason to keep encrypted files with your passwords along with
+software to open them around, all that&#8217;s needed is <em>one</em> strong
+password and a well established and easily available algorithm.
+</td></tr></td></tr></table></p></fieldset></form>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1384,55 +1551,9 @@ possibly cleverer than the two above:</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/25/how-does-this-work/">Testing Out Octopress</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-25T11:46:00-04:00" pubdate data-updated="true">Mar 25<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/03/25/how-does-this-work/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Thanks to <a href="http://octopress.org">Octopress</a> and <a href="http://github.com">Github</a> I blog….</p>
-
-<p>And I Tweet, too?</p>
-
-<blockquote class="twitter-tweet"><p>Thanks to Octopress and Github pages I now have a blog: <a href="http://t.co/yKm0TVRMMu" title="http://grisha.org/">grisha.org</a></p>&mdash; Grisha Trubetskoy (@humblehack) <a href="https://twitter.com/humblehack/status/316339220371349508">March 26, 2013</a></blockquote>
-<script async="" src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<p>
-<a href="https://www.youtube.com/channel/UCPL5zsiUm0Psny8xD3mK1pg">A link to Gregory Trubetskoy videos</a>
-or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
-</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/7/">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -1475,6 +1596,10 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/">Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2019/06/19/sql-dag/">Implicit SQL DAG in Maestro</a>
       </li>
     
@@ -1488,10 +1613,6 @@ or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
     
       <li class="post">
         <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
       </li>
     
   </ul>

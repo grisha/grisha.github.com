@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Earlier I wrote about Maestro,
-a tool that we recently open-sourced.
-At first glance, Maestro may appear to be yet another data pipeline &hellip;">
+  <meta name="description" content="When doing computing that requires data to be local to the machine,
+e.g. model training on a GPU, data may be downloaded from tables in
+BigQuery or &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,6 +96,151 @@ At first glance, Maestro may appear to be yet another data pipeline &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/">Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2020-05-08T12:22:00-04:00" pubdate data-updated="true">May 8<span>th</span>, 2020</time>
+        
+         | <a href="/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>When doing computing that requires data to be local to the machine,
+e.g. model training on a GPU, data may be downloaded from tables in
+BigQuery or similar SQL-centric environments such as Hadoop/Hive. (The
+<a href="https://github.com/grisha/bq_etl">project</a> I describe here is
+BigQuery-specific for now, but the concept applies and can be extended
+to any such tool).</p>
+
+<p>There is always the question of when does one bring data out of
+BigQuery and how much more data transformation is acceptible
+afterwards. I believe that the correct answer is a rather strong
+“none”: all possible data transformation should be done <em>before</em> the
+data leave BigQuery.</p>
+
+<p>Reality is oft otherwise. Once information is downloaded to local
+storage, it is much easier to load up a Pandas dataframe for a quick
+tweak.  Even though the proper fix would be to correct the SQL and run
+it again, it is just too convenient to adjust data locally. Once a
+dataset has been corrected locally, possibly multiple times as part of
+development iteration, it becomes critically important to somehow keep
+track of which files result from which code version. You can hopefully
+see how this is gradually becoming a data nightmare.</p>
+
+<p>Data monkey patching is difficult to track because the place in code
+where it happens usually is not in any way tied to the SQL statement
+for which it is correcting. The SQL defining the original data may be
+in a different code base or in none at all.</p>
+
+<p>Here is my simple solution. It starts with a few requirements:</p>
+
+<blockquote>
+  <ul>
+    <li>Each SQL statement should be in its own .sql file.</li>
+  </ul>
+</blockquote>
+
+<p>This makes it possible to view and edit this code as what it is - SQL,
+not a string in Python code.</p>
+
+<blockquote>
+  <ul>
+    <li>The name and the content of the .sql file should dictate the name
+of the output table.</li>
+  </ul>
+</blockquote>
+
+<p>The simplest way to do this is with a short hash of the contents
+appended to the table name. Once that is true, the .sql file becomes a
+complete description of the output table. If the SQL file is altered,
+it would result in a different table.</p>
+
+<blockquote>
+  <ul>
+    <li>There should be no need to use external tools to keep track of
+the state.</li>
+  </ul>
+</blockquote>
+
+<p>You do not need MLFlow or Redis to know what the SQL has been
+executed - the mere table’s existence in BigQuery is evidence of it.</p>
+
+<blockquote>
+  <ul>
+    <li>The location of  any GCS extracts from this table should uniquely match the table name.</li>
+  </ul>
+</blockquote>
+
+<p>If the blob(s) exist, it means that the extract has been performed.</p>
+
+<blockquote>
+  <ul>
+    <li>The local filename should still depend on the original .sql file.</li>
+  </ul>
+</blockquote>
+
+<p>Which makes it easy to check whether the data has been downloaded to
+local storage.</p>
+
+<p>Note that given the above scheme, if the name or the content of the
+.sql file changes, so does the table name, the GCS extract name and
+the local file name.</p>
+
+<p>Given the above few constraints, we can now answer the questions of
+“Should this SQL be executed or has it already been done?”, “Should
+this table be extracted to GCS?” and “Should this GCS data be
+downloaded?” and optionally forego these steps if they are already
+done.</p>
+
+<blockquote>
+  <ul>
+    <li>The order of execution of .sql files should be inferred from the
+SQL itself.</li>
+  </ul>
+</blockquote>
+
+<p>Last but no the least, if we have multiple SQL statements to be
+executed, what dictates the order of execution? It turns out that SQL
+statements do not need to be executed in any particular order <em>unless</em>
+the output of one is input to another. As I have <a href="/blog/2016/11/14/table-names-from-sql/">written about before</a>,
+this is best inferred
+from the SQL itself and does not need to be explicitely
+specified.</p>
+
+<p>Last week I put together a simplistic little package that does all of
+the above. See it on Github at <a href="https://github.com/grisha/bq_etl">https://github.com/grisha/bq_etl</a>.</p>
+
+<p>It was written to serve my specific needs and for this reason it is
+very bare-bones, but that’s not to say I’m not open to comments,
+issues and pull requests to make it better!</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2385,208 +2530,6 @@ Internet itself.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2017/09/22/bitcoin-value/">Bitcoin: Better Ink Than Gold?</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2017-09-22T07:52:00-04:00" pubdate data-updated="true">Sep 22<span>nd</span>, 2017</time>
-        
-         | <a href="/blog/2017/09/22/bitcoin-value/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>The fundamental question about Bitcoin is not whether it is sound from
-the cryptography standpoint. The question is: what is it?</p>
-
-<h3 id="money-is-debt-ink">Money is Debt Ink</h3>
-
-<p>To define Bitcoin we need to look back at the history of <em>money</em>.  The
-earliest money was in the form of things that were scarce and
-impossible to falsify, something like specific kinds of sea shells.
-Everyone knew that stuff could be traded for these tokens.</p>
-
-<p>Once such monetary tokens were invented, we no longer needed to decide
-what to barter right there and then, we could postpone the
-decision. One could <em>sell</em> milk for tokens, then use those tokens to
-<em>buy</em> a spear later, this way the milk didn’t spoil while waiting for
-the spear to be made.</p>
-
-<p>What is not very obvious is that the tokens represented <em>debt</em>.  A
-sale is really a <em>loan</em> in disguise. Before the sale, the seller had
-milk. After the sale, the seller had tokens, which are proof that
-value of tokens is owed to the seller. In other words, the tokens
-received for the milk sold were a <em>record of debt</em>. Tokens are the
-<em>ink</em> in which this record is written.</p>
-
-<p>It is noteworthy that there is no money if there is no debt, or that
-money implies debt. It’s a simple principle that so few understand.</p>
-
-<h3 id="world-wide-debt-ledger">World-Wide Debt Ledger</h3>
-
-<p>The best way of thinking about money is that it is the <em>medium</em> in
-which we maintain a world-wide record of debt. The entries in this
-book or ledger are written as physical tokens. Only the people in
-possession of the tokens actually know how much they have and there is
-no history, only the final state. The history exists only in the
-minds (or records) of the traders. It is very private.</p>
-
-<h3 id="gold-ink">Gold Ink</h3>
-
-<p>Later people started using rare metals such as gold or silver as
-money.  Metals were better than sea shells because they were
-divisible. We could now make arbitrary size tokes we called (coined?)
-<em>coins</em>.</p>
-
-<p>Although we intuitively think that gold has a lot of value, in reality
-it has very little. Gold does not feed us or keep us warm. It does
-have some unique properties, but back when we started using gold as
-money we couldn’t possibly appreciate those, other than perhaps gold
-being pretty and extremely durable.</p>
-
-<p>Gold is also rare. But rarity does not imply value. The sea shells
-were worthless before they were used as money, and they are worthless
-now, yet they too are rare.</p>
-
-<h3 id="banks-paper--and-records-of-records-of-records">Banks, Paper  and Records of Records (of Records)</h3>
-
-<p>But it turned out that keeping valuable tokens was difficult, they
-could be lost or stolen, and worse, people were willing to kill for
-them. And so we decided to keep them all safe in one place.  This
-was the original <em>bank</em>.</p>
-
-<p>The bank issued <em>paper notes</em> that corresponded to the gold in the
-vault. Now these paper notes could be traded for anything. This was
-because people knew that even though the paper is worthless, it
-represents gold that is in the bank. At any time one could go to the
-bank, give the bank the paper note and receive gold (at which point
-the bank would destroy the paper note because the debt is settled).</p>
-
-<p>A paper note is a <em>record of the record</em> of debt. The true record was
-in gold, paper was a copy. It’s a bit of a mind-twister, but humans
-have become really good at rewriting the original debt ledger in other
-mediums.</p>
-
-<p>Ironically the concept of the bank as a safe vault never really
-worked: people were willing to steal and kill for paper money just the
-same. These days bank vaults keep paper notes as if its gold. And the
-bank’s computer keeps a <em>record of the record of the record</em> of debt.</p>
-
-<h3 id="real-estate-ink">Real Estate Ink</h3>
-
-<p>At some point bankers realized that they can manipulate the monetary
-supply because only the bankers actually knew how much gold they
-had. It was done “for the good of the public” who could get easier
-loans, but it was also an easy way for the banks to make money out of
-nothing.</p>
-
-<p>Eventually it was decreed that not just gold, but anyhting could be
-similarly held by the bank so that vastly more paper notes could be
-issued. Most notably real estate, the arrangement of issuing paper
-notes for a house being known as a mortgage. And since a house cannot be
-placed into the vault, it too had to be recorded, creating yet another
-layer of abstraction. It all ended with collateralized debt
-obligations, credit default swaps and ultimately the 2008 subprime
-mortgage crisis. Next year Bitcoin was born…</p>
-
-<h3 id="monetary-system-is-just-a-ledger">Monetary System is Just a Ledger</h3>
-
-<p>The bottom line remains: we kept a legder. The recording medium was
-precious metals, then evolved to paper and metals, and finally when we
-went off the gold standard it became just paper reflecting value of
-arbitrary things held under lien as collateral.</p>
-
-<h3 id="enter-blockchain">Enter Blockchain</h3>
-
-<p>The Bitcoin <em>blockchian</em> is also a medium for this legder, only
-instead of relying on scarcity of precious metals, the scarcity is in
-the mathematical complexity of a problem.</p>
-
-<p>And this is where our minds begin to play tricks on us, because this
-is a concept previously unknown to humans. A Bitcoin, which takes an
-enormous amount of computational power to generate, is actually,
-really scarce. Yes, it is not physical, it is just “knowlegde” or
-“information”, but by all laws of nature it is scarce, in fact more
-scarce than gold, the total amount of which in the universe isn’t
-fully known.</p>
-
-<h3 id="but-bitcoin-is-just-an-agreement">But Bitcoin is just an Agreement?</h3>
-
-<p>Interestingly, Bitcoin is merely an agreement and one might argue that
-some day we can collectively decide to increase the 21 million limit
-thereby diluting Bitcoin value. But can we actually do that, or will it
-not be Bitcoin at that point? I think only time will
-tell.</p>
-
-<p>We do already have a lot of things that we agree on and we don’t
-really question how it happened. The aforementioned shells were
-collectively agreed upon. We agree on what the current date is, does
-it matter how it happened? In fact, much of what the world is, just
-<em>is</em>, including the fiat money (where “fiat” literally means “let it
-be done”). And so now Bitcoin just is.</p>
-
-<p>The sea shells ceased to exist as money in favor or precious metals,
-and it is likely that same will at some point happen with Bitcoin.</p>
-
-<p>History does show that when it comes to money, people show their worst
-traits. This is why countries with solid currencies have big armies
-and police, and very strict laws regarding manipulation of money. This
-is how “fiat” actually works.</p>
-
-<p>Amazingly, the mathematic principles on which Bitcoin is based do not
-need to be defended. No army in the world could ever change a single
-prime number.</p>
-
-<h3 id="alternative-realities">Alternative Realities</h3>
-
-<p>The name Bitcoin refers to a specific blockchain. There can be many
-like it. The name could have been different, the parameters of the
-algorithm could have been different, just like the dollar bills could
-have been blue. There are other cryptographic currencies, and they are
-different, they too now exist. (Caveat: some of them are
-mathematically bogus).</p>
-
-<p>One could argue that gold exists in nature, while Bitcoin was created
-by man, and thus gold is somehow more real. But Bitcoin rests on the
-mathematical principles that too are just part of this universe, they
-were not created by man, they were discovered and applied, and again
-in this sense Bitcoin isn’t much different than gold.</p>
-
-<h3 id="the-mystery-of-value">The Mystery of Value</h3>
-
-<p>The mystery to me is how we collectively set a value of things like
-gold or Bitcoins. Now that we’ve demonstrated that as money, they are
-equivalent. Why is an ounce of gold worth $1300? Who decided that? The
-market? Is the real value of it in how good of an ink it is in the
-world-wide debt ledger?</p>
-
-<p>To be continued…</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2630,6 +2573,10 @@ world-wide debt ledger?</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/">Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2019/06/19/sql-dag/">Implicit SQL DAG in Maestro</a>
       </li>
     
@@ -2643,10 +2590,6 @@ world-wide debt ledger?</p>
     
       <li class="post">
         <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
       </li>
     
   </ul>

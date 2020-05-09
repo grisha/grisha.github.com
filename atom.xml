@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2020-05-09T15:14:28-04:00</updated>
+  <updated>2020-05-09T15:50:36-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,6 +12,122 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.]]></title>
+    <link href="http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/"/>
+    <updated>2020-05-08T12:22:00-04:00</updated>
+    <id>http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl</id>
+    <content type="html"><![CDATA[<p>When doing computing that requires data to be local to the machine,
+e.g. model training on a GPU, data may be downloaded from tables in
+BigQuery or similar SQL-centric environments such as Hadoop/Hive. (The
+<a href="https://github.com/grisha/bq_etl">project</a> I describe here is
+BigQuery-specific for now, but the concept applies and can be extended
+to any such tool).</p>
+
+<p>There is always the question of when does one bring data out of
+BigQuery and how much more data transformation is acceptible
+afterwards. I believe that the correct answer is a rather strong
+“none”: all possible data transformation should be done <em>before</em> the
+data leave BigQuery.</p>
+
+<p>Reality is oft otherwise. Once information is downloaded to local
+storage, it is much easier to load up a Pandas dataframe for a quick
+tweak.  Even though the proper fix would be to correct the SQL and run
+it again, it is just too convenient to adjust data locally. Once a
+dataset has been corrected locally, possibly multiple times as part of
+development iteration, it becomes critically important to somehow keep
+track of which files result from which code version. You can hopefully
+see how this is gradually becoming a data nightmare.</p>
+
+<p>Data monkey patching is difficult to track because the place in code
+where it happens usually is not in any way tied to the SQL statement
+for which it is correcting. The SQL defining the original data may be
+in a different code base or in none at all.</p>
+
+<p>Here is my simple solution. It starts with a few requirements:</p>
+
+<blockquote>
+  <ul>
+    <li>Each SQL statement should be in its own .sql file.</li>
+  </ul>
+</blockquote>
+
+<p>This makes it possible to view and edit this code as what it is - SQL,
+not a string in Python code.</p>
+
+<blockquote>
+  <ul>
+    <li>The name and the content of the .sql file should dictate the name
+of the output table.</li>
+  </ul>
+</blockquote>
+
+<p>The simplest way to do this is with a short hash of the contents
+appended to the table name. Once that is true, the .sql file becomes a
+complete description of the output table. If the SQL file is altered,
+it would result in a different table.</p>
+
+<blockquote>
+  <ul>
+    <li>There should be no need to use external tools to keep track of
+the state.</li>
+  </ul>
+</blockquote>
+
+<p>You do not need MLFlow or Redis to know what the SQL has been
+executed - the mere table’s existence in BigQuery is evidence of it.</p>
+
+<blockquote>
+  <ul>
+    <li>The location of  any GCS extracts from this table should uniquely match the table name.</li>
+  </ul>
+</blockquote>
+
+<p>If the blob(s) exist, it means that the extract has been performed.</p>
+
+<blockquote>
+  <ul>
+    <li>The local filename should still depend on the original .sql file.</li>
+  </ul>
+</blockquote>
+
+<p>Which makes it easy to check whether the data has been downloaded to
+local storage.</p>
+
+<p>Note that given the above scheme, if the name or the content of the
+.sql file changes, so does the table name, the GCS extract name and
+the local file name.</p>
+
+<p>Given the above few constraints, we can now answer the questions of
+“Should this SQL be executed or has it already been done?”, “Should
+this table be extracted to GCS?” and “Should this GCS data be
+downloaded?” and optionally forego these steps if they are already
+done.</p>
+
+<blockquote>
+  <ul>
+    <li>The order of execution of .sql files should be inferred from the
+SQL itself.</li>
+  </ul>
+</blockquote>
+
+<p>Last but no the least, if we have multiple SQL statements to be
+executed, what dictates the order of execution? It turns out that SQL
+statements do not need to be executed in any particular order <em>unless</em>
+the output of one is input to another. As I have <a href="http://grisha.org/blog/2016/11/14/table-names-from-sql/">written about before</a>,
+this is best inferred
+from the SQL itself and does not need to be explicitely
+specified.</p>
+
+<p>Last week I put together a simplistic little package that does all of
+the above. See it on Github at <a href="https://github.com/grisha/bq_etl">https://github.com/grisha/bq_etl</a>.</p>
+
+<p>It was written to serve my specific needs and for this reason it is
+very bare-bones, but that’s not to say I’m not open to comments,
+issues and pull requests to make it better!</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Implicit SQL DAG in Maestro]]></title>
@@ -5040,159 +5156,6 @@ drawbacks. For example there is no way to read a single series - even
 though the view selects a single array element, under the hood
 Postgres reads the whole row. Given that time series is more write
 intensive and rarely read, this may not be a bad compromise.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Simple Tgres Part II - A High Rate Counter]]></title>
-    <link href="http://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/"/>
-    <updated>2016-12-28T17:06:00-05:00</updated>
-    <id>http://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter</id>
-    <content type="html"><![CDATA[<p>Continuing on the <a href="http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres/">the previous</a>
-post on simple use of <a href="https://github.com/tgres/tgres">Tgres</a> components, let’s
-try to count something that goes by really fast.</p>
-
-<p>This time let’s start out with creating a memory-based SerDe. This
-means that all our data is in memory and there is no database backing
-our series.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-<span class="line-number">24</span>
-<span class="line-number">25</span>
-<span class="line-number">26</span>
-<span class="line-number">27</span>
-<span class="line-number">28</span>
-<span class="line-number">29</span>
-<span class="line-number">30</span>
-<span class="line-number">31</span>
-<span class="line-number">32</span>
-<span class="line-number">33</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">package</span> <span class="nx">main</span>
-</span><span class="line">
-</span><span class="line"><span class="kn">import</span> <span class="p">(</span>
-</span><span class="line">    <span class="s">&quot;fmt&quot;</span>
-</span><span class="line">    <span class="s">&quot;net/http&quot;</span>
-</span><span class="line">    <span class="s">&quot;time&quot;</span>
-</span><span class="line">
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
-</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/receiver&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
-</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/serde&quot;</span>
-</span><span class="line"><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">step</span> <span class="o">:=</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="c1">// 1 second resolution</span>
-</span><span class="line">    <span class="nx">span</span> <span class="o">:=</span> <span class="mi">600</span> <span class="o">*</span> <span class="nx">step</span>      <span class="c1">// spanning 10 minutes</span>
-</span><span class="line">
-</span><span class="line">    <span class="c1">// In-memory SerDe</span>
-</span><span class="line">    <span class="nx">ms</span> <span class="o">:=</span> <span class="nx">serde</span><span class="p">.</span><span class="nx">NewMemSerDe</span><span class="p">()</span>
-</span><span class="line">
-</span><span class="line">    <span class="c1">// Create a receiver of our data points backed by the above</span>
-</span><span class="line">    <span class="c1">// memory SerDe</span>
-</span><span class="line">    <span class="nx">rcvr</span> <span class="o">:=</span> <span class="nx">receiver</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">ms</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">receiver</span><span class="p">.</span><span class="nx">SimpleDSFinder</span><span class="p">{</span><span class="o">&amp;</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DSSpec</span><span class="p">{</span>
-</span><span class="line">        <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
-</span><span class="line">        <span class="nx">RRAs</span><span class="p">:</span> <span class="p">[]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span>
-</span><span class="line">            <span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span><span class="nx">Function</span><span class="p">:</span> <span class="nx">rrd</span><span class="p">.</span><span class="nx">WMEAN</span><span class="p">,</span>
-</span><span class="line">                <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
-</span><span class="line">                <span class="nx">Span</span><span class="p">:</span> <span class="nx">span</span><span class="p">,</span>
-</span><span class="line">            <span class="p">},</span>
-</span><span class="line">        <span class="p">}}})</span>
-</span><span class="line">    <span class="nx">rcvr</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now let’s create a goroutine which creates data points as fast as it
-can, the difference from the previous blog post is that we are using
-QueueGauge(), which is a <em>paced metric</em>, meaning that it flushes to the
-time series only periodically (once per second by default) so as to
-not overwhelm the I/O and or network (even though in this case it doesn’t
-really matter since we’re using a memory-based SerDe anyway).</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
-</span><span class="line">    <span class="nx">end</span> <span class="o">:=</span> <span class="nx">start</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="nx">span</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">        <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
-</span><span class="line">        <span class="k">for</span> <span class="nx">t</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">();</span> <span class="nx">t</span><span class="p">.</span><span class="nx">Before</span><span class="p">(</span><span class="nx">end</span><span class="p">);</span> <span class="nx">t</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span> <span class="p">{</span>
-</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="nx">serde</span><span class="p">.</span><span class="nx">Ident</span><span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="s">&quot;foo.bar&quot;</span><span class="p">},</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
-</span><span class="line">            <span class="nx">n</span><span class="o">++</span>
-</span><span class="line">        <span class="p">}</span>
-</span><span class="line">    <span class="p">}()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And finally, as before, we need to hook up a couple of http handlers:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcher</span><span class="p">(</span><span class="nx">ms</span><span class="p">.</span><span class="nx">Fetcher</span><span class="p">())</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
-</span><span class="line">
-</span><span class="line">    <span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
-</span><span class="line">    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
-</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="nx">listenSpec</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="p">}</span> <span class="c1">// end of main()</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Now if we run the above code with something like
-<code>go run simpletgres.go</code>, we’ll notice that unlike with the previous
-example, the web server starts right away, and the data points are
-being written while the server is running. If we aim Grafana at it,
-we should be able to see the chart update in real time.</p>
-
-<p>After a couple of minutes, mine looks like this:</p>
-
-<p><img src="http://grisha.org/images/simple-tgres01.png" /></p>
-
-<p>So my macbook can crank these out at about 2.5 million per second.</p>
-
-<p>In my experience instrumenting my apps with simple counters like this
-and having them available directly from the app without having to send
-them to a separate statsd server somewhere has been extremely useful in
-helping understand performance and other issues.</p>
 ]]></content>
   </entry>
   
