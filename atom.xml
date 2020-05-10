@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2020-05-09T15:50:36-04:00</updated>
+  <updated>2020-05-09T21:01:52-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -75,7 +75,7 @@ the state.</li>
   </ul>
 </blockquote>
 
-<p>You do not need MLFlow or Redis to know what the SQL has been
+<p>You do not need MLFlow or Redis to know that the SQL has been
 executed - the mere table’s existence in BigQuery is evidence of it.</p>
 
 <blockquote>
