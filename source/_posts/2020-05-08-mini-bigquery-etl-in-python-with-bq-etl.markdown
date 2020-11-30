@@ -52,7 +52,7 @@ it would result in a different table.
 >  * There should be no need to use external tools to keep track of
 >    the state.
 
-You do not need MLFlow or Redis to know what the SQL has been
+You do not need MLFlow or Redis to know that the SQL has been
 executed - the mere table's existence in BigQuery is evidence of it.
 
 >  * The location of  any GCS extracts from this table should uniquely match the table name.
