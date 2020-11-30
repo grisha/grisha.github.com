@@ -269,11 +269,11 @@
         <lastmod>2020-05-09T21:01:45-04:00</lastmod>
     </url>
     <url>
-        <loc>http://grisha.org/</loc>
-        <lastmod>2020-05-09T21:01:45-04:00</lastmod>
-    </url>
-    <url>
         <loc>http://grisha.org/robots.txt</loc>
         <lastmod>2017-12-20T18:09:33-05:00</lastmod>
+    </url>
+    <url>
+        <loc>http://grisha.org/</loc>
+        <lastmod>2020-05-09T21:01:45-04:00</lastmod>
     </url>
 </urlset>
