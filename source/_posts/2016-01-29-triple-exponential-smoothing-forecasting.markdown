@@ -158,8 +158,8 @@ Since difference can be negative or positive, the common convention is
 to use the absolute value or square the error so that the number is always
 positive. For a whole series the squared errors are typically summed
 resulting in _[Sum of Squared Errors](https://en.wikipedia.org/wiki/Residual_sum_of_squares) (SSE)_.
-Sometimes you may come across _[Mean Squared Error](https://en.wikipedia.org/wiki/Residual_sum_of_squares)
-(MSE)_ which is simply $\sqrt{SSE}$.
+Sometimes you may come across _[Mean Squared Error](https://en.wikipedia.org/wiki/Mean_squared_error)
+(MSE).
 
 ## And Now the Methods (where the fun begins!)
 
