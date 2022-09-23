@@ -3,7 +3,7 @@ layout: post
 title: "Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl."
 date: 2020-05-08 12:22
 comments: true
-published: true
+published: false
 categories:
 ---
 
