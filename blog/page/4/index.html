@@ -9,9 +9,9 @@
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="If you haven’t read Part I and
-Part II
-you probably should, or the following will be hard to make sense of. In Part I we’ve learned how to forceast &hellip;">
+  <meta name="description" content="Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn’t try this with Graphite. In this write up I try
+to explain why it &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -96,1267 +96,6 @@ you probably should, or the following will be hard to make sense of. In Part I w
     <div id="content">
       <div class="blog-index">
   
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Holt-Winters Forecasting for Dummies - Part III</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-02-17T10:39:00-05:00" pubdate data-updated="true">Feb 17<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>If you haven’t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a> and
-<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
-you probably should, or the following will be hard to make sense of.</p>
-
-<p>In Part I we’ve learned how to forceast one point, in Part II we’ve
-learned how to forecast two points. In this part we’ll learn how to
-forecast <em>many</em> points.</p>
-
-<h2 id="more-terminology">More Terminology</h2>
-
-<h3 id="season"><em>Season</em></h3>
-
-<p>If a series appears to be repetitive at regular intervals, such an
-interval is referred to as a <em>season</em>, and the series is said to be
-<em>seasonal</em>. <a href="https://en.wikipedia.org/wiki/Seasonality">Seasonality</a>
-is required for the Holt-Winters method to work, non-seasonal series
-(e.g. stock prices) cannot be forecasted using this method (would be
-nice though if they could be).</p>
-
-<h3 id="season-length"><em>Season Length</em></h3>
-
-<p><em>Season length</em> is the number of data points after which a new season
-begins. We will use $L$ to denote season length.</p>
-
-<h3 id="seasonal-component"><em>Seasonal Component</em></h3>
-
-<p>The <em>seasonal component</em> is an additional deviation from level + trend
-that repeats itself at the same offset into the season. There is a
-seasonal component for every point in a season, i.e. if your season
-length is 12, there are 12 seasonal components. We will use $s$ to
-denote the seasonal component.</p>
-
-<h2 id="triple-exponential-smoothing-aka-holt-winters-method">Triple Exponential Smoothing a.k.a Holt-Winters Method</h2>
-
-<p>The idea behind triple exponential smoothing is to apply exponential
-smoothing to the seasonal components in addition to level and
-trend. The smoothing is applied across seasons, e.g. the seasonal
-component of the 3rd point into the season would be exponentially
-smoothed with the the one from the 3rd point of last season, 3rd point
-two seasons ago, etc. In math notation we now have four equations (see footnote):</p>
-
-<script type="math/tex; mode=display">% <![CDATA[
-
-\begin{align}
-& \ell_x = \alpha(y_x - s_{x-L}) + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
-& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
-& s_x = \gamma(y_x - \ell_x) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
-& \hat{y}_{x+m} = \ell_x + mb_x + s_{x-L+1+(m-1)modL}& \mbox{forecast}\\
-\end{align}
- %]]></script>
-
-<ul>
-  <li>What’s new:
-    <ul>
-      <li>We now have a third greek letter, $\gamma$ (gamma) which is the smoothing
-factor for the seasonal component.</li>
-      <li>The expected value index is $x+m$ where $m$ can be any integer meaning
-we can forecast any number of points into the future (woo-hoo!)</li>
-      <li>The forecast equation now consists of level, trend and the seasonal
-component.</li>
-    </ul>
-  </li>
-</ul>
-
-<p>The index of the seasonal component of the forecast
-$s_{x-L+1+(m-1)modL}$ may appear a little mind boggling, but it’s
-just the offset into the list of seasonal components from the last set
-from observed data. (I.e. if we are forecasting the 3rd point into the
-season 45 seasons into the future, we cannot use seasonal components
-from the 44th season in the future since that season is also
-forecasted, we must use the last set of seasonal components from
-observed points, or from “the past” if you will.) It looks much
-simpler in Python as you’ll see shortly.</p>
-
-<h3 id="initial-values">Initial Values</h3>
-
-<p>Before we can discuss initial values, let me introduce to you a new
-tiny series (okay, not as tiny):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">48</span><span class="p">,</span><span class="mi">53</span><span class="p">,</span><span class="mi">47</span><span class="p">,</span><span class="mi">37</span><span class="p">,</span><span class="mi">39</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="mi">35</span><span class="p">,</span><span class="mi">41</span><span class="p">,</span><span class="mi">38</span><span class="p">,</span>
-</span><span class="line">          <span class="mi">27</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">33</span><span class="p">,</span><span class="mi">35</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">36</span><span class="p">,</span><span class="mi">22</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">14</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">19</span><span class="p">,</span>
-</span><span class="line">          <span class="mi">26</span><span class="p">,</span><span class="mi">29</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">46</span><span class="p">,</span><span class="mi">33</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mi">28</span><span class="p">,</span><span class="mi">22</span><span class="p">,</span><span class="mi">27</span><span class="p">,</span>
-</span><span class="line">          <span class="mi">18</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">21</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">34</span><span class="p">,</span><span class="mi">44</span><span class="p">,</span><span class="mi">38</span><span class="p">,</span><span class="mi">31</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span><span class="mi">26</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>This is what it looks like:</p>
-
-<p><img src="/images/hw04.png" /></p>
-
-<p>You can see that this series is seasonal, there are clearly visible 6
-seasons. Although perhaps not easily apparent from the picture, the
-season length for this series is 12, i.e. it “repeats” every 12
-points. In order to apply triple exponential smoothing we need to know
-what the season length is. (There do exist methods for detecting
-seasonality in series, but this is way beyond the scope of this text).</p>
-
-<h4 id="initial-trend">Initial Trend</h4>
-
-<p>For double exponential smoothing we simply used the first two points
-for the initial trend. With seasonal data we can do better than that,
-since we can observe many seasons and can extrapolate a better
-starting trend. The most common practice is to compute the average of
-trend averages across seasons.</p>
-
-<script type="math/tex; mode=display">
-b_0 = \dfrac{1}{L}\left(\dfrac{y_{L+1}-y_1}{L}+\dfrac{y_{L+2}-y_2}{L}+...+\dfrac{y_{L+L}-y_L}{L}\right)
-</script>
-
-<p>Good news - this looks simpler in Python than in math notation:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">initial_trend</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">):</span>
-</span><span class="line">    <span class="nb">sum</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slen</span><span class="p">):</span>
-</span><span class="line">        <span class="nb">sum</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">slen</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="n">slen</span>
-</span><span class="line">    <span class="k">return</span> <span class="nb">sum</span> <span class="o">/</span> <span class="n">slen</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; initial_trend(series, 12)</span>
-</span><span class="line"><span class="c"># -0.7847222222222222</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h4 id="initial-seasonal-components">Initial Seasonal Components</h4>
-
-<p>The situation is even more complicated when it comes to initial values
-for the seasonal components. Briefly, we need to compute the average
-level for every observed season we have, divide every observed value
-by the average for the season it’s in and finally average each of
-these numbers across our observed seasons. If you want more detail, here is
-<a href="http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm">one thorough description of this process</a>.</p>
-
-<p>I will forgo the math notation for initial seasonal components, but
-here it is in Python. The result is a season-length array of seasonal components.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">initial_seasonal_components</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">):</span>
-</span><span class="line">    <span class="n">seasonals</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span class="line">    <span class="n">season_averages</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span class="line">    <span class="n">n_seasons</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">/</span><span class="n">slen</span><span class="p">)</span>
-</span><span class="line">    <span class="c"># compute season averages</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seasons</span><span class="p">):</span>
-</span><span class="line">        <span class="n">season_averages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">slen</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">slen</span><span class="p">))</span>
-</span><span class="line">    <span class="c"># compute initial values</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">slen</span><span class="p">):</span>
-</span><span class="line">        <span class="n">sum_of_vals_over_avg</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span class="line">        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_seasons</span><span class="p">):</span>
-</span><span class="line">            <span class="n">sum_of_vals_over_avg</span> <span class="o">+=</span> <span class="n">series</span><span class="p">[</span><span class="n">slen</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">season_averages</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-</span><span class="line">        <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sum_of_vals_over_avg</span><span class="o">/</span><span class="n">n_seasons</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">seasonals</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; initial_seasonal_components(series, 12)</span>
-</span><span class="line"><span class="c"># {0: -7.4305555555555545, 1: -15.097222222222221, 2: -7.263888888888888, 3: -5.097222222222222, 4: 3.402777777777778, 5: 8.069444444444445, 6: 16.569444444444446, 7: 9.736111111111112, 8: -0.7638888888888887, 9: 1.902777777777778, 10: -3.263888888888889, 11: -0.7638888888888887}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h3 id="the-algorithm">The Algorithm</h3>
-
-<p>And finally, here is the additive Holt-Winters method in Python. The
-arguments to the function are the series of observed values, the
-season length, alpha, beta, gamma and the number of points we want
-forecasted.:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-<span class="line-number">18</span>
-<span class="line-number">19</span>
-<span class="line-number">20</span>
-<span class="line-number">21</span>
-<span class="line-number">22</span>
-<span class="line-number">23</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">triple_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">n_preds</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span class="line">    <span class="n">seasonals</span> <span class="o">=</span> <span class="n">initial_seasonal_components</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">)</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="n">n_preds</span><span class="p">):</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c"># initial values</span>
-</span><span class="line">            <span class="n">smooth</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span class="line">            <span class="n">trend</span> <span class="o">=</span> <span class="n">initial_trend</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">slen</span><span class="p">)</span>
-</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span class="line">            <span class="k">continue</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
-</span><span class="line">            <span class="n">m</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">smooth</span> <span class="o">+</span> <span class="n">m</span><span class="o">*</span><span class="n">trend</span><span class="p">)</span> <span class="o">+</span> <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span>
-</span><span class="line">        <span class="k">else</span><span class="p">:</span>
-</span><span class="line">            <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-</span><span class="line">            <span class="n">last_smooth</span><span class="p">,</span> <span class="n">smooth</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">smooth</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">            <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">smooth</span><span class="o">-</span><span class="n">last_smooth</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
-</span><span class="line">            <span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">]</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">*</span><span class="p">(</span><span class="n">val</span><span class="o">-</span><span class="n">smooth</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span><span class="o">*</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">]</span>
-</span><span class="line">            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">smooth</span><span class="o">+</span><span class="n">trend</span><span class="o">+</span><span class="n">seasonals</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="n">slen</span><span class="p">])</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># # forecast 24 points (i.e. two seasons)</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; triple_exponential_smoothing(series, 12, 0.716, 0.029, 0.993, 24)</span>
-</span><span class="line"><span class="c"># [30, 20.34449316666667, 28.410051892109554, 30.438122252647577, 39.466817731253066, ...</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And here is what this looks like if we were to plot the original
-series, followed by the last 24 points from the result of the
-<code>triple_exponential_smoothing()</code> call:</p>
-
-<p><img src="/images/hw05.png" /></p>
-
-<h3 id="a-note-on---and-">A Note on α, β and γ</h3>
-
-<p>You may be wondering how I came up with 0.716, 0.029 and 0.993 for
-$\alpha$, $\beta$ and $\gamma$, respectively. To make long story short, it
-was done by way of trial and error: simply running the algorithm over and
-over again and selecting the values that give you the smallest
-<a href="https://en.wikipedia.org/wiki/Residual_sum_of_squares">SSE</a>. As I
-mentioned before, this process is known as <em>fitting</em>.</p>
-
-<p>To compute the smothing factors to three decimal points
-we may have to run through 1,000,000,000 iterations, but luckily
-there are more efficient methods at zooming in on best
-values. Unfortunately this would take a whole other very long post to
-describe this process. One good algorithm for this is
-<a href="https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method">Nelder-Mead</a>,
-which is what <a href="https://github.com/tgres/tgres">tgres</a> uses.</p>
-
-<h2 id="conclusion">Conclusion</h2>
-
-<p>Well - here you have it, Holt-Winters method explained the way I wish
-it would have been explained to me when I needed it. If you think I
-missed something, found an error or a suggestion, please do not
-hesitate to comment!</p>
-
-<h2 id="footnote">Footnote</h2>
-
-<p>The triple exponential smoothing additive method formula is as it is
-described in “Forecasting Method and Applications, Third Edition” by
-Makridakis, Wheelwright and Hyndman (1998). <a href="https://en.wikipedia.org/wiki/Exponential_smoothing#Triple_exponential_smoothing">Wikipedia</a> has a different
-formula for the seasonal component (I don’t know which is better):</p>
-
-<script type="math/tex; mode=display">% <![CDATA[
-
-\begin{align}
-& s_x = \gamma(y_x - \ell_{x-1} - b_{x-1}) + (1-\gamma)s_{x-L} & \mbox{seasonal} \\
-\end{align}
- %]]></script>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Holt-Winters Forecasting for Dummies - Part II</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-02-16T13:05:00-05:00" pubdate data-updated="true">Feb 16<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>If you haven’t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
-you probably should, or the following will be hard to make sense of.</p>
-
-<p>All the forecasting methods we covered so far, including single
-exponential smoothing, were only good at predicting a single
-point. We can do better than that, but first we need to be introduced to
-a couple of new terms.</p>
-
-<h2 id="more-terminology">More terminology</h2>
-
-<h3 id="level"><em>Level</em></h3>
-
-<p>Expected value has another name, which, again varies depending on who wrote the
-text book: <em>baseline</em>, <em>intercept</em> (as in
-<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
-<em>level</em>. We will stick with “level” here.</p>
-
-<p>So level is that one predicted point that we learned how to calculate
-in Part I. But because now it’s going to be only part of calculation
-of the forcast, we can no longer refer to it as $\hat{y}$ and will instead
-use $\ell$.</p>
-
-<h3 id="trend-or-slope"><em>Trend</em> or <em>Slope</em></h3>
-
-<p>You should be familiar with
-<a href="https://en.wikipedia.org/wiki/Slope">slope</a> from your high school algebra
-class. What you might be a little rusty on is how to calculate it,
-which is important, because a series slope has an interesting
-characteristic. Slope is:</p>
-
-<script type="math/tex; mode=display">
-m = \dfrac{\Delta{y}} {\Delta{x}}
-</script>
-
-<p>where $\Delta{y}$ is the difference in the $y$ coordinates and
-$\Delta{x}$ is the difference in the $x$ coordinates, respectively,
-between two points. While in real algebraic problems $\Delta{x}$ could
-be anything, in a series, from one point to the next, it is always
-1. Which means that for a series, slope between two adjacent points
-is simply $\dfrac{\Delta{y}} {1}$ or $\Delta{y}$, or:</p>
-
-<script type="math/tex; mode=display">
-b = y_x - y_{x-1}
-</script>
-
-<p>Where $b$ is <em>trend</em>. To the best of my understanding terms “trend”
-and “slope” are interchangeable. In forecasting parlance “trend” is
-more common, and in math notation forecasters refer to it as $b$
-rather than $m$.</p>
-
-<h4 id="additive-vs-multiplicative">Additive vs Multiplicative</h4>
-
-<p>Another thing to know about trend is that instead of subtracting
-$y_{x-1}$ from $y_x$, we could divide one by the other thereby
-getting a ratio. The difference between these two approaches is
-similar to how we can say that something costs $20 more or 5%
-more. The variant of the method based on subtraction is known as
-<em>additive</em>, while the one based on division is known as
-<em>multiplicative</em>.</p>
-
-<p>Practice shows that a ratio (i.e. multiplicative) is a more stable
-predictor. The additive method, however is simpler to understand, and
-going from additive to multiplicative is trivial once you understand
-this whole thing. For this reason we will stick with the additive
-method here, leaving the multiplicative method an exercise for the
-reader.</p>
-
-<h2 id="double-exponential-smoothing">Double Exponential Smoothing</h2>
-
-<p>So now we have two components to a series: level and trend. In Part I
-we learned several methods to forecast the level, and it should follow
-that every one of these methods can be applied to the trend
-just as well. E.g. the naive method would assume that trend between
-last two points is going to stay the same, or we could average all
-slopes between all points to get an average trend, use a moving trend
-average or apply exponential smoothing.</p>
-
-<p>Double exponential smoothing then is nothing more than exponential
-smoothing applied to both level and trend. To express this in
-mathematical notation we now need three equations: one for level, one
-for the trend and one to combine the level and trend to get the
-expected $\hat{y}$.</p>
-
-<script type="math/tex; mode=display">% <![CDATA[
-
-\begin{align}
-& \ell_x = \alpha y_x + (1-\alpha)(\ell_{x-1} + b_{x-1})& \mbox{level} \\
-& b_x = \beta(\ell_x - \ell_{x-1}) + (1-\beta)b_{x-1} & \mbox{trend} \\
-& \hat{y}_{x+1} = \ell_x + b_x & \mbox{forecast}\\
-\end{align}
- %]]></script>
-
-<p>The first equation is from Part I, only now we’re using $\ell$ instead
-of $\hat{y}$ and on the right side the expected value becomes the sum
-of level end trend.</p>
-
-<p>The second equation introduces $\beta$, the <em>trend factor</em> (or
-coefficient). As with $\alpha$, some values of ${\beta}$ work better
-than others depending on the series.</p>
-
-<p>Similarly to single exponential smoothing, where we used the first
-observed value as the first expected, we can use the first observed
-trend as the first expected. Of course we need at least two points to
-compute the initial trend.</p>
-
-<p>Because we have a level and a trend, this method can forecast not one,
-but two data points. In Python:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-<span class="line-number">12</span>
-<span class="line-number">13</span>
-<span class="line-number">14</span>
-<span class="line-number">15</span>
-<span class="line-number">16</span>
-<span class="line-number">17</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">double_exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-</span><span class="line">            <span class="n">level</span><span class="p">,</span> <span class="n">trend</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span class="line">        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> <span class="c"># we are forecasting</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span class="line">        <span class="k">else</span><span class="p">:</span>
-</span><span class="line">          <span class="n">value</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</span><span class="line">        <span class="n">last_level</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">level</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">value</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">        <span class="n">trend</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">level</span><span class="o">-</span><span class="n">last_level</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">beta</span><span class="p">)</span><span class="o">*</span><span class="n">trend</span>
-</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="o">+</span><span class="n">trend</span><span class="p">)</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; double_exponential_smoothing(series, alpha=0.9, beta=0.9)</span>
-</span><span class="line"><span class="c"># [3, 17.0, 15.45, 14.210500000000001, 11.396044999999999, 8.183803049999998, 12.753698384500002, 13.889016464000003]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And here is a picture of double exponential smoothing in action (the
-green dotted line).</p>
-
-<p><img src="/images/hw03.png" /></p>
-
-<h2 id="quick-review">Quick Review</h2>
-
-<p>We’ve learned that a data point in a series can be represented as a
-level and a trend, and we have learned how to appliy exponential
-smoothing to each of them to be able to forecast not one, but two
-points.</p>
-
-<p>In <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>
-we’ll finally talk about triple exponential smoothing.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Holt-Winters Forecasting for Dummies (or Developers) - Part I</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2016-01-29T15:36:00-05:00" pubdate data-updated="true">Jan 29<span>th</span>, 2016</time>
-        
-         | <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>This three part write up [<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
-<a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
-is my attempt at a down-to-earth explanation (and Python code) of the
-Holt-Winters method for those of us who while hypothetically might be
-quite good at math, still try to avoid it at every opportunity. I had
-to dive into this subject while tinkering on
-<a href="https://github.com/tgres/tgres">tgres</a> (which features a Golang implementation). And
-having found it somewhat complex (and yet so brilliantly
-simple), figured that it’d be good to share this knowledge, and
-in the process, to hopefully solidify it in my head as well.</p>
-
-<p><a href="https://en.wikipedia.org/wiki/Exponential_smoothing#Triple_exponential_smoothing">Triple Exponential Smoothing</a>,
-also known as the Holt-Winters method, is one of the many methods or
-algorithms that can be used to forecast data points in a series,
-provided that the series is “seasonal”, i.e. repetitive over some
-period.</p>
-
-<p><img src="/images/hw00.png" /></p>
-
-<h1 id="a-little-history">A little history</h1>
-
-<p>Еxponential smoothing in some form or another dates back to the work
-of <a href="https://en.wikipedia.org/wiki/Sim%C3%A9on_Denis_Poisson">Siméon Poisson</a> (1781-1840),
-while its application in forecasting appears to have been pioneered over a century later in 1956 by
-<a href="https://en.wikipedia.org/wiki/Robert_Goodell_Brown">Robert Brown</a> (1923–2013)
-in his publication
-<a href="https://industrydocuments.library.ucsf.edu/tobacco/docs/#id=jzlc0130">Exponential Smoothing for Predicting Demand</a>,
-(Cambridge, Massachusetts). [Based on the URL it seems Brown was working on forecasting tobacco demand?]</p>
-
-<p>In 1957 an <a href="http://web.mit.edu/">MIT</a> and <a href="http://www.uchicago.edu/">University of Chicago</a>
-graduate, professor <a href="https://en.wikipedia.org/wiki/Charles_C._Holt">Charles C Holt</a>
-(1921-2010) was working at <a href="http://www.cmu.edu/">CMU</a> (then known as CIT) on forecasting trends in production,
-inventories and labor force.
-It appears that Holt and Brown worked independently  and knew not of each-other’s work.
-Holt published a paper “Forecasting trends
-and seasonals by exponentially weighted moving averages” (Office of Naval Research Research
-Memorandum No. 52, Carnegie Institute of Technology) describing
-double exponential smoothing. Three years later, in 1960, a student of
-Holts (?) Peter R. Winters improved the algorithm by adding seasonality and
-published
-<a href="http://pubsonline.informs.org/doi/abs/10.1287/mnsc.6.3.324">Forecasting sales by exponentially weighted moving averages</a>
-(Management Science 6, 324–342), citing Dr. Holt’s 1957 paper as earlier work on the same subject.
-This algorithm became known as triple exponential smoothing or the Holt-Winters method,
-the latter probably because it was described in a 1960 Prentice-Hall book “Planning Production, Inventories, and Work Force”
-by Holt, <a href="https://en.wikipedia.org/wiki/Franco_Modigliani">Modigliani</a>, <a href="https://en.wikipedia.org/wiki/John_Muth">Muth</a>,
-<a href="https://en.wikipedia.org/wiki/Herbert_A._Simon">Simon</a>,
-<a href="https://www.gsb.stanford.edu/faculty-research/faculty/charles-puis-bonini">Bonini</a> and Winters - good luck finding a copy!</p>
-
-<p>Curiously, I’ve not been able to find any personal information on Peter R. Winters online. If you find anything, please let me
-know, I’ll add a reference here.</p>
-
-<p>In 2000 the Holt-Winters method became well known in the <a href="https://en.wikipedia.org/wiki/Internet_service_provider">ISP</a>
-circles at the height of the <a href="https://en.wikipedia.org/wiki/Dot-com_bubble">.com boom</a> when Jake D. Brutlag (then of WebTV) published
-<a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwiAx9SNoezKAhXCC5oKHZZ4A84QFgghMAA&amp;url=https%3A%2F%2Fwww.usenix.org%2Fevents%2Flisa00%2Ffull_papers%2Fbrutlag%2Fbrutlag.pdf&amp;usg=AFQjCNEg-ynB5Ok0Sf4ATBB77PcGwT4OLw&amp;bvm=bv.113943665,d.bGs">Aberrant Behavior Detection in Time Series for Network Monitoring</a>
-(Proceedings of the 14th Systems Administration Conference, LISA
-2000). It described how an open source <a href="https://en.wikipedia.org/wiki/C_%28programming_language%29">C</a>
-implementation [<a href="https://github.com/oetiker/rrdtool-1.x/commit/cafbbce69d9d1d4a1772299d97138b5a81d343f5">link to the actual commit</a>]
-of a variant of the Holt-Winters seasonal method, which he contributed as a feature
-to the very popular at ISPs <a href="http://oss.oetiker.ch/rrdtool/">RRDTool</a>, could be used to
-monitor network traffic.</p>
-
-<p>In 2003, a remarkable 40+ years since the publication of Winters
-paper, professor <a href="http://www.sbs.ox.ac.uk/community/people/james-taylor">James W Taylor</a>
-of <a href="http://www.ox.ac.uk/">Oxford University</a> extended the
-Holt-Winters method to multiple seasonalities (i.e. $n$-th exponential
-smoothing) and published <a href="http://users.ox.ac.uk/~mast0315/ExpSmDoubleSeasonal.pdf">Short-term electricity demand forecasting using double seasonal exponential smoothing</a>
-(Journal of Operational
-Research Society, vol. 54, pp. 799–805). (But we won’t cover Taylors
-method here).</p>
-
-<p>In 2011 the RRDTool implementation contributed by Brutlag was
-<a href="https://github.com/graphite-project/graphite-web/commit/4e7a0d664ea2153ea65173138ab8f337716e21fa">ported</a>
-to <a href="http://graphite.readthedocs.org/en/latest/">Graphite</a> by Matthew Graham thus making it even more popular in the
-devops community.</p>
-
-<p>So… how does it work?</p>
-
-<h1 id="forecasting-baby-steps">Forecasting, Baby Steps</h1>
-
-<p>The best way to explain triple exponential smoothing is to gradually
-build up to it starting with the simplest forecasting methods. Lest
-this text gets too long, we will stop at triple exponential smoothing,
-though there are quite a few other methods known.</p>
-
-<p>I used mathematical notation only where I thought it made best sense, sometimes
-accompanied by an “English translation”, and where appropriate
-supplemented with a bit of <a href="http://www.python.org">Python</a> code.
-In Python I refrain from using any non-standard packages, keeping the
-examples plain. I chose not to use <a href="https://wiki.python.org/moin/Generators">generators</a>
-for clarity. The objective here is to explain
-the inner working of the algorithm so that you can implement it
-yourself in whatever language you prefer.</p>
-
-<p>I also hope to demonstrate that this is simple enough that you do not
-need to resort to <a href="http://www.scipy.org/">SciPy</a> or <a href="https://en.wikipedia.org/wiki/R_%28programming_language%29">whatever</a>
-(not that there is anything wrong with that).</p>
-
-<h2 id="but-first-some-terminology">But First, Some Terminology</h2>
-
-<h3 id="series"><em>Series</em></h3>
-
-<p>The main subject here is a <em>series</em>. In the real world we are most
-likely to be applying this to a <em>time series</em>, but for this discussion
-the time aspect is irrelevant. A series is merely an ordered sequence
-of numbers. We might be using words that are chronological in nature
-(past, future, yet, already, <em>time</em> even!), but only because it makes it easer to
-understand. So forget about time, timestamps, intervals,
-<a href="http://www.preposterousuniverse.com/blog/2013/10/18/is-time-real/">time does not exist</a>,
-the only property each data point has (other than the value) is its order: first,
-next, previous, last, etc.</p>
-
-<p>It is useful to think of a series as a list of two-dimensional $x,y$
-coordinates, where $x$ is order (always going up by 1), and $y$ is
-value. For this reason in our math formulas we will be sticking to $y$
-for value and $x$ for order.</p>
-
-<h3 id="observed-vs-expected"><em>Observed</em> vs <em>Expected</em></h3>
-
-<p>Forecasting is estimating values that we do not yet know based on the
-the values we do know. The values we know are referred to as
-<em>observed</em> while the values we forecast as <em>expected</em>. The math
-convention to denote expected values is with the
-<a href="https://en.wikipedia.org/wiki/Circumflex">circumflex</a> a.k.a. “hat”: $\hat{y}$</p>
-
-<p>For example, if we have a series that looks like <code>[1,2,3]</code>, we might
-forecast the next value to be 4. Using this terminology, given
-observed series <code>[1,2,3]</code> the next expected value ${\hat{y}_4}$ is 4.</p>
-
-<h3 id="method"><em>Method</em></h3>
-
-<p>We may have intuited based on <code>[1,2,3]</code> that in this series each value
-is 1 greater than the previous, which in math notation can
-be expressed as and $\hat{y}_{x + 1} = y_x + 1$.  This equation, the
-result of our intuition, is known as a forecast <em>method</em>.</p>
-
-<p>If our method is correct then the next observed value would indeed be
-4, but if <code>[1,2,3]</code> is actually part of a
-<a href="https://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci sequence</a>, then where we
-expected ${\hat{y}_4 = 4}$, we would observe $y_4 = 5$. Note the hatted
-${\hat{y}}$ (expected) in the former and $y$ (observed) in the latter expression.</p>
-
-<h3 id="error-sse-and-mse"><em>Error</em>, <em>SSE</em> and <em>MSE</em></h3>
-
-<p>It is perfectly normal to compute expected values where we already
-have observed values. Comparing the two lets you compute the <em>error</em>,
-which is the <em>difference</em> between observed and expected and is an
-indispensable indication of the accuracy of the method.</p>
-
-<p>Since difference can be negative or positive, the common convention is
-to use the absolute value or square the error so that the number is always
-positive. For a whole series the squared errors are typically summed
-resulting in <em><a href="https://en.wikipedia.org/wiki/Residual_sum_of_squares">Sum of Squared Errors</a> (SSE)</em>.
-Sometimes you may come across _<a href="https://en.wikipedia.org/wiki/Mean_squared_error">Mean Squared Error</a>
-(MSE).</p>
-
-<h2 id="and-now-the-methods-where-the-fun-begins">And Now the Methods (where the fun begins!)</h2>
-
-<p>In the next few examples we are going to be using this tiny series:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">13</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">12</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(Feel free to paste it and any of the following code snippets into your Python
-<a href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">repl</a>)</p>
-
-<h3 id="naive-method">Naive Method</h3>
-
-<p>This is the most primitive forecasting method. The premise of the
-<em>naive</em> method is that the expected point is equal to the last
-observed point:</p>
-
-<script type="math/tex; mode=display">
-\hat{y}_{x+1} = y_x
-</script>
-
-<p>Using this method we would forecast the next point to be 12.</p>
-
-<h3 id="simple-average">Simple Average</h3>
-
-<p>A less primitive method is the <a href="https://en.wikipedia.org/wiki/Arithmetic_mean">arithmetic average</a>
-of all the previously observed data points. We take all the values we
-know, calculate the average and bet that that’s going to be the next value. Of course it won’t be it exactly,
-but it probably will be somewhere in the ballpark, hopefully you can see the reasoning behind this
-simplistic approach.</p>
-
-<script type="math/tex; mode=display">
-\hat{y}_{x+1} = \dfrac{1}{x}\sum_{i=1}^{x}y_i
-</script>
-
-<p>(Okay, this formula is only here because I think the <a href="https://en.wikipedia.org/wiki/Summation">capital Sigma</a>
-looks cool. I am sincerely hoping that the average requires no explanation.) In Python:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">average</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
-</span><span class="line">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># Given the above series, the average is:</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series)</span>
-</span><span class="line"><span class="c"># 10.285714285714286</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>As a forecasting method, there are actually situations where it’s spot
-on. For example your final school grade may be the average of all the
-previous grades.</p>
-
-<h3 id="moving-average">Moving Average</h3>
-
-<p>An improvement over simple average is the average of $n$ last
-points. Obviously the thinking here is that only the recent values
-matter. Calculation of the moving average involves what is sometimes
-called a “sliding window” of size $n$:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># moving average using n last points</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">moving_average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">average</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:])</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; moving_average(series, 3)</span>
-</span><span class="line"><span class="c"># 11.333333333333334</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; moving_average(series, 4)</span>
-</span><span class="line"><span class="c"># 11.75</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>A moving average can actually be quite effective, especially if you
-pick the right $n$ for the series. Stock analysts adore it.</p>
-
-<p>Also note that simple average is a variation of a moving average, thus
-the two functions above could be re-written as a single recursive one
-(just for fun):</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-</span><span class="line">    <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-</span><span class="line">        <span class="k">return</span> <span class="n">average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
-</span><span class="line">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">:]))</span><span class="o">/</span><span class="n">n</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series, 3)</span>
-</span><span class="line"><span class="c"># 11.333333333333334</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; average(series)</span>
-</span><span class="line"><span class="c"># 10.285714285714286</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h3 id="weighted-moving-average">Weighted Moving Average</h3>
-
-<p>A <em>weighted</em> moving average is a moving average where within the
-sliding window values are given different weights, typically so that
-more recent points matter more.</p>
-
-<p>Instead of selecting a window size, it requires a list of weights
-(which should add up to 1). For example if we picked <code>[0.1,
-0.2, 0.3, 0.4]</code> as weights, we would be giving 10%, 20%, 30% and 40%
-to the last 4 points respectively. In Python:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># weighted average, weights is a list of weights</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">weighted_average</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span class="line">    <span class="n">weights</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">weights</span><span class="p">)):</span>
-</span><span class="line">        <span class="n">result</span> <span class="o">+=</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; weights = [0.1, 0.2, 0.3, 0.4]</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; weighted_average(series, weights)</span>
-</span><span class="line"><span class="c"># 11.5</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Weighted moving average is fundamental to what follows, please take a
-moment to understand it, give it a think before reading on.</p>
-
-<p>I would also like to stress the importance of the weights adding up
-to 1. To demonstrate why, let’s say we pick weights <code>[0.9, 0.8, 0.7,
-0.6]</code> (which add up to 3.0). Watch what happens:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">&gt;&gt;&gt; weighted_average(series, [0.9, 0.8, 0.7, 0.6])
-</span><span class="line">&gt;&gt;&gt; 35.5  # &lt;--- this is clearly bogus</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h3 id="picture-time">Picture time!</h3>
-
-<p>Here is a picture that demonstrates our tiny series and all of the above
-forecasts (except for naive).</p>
-
-<p><img src="/images/hw01.png" /></p>
-
-<p>It’s important to understand that which of the above methods is better
-very much depends on the nature of the series. The order in which I
-presented them was from simple to complex, but “more complex” doesn’t
-necessarily mean “better”.</p>
-
-<h3 id="single-exponential-smoothing">Single Exponential Smoothing</h3>
-
-<p>Here is where things get interesting. Imagine a weighted average where
-we consider <em>all</em> of the data points, while assigning exponentially
-smaller weights as we go back in time. For example if we started with
-0.9, our weights would be (going back in time):</p>
-
-<script type="math/tex; mode=display">
-0.9^1, 0.9^2, 0.9^3, 0.9^4, 0.9^5, 0.9^6... \\
-\mbox{or: } 0.9, 0.81, 0.729, 0.6561, 0.59049, 0.531441, ...
-</script>
-
-<p>…eventually approaching the big old zero. In some way this is very
-similar to the weighted average above, only the weights are dictated
-by math, decaying uniformly. The smaller the starting weight, the
-faster it approaches zero.</p>
-
-<p>Only… there is a problem: weights do not add up to 1. The sum of
-the first 3 numbers alone is already 2.439! (Exercise for the reader: what number
-does the sum of the weights approach and why?)</p>
-
-<p>What earned Poisson, Holts or Roberts a permanent place in the history
-of Mathematics is solving this with a succinct and elegant formula:</p>
-
-<script type="math/tex; mode=display">
-\hat{y}_x = \alpha \cdot y_x + (1-\alpha) \cdot \hat{y}_{x-1} \\
-</script>
-
-<p>If you stare at it just long enough, you will see that the expected
-value $\hat{y}_x$ is the sum of two products: $\alpha \cdot y_x$ and
-$(1-\alpha) \cdot \hat{y}_{x-1}$. You can think of $\alpha$ (alpha)
-as a sort of a starting weight 0.9 in the above (problematic)
-example. It is called the <em>smoothing factor</em> or <em>smoothing
-coefficient</em> (depending on who wrote your text book).</p>
-
-<p>So essentially we’ve got a weighted moving average with two weights:
-$\alpha$ and $1-\alpha$.  The sum of $\alpha$ and $1-\alpha$ is 1, so
-all is well.</p>
-
-<p>Now let’s zoom in on the right side of the sum. Cleverly, $1-\alpha$
-is multiplied by the <em>previous</em> expected value
-$\hat{y}_{x-1}$. Which, if you think about it, is the result of the
-same formula, which makes the expression recursive (and programmers
-love recursion), and if you were to write it all out on paper you would
-quickly see that $(1-\alpha)$ is multiplied by itself again and again
-all the way to beginning of the series, if there is one, infinitely
-otherwise. And this is why this method is called
-<em>exponential</em>.</p>
-
-<p>Another important thing about $\alpha$ is that its value dictates how
-much weight we give the most recent observed value versus the last
-expected. It’s a kind of a lever that gives more weight to the left
-side when it’s higher (closer to 1) or the right side when it’s lower
-(closer to 0).</p>
-
-<p>Perhaps $\alpha$ would be better referred to as <em>memory decay rate</em>: the
-higher the $\alpha$, the faster the method “forgets”.</p>
-
-<h4 id="why-is-it-called-smoothing">Why is it called “smoothing”?</h4>
-
-<p>To the best of my understanding this simply refers to the effect these
-methods have on a graph if you were to plot the values: jagged lines
-become smoother.  Moving average also has the same effect, so it
-deserves the right to be called smoothing just as well.</p>
-
-<h4 id="implementation">Implementation</h4>
-
-<p>There is an aspect of this method that programmers would appreciate
-that is of no concern to mathematicians: it’s simple and efficient to
-implement. Here is some Python. Unlike the previous examples, this
-function returns expected values for the whole series, not just one
-point.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-<span class="line-number">10</span>
-<span class="line-number">11</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="c"># given a series and alpha, return series of smoothed points</span>
-</span><span class="line"><span class="k">def</span> <span class="nf">exponential_smoothing</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-</span><span class="line">    <span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="c"># first value is same as series</span>
-</span><span class="line">    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)):</span>
-</span><span class="line">        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">series</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">result</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-</span><span class="line">    <span class="k">return</span> <span class="n">result</span>
-</span><span class="line">
-</span><span class="line"><span class="c"># &gt;&gt;&gt; exponential_smoothing(series, 0.1)</span>
-</span><span class="line"><span class="c"># [3, 3.7, 4.53, 5.377, 6.0393, 6.43537, 6.991833]</span>
-</span><span class="line"><span class="c"># &gt;&gt;&gt; exponential_smoothing(series, 0.9)</span>
-</span><span class="line"><span class="c"># [3, 9.3, 11.73, 12.873000000000001, 12.0873, 10.20873, 11.820873]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The figure below shows exponentially smoothed version of our series
-with $\alpha$ of 0.9 (red) and $\alpha$ of 0.1 (orange).</p>
-
-<p><img src="/images/hw02.png" /></p>
-
-<p>Looking at the above picture it is apparent that the $\alpha$ value of 0.9
-follows the observed values much closer than 0.1. This isn’t going to
-be true for any series, each series has its best $\alpha$ (or
-several). The process of finding the best $\alpha$ is referred to as
-<em>fitting</em> and we will discuss it later separately.</p>
-
-<h2 id="quick-review">Quick Review</h2>
-
-<p>We’ve learned some history, basic terminology (series and how it knows
-no time, method, error SSE, MSE and fitting). And we’ve learned some
-basic forecasting methods: naive, simple average, moving average,
-weighted moving average and, finally, single exponential smoothing.</p>
-
-<p>One very important characteristic of all of the above methods is that
-remarkably, they can only forecast a <em>single</em> point. That’s correct,
-just one.</p>
-
-<p>In <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
-one point.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">Storing Time Series in PostgreSQL Efficiently</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-09-23T22:01:00-04:00" pubdate data-updated="true">Sep 23<span>rd</span>, 2015</time>
-        
-         | <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>With the latest advances in PostgreSQL (and other db’s), a relational
-database begins to look like a very viable TS storage platform. In
-this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
-there is a <a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
-
-<p>A TS is a series of [timestamp, measurement] pairs, where measurement
-is typically a floating point number. These pairs (aka “data points”)
-usually arrive at a high and steady rate. As time goes on, detailed
-data usually becomes less interesting and is often consolidated into
-larger time intervals until ultimately it is expired.</p>
-
-<h2 id="the-obvious-approach">The obvious approach</h2>
-
-<p>The “naive” approach is a three-column table, like so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">id</span> <span class="nb">INT</span><span class="p">,</span> <span class="n">time</span> <span class="n">TIMESTAMPTZ</span><span class="p">,</span> <span class="n">value</span> <span class="nb">REAL</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(Let’s gloss over some details such as an index on the time column and
-choice of data type for time and value as it’s not relevant to this
-discussion.)</p>
-
-<p>One problem with this is the inefficiency of appending data. An insert
-requires a look up of the new id, locking and (usually) blocks until
-the data is synced to disk. Given the TS’s “firehose” nature, the
-database can quite quickly get overwhelmed.</p>
-
-<p>This approach also does not address consolidation and eventual
-expiration of older data points.</p>
-
-<h2 id="round-robin-database">Round-robin database</h2>
-
-<p>A better alternative is something called a <em>round-robin database</em>.  An
-RRD is a circular structure with a separately stored pointer denoting
-the last element and its timestamp.</p>
-
-<p>A everyday life example of an RRD is a week. Imagine a structure of 7
-slots, one for each day of the week. If you know today’s date and day
-of the week, you can easily infer the date for each slot. For example
-if today is Tuesday, April 1, 2008, then the Monday slot refers to
-March 31st, Sunday to March 30th and (most notably) Wednesday to March
-26.</p>
-
-<p>Here’s what a 7-day RRD of average temperature might look as of
-Tuesday, April 1:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">26</span> <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">69</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class="line">                    <span class="o">^</span>
-</span><span class="line">                    <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">Week</span> <span class="k">day</span><span class="p">:</span> <span class="n">Sun</span>  <span class="n">Mon</span>  <span class="n">Tue</span>  <span class="n">Wed</span>  <span class="n">Thu</span>  <span class="n">Fri</span>  <span class="n">Sat</span>
-</span><span class="line"><span class="nb">Date</span><span class="p">:</span>     <span class="mi">3</span><span class="o">/</span><span class="mi">30</span> <span class="mi">3</span><span class="o">/</span><span class="mi">31</span> <span class="mi">4</span><span class="o">/</span><span class="mi">1</span>  <span class="mi">4</span><span class="o">/</span><span class="mi">2</span>  <span class="mi">3</span><span class="o">/</span><span class="mi">27</span> <span class="mi">3</span><span class="o">/</span><span class="mi">28</span> <span class="mi">3</span><span class="o">/</span><span class="mi">29</span>
-</span><span class="line"><span class="n">Temp</span> <span class="n">F</span><span class="p">:</span>   <span class="mi">79</span>   <span class="mi">82</span>   <span class="mi">90</span>   <span class="mi">92</span>   <span class="mi">75</span>   <span class="mi">80</span>   <span class="mi">81</span>
-</span><span class="line">                         <span class="o">^</span>
-</span><span class="line">                         <span class="k">last</span> <span class="n">entry</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Note how little has changed, and that the update required no
-allocation of space: all we did to record 92F on Wednesday is
-overwrite one value. Even more remarkably, the previous value
-automatically “expired” when we overwrote it, thus solving the
-eventual expiration problem without any additional operations.</p>
-
-<p>RRD’s are also very space-efficient. In the above example we specified
-the date of every slot for clarity. In an actual implementation only
-the date of the last slot needs to be stored, thus the RRD can be kept
-as a sequence of 7 numbers plus the position of the last entry and
-it’s timestamp. In Python syntax it’d look like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="p">[[</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">92</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="p">],</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1207022400</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
-
-<p>Here is a naive approach to having a round-robin table. Carrying on
-with our 7 day RRD example, it might look like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">week_day</span> <span class="o">|</span> <span class="n">temp_f</span>
-</span><span class="line"><span class="o">---------+--------</span>
-</span><span class="line">     <span class="mi">1</span>   <span class="o">|</span>   <span class="mi">79</span>
-</span><span class="line">     <span class="mi">2</span>   <span class="o">|</span>   <span class="mi">82</span>
-</span><span class="line">     <span class="mi">3</span>   <span class="o">|</span>   <span class="mi">90</span>
-</span><span class="line">     <span class="mi">4</span>   <span class="o">|</span>   <span class="mi">69</span>
-</span><span class="line">     <span class="mi">5</span>   <span class="o">|</span>   <span class="mi">75</span>
-</span><span class="line">     <span class="mi">6</span>   <span class="o">|</span>   <span class="mi">80</span>
-</span><span class="line">     <span class="mi">7</span>   <span class="o">|</span>   <span class="mi">81</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Somewhere separately we’d also need to record that the last entry is
-week_day 3 (Tuesday) and it’s 2008-04-01. Come April 2, we could
-record the temperature using:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">series</span> <span class="k">SET</span> <span class="n">temp_f</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">week_day</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>This might be okay for a 7-slot RRD, but a more typical TS might have
-a slot per minute going back 90 days, which would require 129600
-rows. For recording data points one at a time it might be fast enough,
-but to copy the whole RRD would require 129600 UPDATE statements which
-is not very efficient.</p>
-
-<p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
-
-<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
-
-<p>An array would allow us to store the whole series in a single
-row. Sticking with the 7-day RRD example, our table would be created
-as follows:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span><span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-</span><span class="line">                 <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class="line">                 <span class="n">pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(Nevemind that there is no id column for now)</p>
-
-<p>We could populate the whole RRD in a single statement:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span><span class="p">(</span><span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">,</span> <span class="s1">&#39;2008-08-01&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>…or record 92F for Wednesday as so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span><span class="p">,</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>(In PostgreSQL arrays are 1-based, not 0-based like in most
-programming languages)</p>
-
-<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
-
-<p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
-make sense to keep chunks in which our RRD is written to disk in line
-with page size, or at least smaller than one page. (PostgreSQL provides
-configuration parameters for how much of a page is used, etc, but this
-is way beyond the scope of this article).</p>
-
-<p>Having the series split into chunks also paves the way for some kind
-of a caching layer, we could have a server which waits for one row
-worth of data points to accumulate, then flushes then all at once.</p>
-
-<p>For simplicity, let’s take the above example and expand the RRD to 4
-weeks, while keeping 1 week per row. In our table definition we need
-provide a way for keeping the order of every row of the TS with a
-column named n, and while we’re at it, we might as well introduce a
-notion of an id, so as to be able to store multiple TS in the same
-table.</p>
-
-<p>Let’s start with two tables, one called rrd where we would store the
-last position and date, and another called ts which would store the
-actual data.</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-<span class="line-number">9</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rrd</span> <span class="p">(</span>
-</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
-</span><span class="line">  <span class="n">last_date</span> <span class="nb">DATE</span><span class="p">,</span>
-</span><span class="line">  <span class="n">last_pos</span> <span class="nb">INT</span><span class="p">);</span>
-</span><span class="line">
-</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
-</span><span class="line">  <span class="n">rrd_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>We could then populate the TS with fictitious data like so:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rrd</span> <span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">last_date</span><span class="p">,</span> <span class="n">last_pos</span><span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2008-04-01&#39;</span><span class="p">,</span> <span class="mi">24</span><span class="p">);</span>
-</span><span class="line">
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
-</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>To update the data for April 2, we would:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">UPDATE</span> <span class="n">ts</span> <span class="k">SET</span> <span class="n">dp</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">92</span> <span class="k">WHERE</span> <span class="n">rrd_id</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">AND</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-</span><span class="line"><span class="k">UPDATE</span> <span class="n">rrd</span> <span class="k">SET</span> <span class="n">last_date</span> <span class="o">=</span> <span class="s1">&#39;2008-04-02&#39;</span><span class="p">,</span> <span class="n">last_pos</span> <span class="o">=</span> <span class="mi">25</span> <span class="k">WHERE</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
-
-<p>This article omits a lot of detail such as having resolution finer
-than one day, but it does describe the general idea. For an actual
-implementation of this you might want to check out a project I’ve been
-working on: <a href="https://github.com/tgres/tgres">tgres</a></p>
-</div>
-  
-  
-
-
-    </article>
   
   
     <article>
@@ -3030,6 +1769,880 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
 
     </article>
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a Single Request Object?</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-30T13:18:00-04:00" pubdate data-updated="true">Oct 30<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Are you in favor of a single request object, or two separate objects:
+request and response?  Could it be that the two options are not
+contradictory or even mutually exclusive?</p>
+
+<p>I thouhgt I always was in favor of a single request object which I
+<a href="https://mail.python.org/pipermail/web-sig/2003-October/000162.html">expressed on the Web-SIG mailing list thread</a>
+dating back to October 2003 (ten years ago!). But it is only now that
+I’ve come to realize that both proponents of a single object and two
+separate objects were correct, they were just talking about different
+things.</p>
+
+<p>The confusion lies in the distinction between what I am going to term
+a web application and a request handler.</p>
+
+<p>A <em>request handler</em> exists in the realm of an HTTP server, which
+(naturally) serves HTTP requests. An HTTP request consists of a
+request (a method, such as “GET”, along with some HTTP headers and
+possibly a body) and a response (a status line, some HTTP headers and
+possibly a body) sent over the TCP connection. There is a one-to-one
+correspondence between a request and a response established by the
+commonality of the connection. An HTTP request is incomplete if the
+response is missing, and a response cannot exist without a
+request. (Yes, the term “request” is used to denote both the request
+and response, as well as just the request part of the request, and
+that’s confusing).</p>
+
+<p>A <em>web application</em> is a layer on top of the HTTP request handler. A web
+application operates in requests and responses as well, but those
+should not be confused with the HTTP request/response pairs.</p>
+
+<p>Making the conceptual distinction between a web application request
+and an HTTP request is difficult because both web applications and
+request handlers use HTTP headers and status to accomplish their
+objectives. The difference is that strictly speaking a web application
+does not have to use HTTP and ideally should be protocol-agnostic,
+though it is very common for a web application to rely on
+HTTP-specific features these days. Not every HTTP request exists as
+part of a web application. But because it is difficult to imagine a
+web application without HTTP, we tend to lump the two concepts
+together. It is also exacerbated by the fact that HTTP headers carry
+both application-specific and HTTP-specific information.</p>
+
+<p>A good example of the delineation between a web application response
+and an HTTP response is handling of an error condition. A web
+application error is typically not an HTTP error.  Imagine an “invalid
+login” page. It is a web application error, but not an HTTP error. An
+“invalid login” page should send a “200 OK” status line and a body
+explaining that the credentials supplied were not valid. But then HTTP
+provides its own authentication mechanism, and an HTTP “401
+Unauthorized” (which ought not be used by web applications) is often
+misunderstood as something that web applications should incorporate
+into how they do things.</p>
+
+<p>Another example of a place where the line gets blurry is a redirect. A
+redirect is quite common in a web application, and it is typically
+accomplished by way of an HTTP redirect (3XX status code), yet the two
+are not the same. An HTTP redirect, for example, may happen
+unbeknownst to the web application for purely infrastructural reasons,
+and a web application redirect does not always cause an HTTP redirect.</p>
+
+<p>Yet another example: consider a website serving static content where
+same URI responds with different content according to the
+Accept-Language header in the request. Is this a “web application”?
+Hardly. Could you have some Python (or whatever you favorite language
+is) help along with this process? Certainly. Wouldn’t this code be
+part of a “web application”?  Good question. It is not uncommon for a
+web application to consider the Accept-Language header in its
+response. You could also accomplish this entirely in an http server by
+configuring it correctly. Sometimes whether something is a web
+application just depends on how you’re looking at it, but you do have
+to decide for yourself which it is.</p>
+
+<p>Getting to the original problem, the answer to the question of whether
+to use separate response/request objects or not depends very much on
+which realm you’re operating in. A request handler only needs one
+request object representing the HTTP request because it is
+conceptually similar to a file - you don’t typically open a file twice
+once for reading and once for writing. Whereas a web application,
+which may chose between different responses depending on what’s in the
+request is possibly best served with two separate objects.</p>
+
+<p>I think that misunderstanding of what a “web application” is happens
+to be the cause of a lot of bad decisions plaguing the world of web
+development these days. It is not uncommon to see people get stuck on
+low-level HTTP subtleties while referring to web application issues and
+vise-versa. We’d all get along better if we took some time to think
+about the distinction between web applications and HTTP request
+handlers.</p>
+
+<p>P.S. This will get even more complicated when HTTP 2.0 comes around
+where responses may exist without a request. And I haven’t even
+mentioned SSL/TLS.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/26/my-thoughts-on-wsgi/">My Thoughts on WSGI</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-26T11:24:00-04:00" pubdate data-updated="true">Oct 26<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/26/my-thoughts-on-wsgi/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I’m not very fond of it. Here is why.</p>
+
+<h2 id="cgi-origins">CGI Origins</h2>
+
+<p>WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right
+there in the name.</p>
+
+<p>CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn’t a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.</p>
+
+<p>There is now an RFC (<a href="http://www.ietf.org/rfc/rfc3875">RFC3875</a>)
+describing CGI, but I hazard that
+<a href="http://ken.coar.org/">Ken Coar</a> wrote the RFC not because he thought CGI was great, but rather
+out of discontent with the present state of affairs - everyone was
+using CGI, yet there never was a formal document describing it.</p>
+
+<p>So if I were to attempt to unite all Python web applications under the
+same standard, CGI wouldn’t be the first thing I would consider. There are
+other efforts at solving the same problem in more elegant ways which
+could be used as a model, e.g. (dare I mention?) Java Servlets.</p>
+
+<h2 id="headers">Headers</h2>
+
+<p>CGI dictated that HTTP headers be passed to the CGI script by way of
+<a href="http://en.wikipedia.org/wiki/Environment_variable">environment variables</a>. The
+same environment that contain your <code>$PATH</code> and <code>$TERM</code>.  (Note this
+also explains the origin of the term <em>environment</em> in WSGI - in HTTP
+there is no <em>request environment</em>, there is simply a <em>request</em>). So as
+to not clash with any other environment variables, CGI would prepend
+<code>HTTP_</code> to every header name. It also swapped dashes with underscores
+because dashes are not allowed in shell variable names. And because
+environment variables in DOS and Unix are typically case-insensitive,
+they were capitalized. Thus <code>"content-type"</code> would become <code>"HTTP_CONTENT_TYPE"</code>.</p>
+
+<p>And how much sense applying the same transformation make in the realm
+in which WSGI operates? The headers are typically read by the
+webserver and stored in some kind of a structure, which ought to be
+directly accessible so the application can get headers in the
+original, unmodified format. For example in Apache this would be the
+<code>req.headers_in</code> table.  What is the benefit of combing through that
+structure converting every key to some capitalized HTTP_ string at
+every request? Why are WSGI developers forced to use
+<code>env['HTTP_CONTENT_LENGTH']</code> rather than <code>env['Content-length']</code>?</p>
+
+<p>Another thing about the environment is that the WSGI standard states
+that it must be a real Python dictionary, thereby dictating that a
+memory allocation happen to satisfy this requirement, <em>at every
+request</em>.</p>
+
+<h2 id="startresponse">start_response()</h2>
+
+<p>In order to be able to write anything to the client a WSGI application
+must envoke the start_response() function passed to it which would
+return a write() method.</p>
+
+<p>Ten points for cuteness here, but the practicality of this solution
+eludes me. This is certainly a clever way to make the fact that the start
+of a response is an irreversible action in HTTP because the headers are
+sent first, but seriosly - do programmers who code at this level not
+know it? Why can’t the header sending part happen implicitly at the
+first write(), and why can’t an application write without sending any
+headers?</p>
+
+<p>There is also another problem here - function calls are relatively
+expensive in Python. The requirement that the app must beg for the
+write object every time introduces a completely unnecessary function
+call.</p>
+
+<p>The request object with a write() method should simply be passed
+in. This is how it has always worked in mod_python (cited in PEP3333 a
+number of times!).</p>
+
+<h2 id="error-handling">Error handling</h2>
+
+<p>First, I must confess that after re-reading the section of the PEP3333
+describing the <code>exc_info</code> argument several times I still can’t say I
+grok what it’s saying. Looking at some implementations out there I am
+releived to know I am not the only one.</p>
+
+<p>But the gist of it that an exception can be supplied along with some
+headers. It seems to me there is confusion between HTTP errors and
+Python errors here, the two are not related. What is the expected
+outcome of passing a Python exception to an HTTP server? The server
+would probably convert it to a 500 Internal Server Error (well it only
+has so many possibilities to chose from), and what’s the point of that?</p>
+
+<p>Wouldn’t the outcome be same if the application simply raised an
+exception?</p>
+
+<p>If the spec wanted to provide means for the application Python errors
+to somehow map to HTTP errors, why not define a special exception
+class which could be used to send HTTP errors? What was wrong with
+mod_python’s:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">raise apache.SERVER_RETURN, apache.HTTP_INTERNAL_SERVER_ERROR</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I think it’s simple and self-explanatory.</p>
+
+<h2 id="other-things">Other things</h2>
+
+<p>What is <code>wsgi.run_once</code>, why does it matter and why should the web
+server provide it? What would be a good use case for such a thing?</p>
+
+<p>There is a long section describing “middleware”. Middleware is a
+wrapper, an example of the <a href="http://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/Pipeline.htm">pipeline design pattern</a>
+and there doesn’t seem to be anything special with this concept that
+the WSGI spec should even mention it. (I also object to the term
+“middleware” - my intuition suggests it’s a layer between “hardware”
+and “software”, not a wrapper.)</p>
+
+<h2 id="scriptname-and-pathinfo">SCRIPT_NAME and PATH_INFO</h2>
+
+<p>Perhaps the most annoying part of CGI were these two mis-understood
+variables, and sadly WSGI uses them too.</p>
+
+<p>Remember that in CGI we always had a script. A typical CGI script
+resided somewhere on the filesystem to which the request URI maps. As
+part of serving the request the server traversed the URI mapping each
+element to an element of the filesystem path to locate the
+script. Once the script was found, the portion of the URI used thus far
+was assigned to the SCRIPT_NAME variable, while the remainder of the
+URI got assigned to PATH_INFO.</p>
+
+<p>But where is <em>the script</em> in WSGI? Is my Python module the script?
+What relatioship does there exist between the request URI and the
+(non-existent) script?</p>
+
+<h2 id="bottom-line">Bottom line</h2>
+
+<p>I am not convinced that there should be a universal standard for
+Python web applications to begin with. I think that what we refer to
+as “web applications” is still not very well understood by us
+programmers.</p>
+
+<p>But if we are to have one, I think that WSGI approach is not the right
+one. It brings the world of Python web development to the lowest
+common denominator - CGI and introduces some problems of its own on
+top of it.</p>
+
+<h2 id="other-notes">Other notes</h2>
+
+<h3 id="what-is-the-gateway-in-cgi">What is the Gateway in CGI</h3>
+
+<p>I did some digging into the etymology of “Common Gateway Interface”,
+because I wanted to know what the original author (Rob McCool) meant
+by it when he came up with it. From reading <a href="http://web.archive.org/web/20100127191128/http://hoohoo.ncsa.illinois.edu/cgi/intro.html">this</a>
+it’s apparent that he saw it as the Web daemon’s gateway to an outside
+program:</p>
+
+<p>“For example, let’s say that you wanted to “hook up” your Unix
+database to the World Wide Web, to allow people from all over the
+world to query it. Basically, you need to create a CGI program that
+the Web daemon will execute to transmit information to the database
+engine, and receive the results back again and display them to the
+client. This is an example of a gateway, and this is where CGI,
+currently version 1.1, got its origins.”</p>
+
+<p>I always perceived it the other way around, I thought the “gateway”
+was a gateway to the web server. I think that when Phillip J. Eby
+first proposed the name WSGI he was under the same misperception as I.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/25/mod-python-the-long-story/">Mod_python: The Long Story</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-25T20:05:00-04:00" pubdate data-updated="true">Oct 25<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/25/mod-python-the-long-story/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>This story started back in 1996. I was in my early twenties, working
+as a programmer at a small company specializing in on-line reporting of
+certain pharmaceutical data.</p>
+
+<p>There was a web-based application (which was extremely cool
+considering how long ago this was), but unfortunately it was written
+in Visual Basic by a contractor and I was determined to do something
+about it. As was very fashionable at the time, I was very pro Open
+Source, had Linux running on my home 386 and had recently heard
+<a href="http://boston-linux-unix-general-discussion-list.996279.n3.nabble.com/fwd-LOCAL-Washington-DC-Linux-User-Group-meeting-and-Python-talk-td3733.html">Guido’s talk</a>
+at the DC Linux user group presenting his new language he called
+Python. Python seemed like a perfect alternative to the VB
+monstrosity.</p>
+
+<p>I spent a few weeks quietly in my cubicle learning Python and
+rewriting the whole app in it. (Back in those days this is how
+programmers worked, there was no “agile” and “daily stand ups”,
+everyone understood that things take time. I miss those days very
+much). Python was fantastic, and soon the app was completely
+re-written.</p>
+
+<p>Then I realized that explaining what I’ve been working on to my bosses
+might be a bit of a challenge. You see, for a while there nobody knew
+that the web app they’ve been using had been re-written in Python, but
+sooner or later I would have to reveal the truth and, more
+importantly, justify my decision. I needed a good reason, and stuff
+about object-oriented programming, clean code, open source, etc would
+have fallen on deaf ears.</p>
+
+<p>Just around that time the Internet Programming with Python book came
+out, and in it there was a chapter on how to embed the Python
+interpreter in the Netscape Enterprise web server. The idea seemed
+very intriguing to me and it might have contained exactly the
+justification I was looking for - it would make the app
+faster. (“Faster” is nearly as good as “cheaper” when it comes to
+selling to the management). I can’t say that I knew much C back then,
+but with enough tinkering around I was able to make something work,
+and lo and behold it was quite noticeably faster.</p>
+
+<p>And so a few days later I held a presentation in the big conference
+room regarding this new tool we’ve started using something called Python which
+can crunch yall’s numbers an order of magnitude faster than the
+Microsoft product we’ve been using. And oh, by the way, I quickly
+hacked something together last night - let’s do a live demo, look how
+fast this is!  They were delighted.</p>
+
+<p>Little did they know, the app had been running in Python for months,
+and the reason for the speed up had little to do with the language
+itself. It was all because I was able to embed the interpreter within
+the web server. Then I thought that to make it all complete I would
+make my little tool open source and put it on my website free for
+everyone to use. I called it
+<a href="http://www.ispol.com/home/grisha/nsapy/">NSAPy</a> as a combination of
+the Netscape Server API and Python.</p>
+
+<p>But I didn’t stop there, and soon I was able to replicate this on an
+Apache web server, which was taking the Internet by storm back
+then. The name mod_python came naturally since there already was a
+mod_perl.</p>
+
+<p>Things were going very well back then. These were the late nineties,
+the dawn of e-commerce on the World Wide Web. I started working for a
+tiny ISP which soon transformed into a humongous Web Hosting company,
+we ran millions of sites, built new data centers with thousands of
+servers pushing gigabits of traffic and (in short) were taking over
+the world (or so it seemed). With the rise of our company’s stock
+price, me and my colleagues were on our way to becoming
+millionaires. Mod_python was doing very well too. It had a busy
+website, a large and very active mailing list and an ever growing
+number of devoted users. I went to various Open Source conferences to
+present about it (and couldn’t really believe that without exception
+everyone knew what mod_python was).</p>
+
+<p>Then came 2001. We just bought a house and our second son was not even
+a year old when one beautiful sunny summer day I was summoned to a
+mandatory meeting. In that meeting about two thirds of our office was
+let go. Even though we all felt it was coming, it was still a shock. I
+remember coming home that morning and having to explain my wife that
+I’d just been fired. This after constant all-nighters, neglect for
+family life under the excuse of having the most important job doing
+the most important thing and changing the world and rants about how
+we’d be all set financially in just a year or two. In my personally
+opinion the 2007 financial crash was nothing compared to the dot-com
+bust. Everyone was getting laid off everywhere, the Internet became a
+dirty word, software development was being outsourced to India.</p>
+
+<p>For the next couple of years I made a living doing contracting work
+here and there. Needless to say, mod_python wasn’t exactly at the top
+of my priority list. But it was getting ever more popular, the mailing
+list busier, though it didn’t make any money (for me at least). I
+tried my best to keep everything running in whatever spare time I had,
+answering emails and releasing new versions periodically. Finding time
+for it was increasingly difficult, especially given that most of the
+work I was doing had nothing to do with mod_python or Python.</p>
+
+<p>One day I had this thought that donating mod_python to the Apache
+Software Foundation would ensure its survival, even if I can no longer
+contribute. And so it was done. Initially things went very well - the
+donation did affiliate mod_python with the solid reputation of Apache
+and that was great. Mod_python gained a multitude more users and most
+importantly contributors.</p>
+
+<p>At the same time my life was becoming ever more stressful. Free time
+for mod_python hacking was getting more and more scarce until there
+was none. I also think I was experiencing burnout. Answering questions
+on the mailing list became an annoyance. I had to read through
+enormous threads with proposals for various features or how things
+ought to work and respond to them, and it was just never ending. It
+wasn’t fun anymore.</p>
+
+<p>I also felt that people didn’t understand what mod_python was and that
+I’m not able to explain it very well. (For what it’s worth, I still
+feel this way). In my mind it was primarily an interface to the Apache
+internals, but since making every structure and API accessible from
+within Python was impractical, only selected pieces were
+exposed. Secondly, mod_python provided means to perform certain things
+that were best done in Apache, e.g. global locking, caching. Lastly,
+it provided certain common tasks but implemented in Apache-specific
+ways (using Apache pools, APR, etc.) for maximal performance; things
+like cookies and sessions fell into that category. Publisher and PSP
+didn’t strictly belong in mod_python, but were there for the sake of
+battery-includedness - you could build a rudimentary app without any
+additional tool.</p>
+
+<p>The rest of the world saw it as a web-development framework. It wasn’t
+a particularly good one, especially when it came to development,
+because it required root privileges to run. It also didn’t do a very
+good job at reloading changed modules very well which complicated
+development. A very considerable effort was put in by one of the
+contributors to address the particular issue of module loading and
+caching, and I never thought it to be important because to me
+restarting Apache seemed like the answer, I didn’t think that people
+without root access would ever use mod_python.</p>
+
+<p>As I was growing more disinterested in mod_python it got to a point
+where I just let it be. I would skim through emails from people I
+trusted and responded affirmatively to whatever they proposed without
+giving it much thought. I didn’t see any point in keeping and
+defending my vision for mod_python. I think that by about 2006 or so I
+was so disconnected I no longer had a good grasp of what the latest
+features of mod_python were being worked on. Not sure if it was my
+lack of interest or that other contributors felt burned out as well,
+but new commits slowed down to a trickle and stopped eventually, and
+my quarterly reports to the ASF Board became a cut-and-paste email of
+“no new activity”.</p>
+
+<p>This is where the negative aspect of the ASF patronage begun to
+surface. Sadly, the ASF rules are that projects and their community
+must be active, and soon the project got moved to the attic. And even
+though I kept telling myself that I couldn’t care less, I must admit
+it hurt. The attic is a like a one-way trash can - once there, a
+project cannot go back, other than through the incubation process.</p>
+
+<p>Fast forward to 2013. Why get back to hacking on it? First of all I
+got tired of “mod_python is dead” plastered all over the web.  Every
+time I see some kid who wasn’t old enough to speak back when I first
+released it tweet that it is this or that, I can’t help but take it a
+little personally. It’s an open source project people, it’s only dead
+if you do not contribute to it.</p>
+
+<p>For the skeptics in the crowd I most certainly disagree that
+mod_python as a concept is dead, I’d even argue that its time hasn’t
+come yet. The vision has not changed. Mod_python is still an interface
+to Apache which lets you take advantage of its versatile architecture
+to do some very powerful things. It’s not quite a web development
+framework, and it’s not even a tool for running your favorite web
+development framework in production (though it can certainly do that
+quite nicely).</p>
+
+<p>These days there is more demand than ever for high volume servers that
+do not have a user interface and thus do not need a WSGI framework to
+power them - I think this is one of the areas where mod_python could
+be most useful. There are also all kinds of possibilities for using
+Apache and mod_python for distributed computing and big data stuff
+taking advantage of the fact that Apache is an excellent job
+supervisor - anyone up for writing a map/reduce framework in
+mod_python?</p>
+
+<p>I must also note that hacking on it in the past weeks has been fun
+once again. I wanted to get up to speed with the latest on Python 3
+and Apache internals, especially the event/epoll stuff and this has
+been a great way to do just that. I also very much enjoy that I can
+once again do whatever I want without any scrutiny.</p>
+
+<p>If there is one thing I’ve learned it’s that few open source projects
+can exist without their founders’ continuous involvement. The Little
+Prince once said - “You become responsible forever for what you have
+tamed”. It seems like mod_python is my rose and if I don’t water it,
+no one will.</p>
+
+<p>P.S. Did I mention mod_python now supports Python 3? Please help
+me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
+
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=watch&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&amp;repo=mod_python&amp;type=fork&amp;count=true&amp;size=large" allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/10/mod-python-performance/">Mod_python Performance and Why It Matters Not.</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-10T13:04:00-04:00" pubdate data-updated="true">Oct 10<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/10/10/mod-python-performance/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><em>TL;DR: mod_python is faster than you think.</em></p>
+
+<p>Tonight I thought I’d spend some time looking into how the new
+<a href="http://www.modpython.org/">mod_python</a>
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+<em>why it really does not matter</em>.</p>
+
+<p>I am particularly interested in the following:</p>
+
+<ul>
+  <li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
+  <li>a mod_python wsgi app, because WSGI is so popular these days.</li>
+  <li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
+  <li>uWSGI, because it claims to be super fast.</li>
+  <li>Apache serving a static file (as a point of reference).</li>
+</ul>
+
+<h1 id="the-test">The Test</h1>
+
+<p>I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM
+allocated to it. Granted this configuration can’t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.</p>
+
+<p>Real-life performance is very much affected by issues related to
+concurrency and load. I don’t have the resources or tools to
+comprehensively test such scenarios, and so I’m just using concurrency
+of 1 and seeing how fast each of the afore-listed set ups can process
+small requests.</p>
+
+<p>I’m using mod_python 3.4.1 (pre-release), revision
+<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
+compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
+3.4, for uWSGI I use 1.9.17.1.</p>
+
+<p>The Apache configuration is pretty minimal (It could probably trimmed
+even more, but this is good enough):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class=""><span class="line">LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
+</span><span class="line">LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
+</span><span class="line">LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
+</span><span class="line">LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
+</span><span class="line">LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
+</span><span class="line">LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
+</span><span class="line">LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
+</span><span class="line">
+</span><span class="line">ServerRoot /home/grisha/mp_test
+</span><span class="line">PidFile logs/httpd.pid
+</span><span class="line">ServerName 127.0.0.1
+</span><span class="line">Listen 8888
+</span><span class="line">MaxRequestsPerChild 1000000
+</span><span class="line">
+</span><span class="line">&lt;Location /&gt;
+</span><span class="line">      SetHandler mod_python
+</span><span class="line">      PythonHandler mp
+</span><span class="line">      PythonPath "sys.path+['/home/grisha/mp_test/htdocs']"
+</span><span class="line">&lt;/Location&gt;</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
+mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
+section, so this makes it a little bit faster.</p>
+
+<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
+above looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">mod_python</span> <span class="kn">import</span> <span class="n">apache</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">handler</span><span class="p">(</span><span class="n">req</span><span class="p">):</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
+</span><span class="line">    <span class="n">req</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;Hello World!&#39;</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="n">apache</span><span class="o">.</span><span class="n">OK</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>As the benchmark tool, I’m using the good old
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>ab -n 10  http://localhost:8888/
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For each test in this article I run 500 requests first as a “warm up”,
+then another 500K for the actual measurement.</p>
+
+<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line">&lt;Location /&gt;
+</span><span class="line">    PythonHandler mod_python.wsgi
+</span><span class="line">    PythonPath <span class="s2">&quot;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&quot;</span>
+</span><span class="line">    PythonOption mod_python.wsgi.application mp_wsgi
+</span><span class="line">&lt;/Location&gt;
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And the <code>mp_wsgi.py</code> file looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">application</span><span class="p">(</span><span class="n">environ</span><span class="p">,</span> <span class="n">start_response</span><span class="p">):</span>
+</span><span class="line">    <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;200 OK&#39;</span>
+</span><span class="line">    <span class="n">output</span> <span class="o">=</span> <span class="s">&#39;Hello World!&#39;</span>
+</span><span class="line">
+</span><span class="line">    <span class="n">response_headers</span> <span class="o">=</span> <span class="p">[(</span><span class="s">&#39;Content-type&#39;</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">),</span>
+</span><span class="line">                        <span class="p">(</span><span class="s">&#39;Content-Length&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">)))]</span>
+</span><span class="line">    <span class="n">start_response</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">response_headers</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">LoadModule</span> <span class="n">wsgi_module</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">modules</span><span class="o">/</span><span class="n">mod_wsgi</span><span class="o">.</span><span class="n">so</span>
+</span><span class="line"><span class="n">WSGIScriptAlias</span> <span class="o">/</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="n">htdocs</span><span class="o">/</span><span class="n">mp_wsgi</span><span class="o">.</span><span class="n">py</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>For uWSGI (I am not an expert), I first used the following command:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">grisha</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mp_test</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">uwsgi</span> \
+</span><span class="line">   <span class="o">--</span><span class="n">http</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">8888</span> \
+</span><span class="line">   <span class="o">-</span><span class="n">M</span> <span class="o">-</span><span class="n">p</span> <span class="mi">1</span> <span class="o">-</span><span class="n">w</span> <span class="n">mysite</span><span class="o">.</span><span class="n">wsgi</span> <span class="o">-</span><span class="n">z</span> <span class="mi">30</span> <span class="o">-</span><span class="n">l</span> <span class="mi">120</span> <span class="o">-</span><span class="n">L</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Which yielded a pretty dismal result, so I tried using a unix socket
+<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
+the front end as described
+<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
+make uWSGI come out on top (even if proxied uWSGI is an orange among
+the apples).</p>
+
+<h3 id="the-results-requests-per-second-fastest-at-the-top">The results, requests per second, fastest at the top:</h3>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="o">|</span> <span class="n">uWSGI</span><span class="o">/</span><span class="n">nginx</span>         <span class="o">|</span> <span class="mi">2391</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">handler</span>  <span class="o">|</span> <span class="mi">2332</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">static</span> <span class="nb">file</span>         <span class="o">|</span> <span class="mi">2312</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_wsgi</span>            <span class="o">|</span> <span class="mi">2143</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">mod_python</span> <span class="n">wsgi</span>     <span class="o">|</span> <span class="mi">1937</span> <span class="o">|</span>
+</span><span class="line"><span class="o">|</span> <span class="n">uWSGI</span> <span class="o">--</span><span class="n">http</span>        <span class="o">|</span> <span class="mi">1779</span> <span class="o">|</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>What’s interesting and unexpected at first is that uWSGI and the
+mod_python handler perform better than sending a static file, which I
+expected to be the fastest. On a second thought though it does make
+sense, once you consider that no (on average pretty expensive)
+filesystem operations are performed to serve the request.</p>
+
+<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
+expected, because the mod_python version is mostly Python, vs
+mod_wsgi’s C version.</p>
+
+<p>I think that with a little work mod_python wsgi handler could perform
+on par with uWSGI, though I’m not sure the effort would be worth
+it. Because as we all know,
+<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
+
+<h1 id="why-it-doesnt-really-matter">Why It Doesn’t Really Matter</h1>
+
+<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
+because after all, what matters more than speed?</p>
+
+<p>But let’s imagine a more real world scenario, because it’s not likely
+that all your application does is send <code>"Hello World!".</code></p>
+
+<p>To illustrate the point a little better I created a very simple Django
+app, which too sends <code>"Hello World!"</code>, only it does it using a template:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="s">&#39;World&#39;</span><span class="p">})</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Using the mod_python wsgi handler (the slowest), we can process 455
+req/s, using uWSGI (the fastest) 474. This means that by moving this
+“application” from mod_pyhton to uWSGI we would improve performance by
+a measley 5%.</p>
+
+<p>Now let’s add some database action to our so-called “application”. For
+every request I’m going to pull my user record from the Django
+auth_users table:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="kn">from</span> <span class="nn">django.contrib.auth.models</span> <span class="kn">import</span> <span class="n">User</span>
+</span><span class="line">
+</span><span class="line"><span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span class="line">    <span class="n">grisha</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">username</span><span class="o">=</span><span class="s">&#39;grisha&#39;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">t</span> <span class="o">=</span> <span class="n">get_template</span><span class="p">(</span><span class="s">&quot;hello.txt&quot;</span><span class="p">)</span>
+</span><span class="line">    <span class="n">c</span> <span class="o">=</span> <span class="n">Context</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">grisha</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]})</span> <span class="c"># world was 5 characters</span>
+</span><span class="line">    <span class="k">return</span> <span class="n">HttpResponse</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
+req/s in uWSGI, and the difference between the two has shrunk to just
+over 3%.</p>
+
+<p>Mind you, our “application” still has less than 10 lines of code. In a
+real-world situation the difference in performance is more likely to
+amount to less than a tenth of a percent.</p>
+
+<p>Bottom line: it’s foolish to pick your web server based on speed
+alone. Factors such as your comfort level with using it, features,
+documentation, security, etc., are far more important than how fast it
+can crank out “Hello world!”.</p>
+
+<p>Last, but not least, mod_python 3.4.1 (used in this article) is
+ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; Older</a>
@@ -3072,23 +2685,23 @@ me <a href="https://github.com/grisha/mod_python/issues/9">test it</a>!</p>
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/">Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2019/06/19/sql-dag/">Implicit SQL DAG in Maestro</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2019/06/05/maestro-is-open-source/">Maestro the BigQuery Orchestrator</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2018/10/18/relative-imports-hack-in-go/">Relative Imports Hack in Golang</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/2018/01/23/explaining-proof-of-work/">Blockchain Proof-of-Work is a Decentralized Clock</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/12/15/blockchain-and-postgres/">The Bitcoin Blockchain PostgresSQL Schema</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/20/blockchain-in-postgresql-part-2/">Blockchain in PostgreSQL Part 2</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/10/10/postgre-as-a-full-node/">Bitcoin Transaction Hash in Pure PostgreSQL</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/09/28/electricity-cost-of-1-bitcoin/">Electricity cost of 1 Bitcoin (Sep 2017)</a>
       </li>
     
   </ul>

@@ -4,7 +4,7 @@
   <title><![CDATA[Gregory Trubetskoy]]></title>
   <link href="http://grisha.org/atom.xml" rel="self"/>
   <link href="http://grisha.org/"/>
-  <updated>2022-09-23T12:39:21-04:00</updated>
+  <updated>2022-09-23T12:43:06-04:00</updated>
   <id>http://grisha.org/</id>
   <author>
     <name><![CDATA[Gregory Trubetskoy]]></name>
@@ -12,343 +12,6 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
-  
-  <entry>
-    <title type="html"><![CDATA[Keeping ETL in BigQuery&nbsp;with&nbsp;bq_etl.]]></title>
-    <link href="http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl/"/>
-    <updated>2020-05-08T12:22:00-04:00</updated>
-    <id>http://grisha.org/blog/2020/05/08/mini-bigquery-etl-in-python-with-bq-etl</id>
-    <content type="html"><![CDATA[<p>When doing computing that requires data to be local to the machine,
-e.g. model training on a GPU, data may be downloaded from tables in
-BigQuery or similar SQL-centric environments such as Hadoop/Hive. (The
-<a href="https://github.com/grisha/bq_etl">project</a> I describe here is
-BigQuery-specific for now, but the concept applies and can be extended
-to any such tool).</p>
-
-<p>There is always the question of when does one bring data out of
-BigQuery and how much more data transformation is acceptible
-afterwards. I believe that the correct answer is a rather strong
-“none”: all possible data transformation should be done <em>before</em> the
-data leave BigQuery.</p>
-
-<p>Reality is oft otherwise. Once information is downloaded to local
-storage, it is much easier to load up a Pandas dataframe for a quick
-tweak.  Even though the proper fix would be to correct the SQL and run
-it again, it is just too convenient to adjust data locally. Once a
-dataset has been corrected locally, possibly multiple times as part of
-development iteration, it becomes critically important to somehow keep
-track of which files result from which code version. You can hopefully
-see how this is gradually becoming a data nightmare.</p>
-
-<p>Data monkey patching is difficult to track because the place in code
-where it happens usually is not in any way tied to the SQL statement
-for which it is correcting. The SQL defining the original data may be
-in a different code base or in none at all.</p>
-
-<p>Here is my simple solution. It starts with a few requirements:</p>
-
-<blockquote>
-  <ul>
-    <li>Each SQL statement should be in its own .sql file.</li>
-  </ul>
-</blockquote>
-
-<p>This makes it possible to view and edit this code as what it is - SQL,
-not a string in Python code.</p>
-
-<blockquote>
-  <ul>
-    <li>The name and the content of the .sql file should dictate the name
-of the output table.</li>
-  </ul>
-</blockquote>
-
-<p>The simplest way to do this is with a short hash of the contents
-appended to the table name. Once that is true, the .sql file becomes a
-complete description of the output table. If the SQL file is altered,
-it would result in a different table.</p>
-
-<blockquote>
-  <ul>
-    <li>There should be no need to use external tools to keep track of
-the state.</li>
-  </ul>
-</blockquote>
-
-<p>You do not need MLFlow or Redis to know that the SQL has been
-executed - the mere table’s existence in BigQuery is evidence of it.</p>
-
-<blockquote>
-  <ul>
-    <li>The location of  any GCS extracts from this table should uniquely match the table name.</li>
-  </ul>
-</blockquote>
-
-<p>If the blob(s) exist, it means that the extract has been performed.</p>
-
-<blockquote>
-  <ul>
-    <li>The local filename should still depend on the original .sql file.</li>
-  </ul>
-</blockquote>
-
-<p>Which makes it easy to check whether the data has been downloaded to
-local storage.</p>
-
-<p>Note that given the above scheme, if the name or the content of the
-.sql file changes, so does the table name, the GCS extract name and
-the local file name.</p>
-
-<p>Given the above few constraints, we can now answer the questions of
-“Should this SQL be executed or has it already been done?”, “Should
-this table be extracted to GCS?” and “Should this GCS data be
-downloaded?” and optionally forego these steps if they are already
-done.</p>
-
-<blockquote>
-  <ul>
-    <li>The order of execution of .sql files should be inferred from the
-SQL itself.</li>
-  </ul>
-</blockquote>
-
-<p>Last but no the least, if we have multiple SQL statements to be
-executed, what dictates the order of execution? It turns out that SQL
-statements do not need to be executed in any particular order <em>unless</em>
-the output of one is input to another. As I have <a href="http://grisha.org/blog/2016/11/14/table-names-from-sql/">written about before</a>,
-this is best inferred
-from the SQL itself and does not need to be explicitely
-specified.</p>
-
-<p>Last week I put together a simplistic little package that does all of
-the above. See it on Github at <a href="https://github.com/grisha/bq_etl">https://github.com/grisha/bq_etl</a>.</p>
-
-<p>It was written to serve my specific needs and for this reason it is
-very bare-bones, but that’s not to say I’m not open to comments,
-issues and pull requests to make it better!</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Implicit SQL DAG in Maestro]]></title>
-    <link href="http://grisha.org/blog/2019/06/19/sql-dag/"/>
-    <updated>2019-06-19T17:17:00-04:00</updated>
-    <id>http://grisha.org/blog/2019/06/19/sql-dag</id>
-    <content type="html"><![CDATA[<p>Earlier I <a href="http://grisha.org/blog/2019/06/05/maestro-is-open-source/">wrote about Maestro</a>,
-a tool that we recently <a href="https://github.com/voxmedia/maestro/">open-sourced</a>.
-At first glance, Maestro may appear to be yet another data pipeline
-orchestration tool. What sets Maestro apart is that it is confined to
-SQL only.</p>
-
-<p>Maestro leverages the fact that any SQL statement declares its
-prerequisites. In other words a collection of SQL statements already is
-a <em>Directed</em> (and hopefully <em>Acyclic</em>) <em>Graph</em>.</p>
-
-<p>Here is a simple example:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="c1">-- table foo created with</span>
-</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">-- table baz created with</span>
-</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">baz</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Upon examination of above two statements, it is clear that the table
-<code>baz</code> must exist first, then the bottom statement can be executed to
-create the table <code>bar</code> and lastly we can create <code>foo</code> by running the
-first statement. We can picture the above DAG like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-</pre></td><td class="code"><pre><code class="text"><span class="line">  baz &lt;- bar &lt;- foo
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>Here is a slightly more complicated example:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="c1">-- table foo created with</span>
-</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">-- table baz created with</span>
-</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">baz</span>
-</span><span class="line">
-</span><span class="line"><span class="c1">-- table bleh</span>
-</span><span class="line"><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">bar</span> <span class="k">JOIN</span> <span class="n">foo</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>This DAG looks like this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-</pre></td><td class="code"><pre><code class="text"><span class="line">  baz &lt;- bar &lt;- foo
-</span><span class="line">          ^      ^
-</span><span class="line">          |      |
-</span><span class="line">          +------+-- bleh
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>It’s a rather simple idea. The only bit of configuration that Maestro
-has to keep that SQL does not provide is the table name, because <code>foo</code>
-cannot be inferred from <code>SELECT * FROM bar</code>.</p>
-
-<p>Armed with this observation, we can now conceive of a tool which is a
-collection of SQL statements, each having a name. This tool can be
-capable of executing these statements in correct order of dependency
-absent any other configuration. And that’s what Maestro does.</p>
-
-<p>The main worry to be assuaged is that this approach is somehow
-limiting. If our data store is BigQuery, well then SQL is <em>the</em> <em>only</em>
-language it speaks. And if the data does indeed need to be processed
-outside of BigQuery with SciPy or whatever, then there are many ways
-we can invent to accomodate this without having to complicate the
-simplicity of tables defined by SQL only.</p>
-
-<p>Not only is this approach hardly limiting, on the contrary, it is
-quite empowering. To create and schedule a new table in Maestro is a
-matter of a few clicks, there is no coding involved
-(aside from the SQL statement itself, of course).</p>
-
-<p>The design limitation affecting most other pipeline orchestrators is
-the assumption that a data processing task is more than an SQL
-statement. With this caveat in place, the dependency has to be
-specified explicitly. Ironically, the task frequently ends up being just an
-SQL statement, but because of the extra flexibility assumed by the
-tool, it must be wrapped in Python or some other language.</p>
-
-<p>The beauty of Maestro’s DAG is that it is implicit, not explicit.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Maestro the BigQuery Orchestrator]]></title>
-    <link href="http://grisha.org/blog/2019/06/05/maestro-is-open-source/"/>
-    <updated>2019-06-05T15:59:00-04:00</updated>
-    <id>http://grisha.org/blog/2019/06/05/maestro-is-open-source</id>
-    <content type="html"><![CDATA[<p>This blog post is mostly for the Google BigQuery nerds out there.  I
-am delighted to announce that a little project we’ve been hacking on
-for the past two years has been made open source under the Apache 2.0
-license: <a href="https://github.com/voxmedia/maestro">https://github.com/voxmedia/maestro</a>.</p>
-
-<p>Maestro is a trusty tool that imports data from our databases every
-night and runs a bunch of BigQuery SQL to generate summaries,
-analysis, recommendations, etc. If anything goes wrong, it lets us
-know by posting to Slack. It also keeps track of resource utilization
-so we can easily tell what each data transformation is costing
-us. Maestro keeps track of who created which table so that when
-there is a problem, we know whom to ask about it. All SQL changes are
-pushed to Github, so that if anything is broken, it is trivial to
-figure out what may have caused it by looking at the commit history.</p>
-
-<p>Before Maestro we had a bunch of scripts and cron jobs, and we also
-experimented with the multitude of data pipeline tools out there. The
-problem was that adding a new SQL statement always required some form
-of programming. The second problem was the interdependency management,
-i.e. how does one script know that the other thing it relies on is
-finished so it can start. Both problems are typically addressed in
-ways that are error prone and inefficient. Not to mention that each
-job  would be done differently, with varying levels of error
-management and notifications. Maestro solved all that.</p>
-
-<p>We still use scripts and cronjobs, and things like Airflow, and
-probably will be using them forever. But when it comes to periodically
-running some SQL to generate a summary table or importing another
-table from a database, Maestro is clearly the first choice.</p>
-
-<p>Maestro is a web app, though it didn’t start out this way. The first
-version was just a daemon which stored its configuration in
-Postgres. To change anything we would simply INSERT/UPDATE on the
-<code>psql</code> command line. Later we added a crude React UI. The UI leaves a
-lot to be desired, but given that the user base is mostly data
-engineers and data scientists, no one is complaining.</p>
-
-<p>Maestro requires no programming. The dependency graph is inferred by
-examining the SQL, which is how it should be. Everything is in one
-place, all errors and notifications are always consistent.</p>
-
-<p>In addition to having a UI, Maestro also has a
-<a href="https://github.com/voxmedia/maestro/tree/master/pythonlib">Python client library</a>
-making it very easy to integrate with your favorite data science packages.
-Maestro can also export tables as CSV to Google Cloud Storage and
-notify your other apps via HTTP when it is done. It can also export
-tables to Google Sheets for the humans.</p>
-
-<p>Maestro is written in Go. It is trivial to deploy - it is a single
-binary which only requires access to a database to store its
-configuration and state. The binary can be compiled with all web
-assets baked into itself and deployed in a <code>FROM scratch</code>
-Docker container only megabytes in size. Being a Go program also makes
-it quite performant when it comes to transferring data between
-databases and BigQuery.</p>
-
-<p><a href="https://github.com/voxmedia/maestro">Maestro source code</a> is in
-Github and there is quite a bit of documentation in
-<a href="https://godoc.org/github.com/voxmedia/maestro">Maestro godoc</a>, including the
-<a href="https://godoc.org/github.com/voxmedia/maestro#hdr-Getting_Started">getting started</a>
-instructions.</p>
-
-<p>The structure of the source code and the UI implementation follows the
-guidelines I set out in a series of <a href="https://grisha.org/blog/2017/04/27/simplistic-go-web-app/">previous posts</a>
-on building Golang web apps.</p>
-
-<p>Please check it out and let us know via Github issues if you have any
-questions, comments, feature suggestions, etc.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Relative Imports Hack in Golang]]></title>
-    <link href="http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go/"/>
-    <updated>2018-10-18T12:42:00-04:00</updated>
-    <id>http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go</id>
-    <content type="html"><![CDATA[<p>If you have multiple packages in your program’s Go source code, you
-probably have come across a situation where if you create a fork on
-Github or move/rename your top level directory, all your import
-statements need to be adjusted.</p>
-
-<p>There is a simple hack to accomplish relative imports by using the
-<code>vendor</code> directory and symlinks. If you have a package directory
-called <code>mypkg</code>, then the following should work:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>mkdir -p vendor/relative
-</span><span class="line"><span class="nv">$ </span>ln -s ../../mypkg vendor/relative/mypkg
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>And now, your Go code could do this:</p>
-
-<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
-<span class="line-number">2</span>
-<span class="line-number">3</span>
-<span class="line-number">4</span>
-<span class="line-number">5</span>
-<span class="line-number">6</span>
-<span class="line-number">7</span>
-</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">package</span> <span class="nx">main</span>
-</span><span class="line">
-</span><span class="line"><span class="kn">import</span> <span class="p">(</span>
-</span><span class="line">    <span class="s">&quot;fmt&quot;</span>
-</span><span class="line">
-</span><span class="line">    <span class="s">&quot;relative/mypkg&quot;</span>
-</span><span class="line"><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div>
-
-<p>I cannot think of any downsides to this approach, if you know of any,
-please do comment!</p>
-]]></content>
-  </entry>
   
   <entry>
     <title type="html"><![CDATA[Blockchain Proof-of-Work is a Decentralized Clock]]></title>
@@ -5156,6 +4819,618 @@ drawbacks. For example there is no way to read a single series - even
 though the view selects a single array element, under the hood
 Postgres reads the whole row. Given that time series is more write
 intensive and rarely read, this may not be a bad compromise.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Simple Tgres Part II - A High Rate Counter]]></title>
+    <link href="http://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/"/>
+    <updated>2016-12-28T17:06:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter</id>
+    <content type="html"><![CDATA[<p>Continuing on the <a href="http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres/">the previous</a>
+post on simple use of <a href="https://github.com/tgres/tgres">Tgres</a> components, let’s
+try to count something that goes by really fast.</p>
+
+<p>This time let’s start out with creating a memory-based SerDe. This
+means that all our data is in memory and there is no database backing
+our series.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>
+<span class="line-number">22</span>
+<span class="line-number">23</span>
+<span class="line-number">24</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>
+<span class="line-number">27</span>
+<span class="line-number">28</span>
+<span class="line-number">29</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span>
+<span class="line-number">33</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">package</span> <span class="nx">main</span>
+</span><span class="line">
+</span><span class="line"><span class="kn">import</span> <span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;fmt&quot;</span>
+</span><span class="line">    <span class="s">&quot;net/http&quot;</span>
+</span><span class="line">    <span class="s">&quot;time&quot;</span>
+</span><span class="line">
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
+</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/receiver&quot;</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/serde&quot;</span>
+</span><span class="line"><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">step</span> <span class="o">:=</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="c1">// 1 second resolution</span>
+</span><span class="line">    <span class="nx">span</span> <span class="o">:=</span> <span class="mi">600</span> <span class="o">*</span> <span class="nx">step</span>      <span class="c1">// spanning 10 minutes</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">// In-memory SerDe</span>
+</span><span class="line">    <span class="nx">ms</span> <span class="o">:=</span> <span class="nx">serde</span><span class="p">.</span><span class="nx">NewMemSerDe</span><span class="p">()</span>
+</span><span class="line">
+</span><span class="line">    <span class="c1">// Create a receiver of our data points backed by the above</span>
+</span><span class="line">    <span class="c1">// memory SerDe</span>
+</span><span class="line">    <span class="nx">rcvr</span> <span class="o">:=</span> <span class="nx">receiver</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">ms</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">receiver</span><span class="p">.</span><span class="nx">SimpleDSFinder</span><span class="p">{</span><span class="o">&amp;</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DSSpec</span><span class="p">{</span>
+</span><span class="line">        <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
+</span><span class="line">        <span class="nx">RRAs</span><span class="p">:</span> <span class="p">[]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span>
+</span><span class="line">            <span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span><span class="nx">Function</span><span class="p">:</span> <span class="nx">rrd</span><span class="p">.</span><span class="nx">WMEAN</span><span class="p">,</span>
+</span><span class="line">                <span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span>
+</span><span class="line">                <span class="nx">Span</span><span class="p">:</span> <span class="nx">span</span><span class="p">,</span>
+</span><span class="line">            <span class="p">},</span>
+</span><span class="line">        <span class="p">}}})</span>
+</span><span class="line">    <span class="nx">rcvr</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now let’s create a goroutine which creates data points as fast as it
+can, the difference from the previous blog post is that we are using
+QueueGauge(), which is a <em>paced metric</em>, meaning that it flushes to the
+time series only periodically (once per second by default) so as to
+not overwhelm the I/O and or network (even though in this case it doesn’t
+really matter since we’re using a memory-based SerDe anyway).</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span>
+</span><span class="line">    <span class="nx">end</span> <span class="o">:=</span> <span class="nx">start</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="nx">span</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line">    <span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">        <span class="nx">n</span> <span class="o">:=</span> <span class="mi">0</span>
+</span><span class="line">        <span class="k">for</span> <span class="nx">t</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">();</span> <span class="nx">t</span><span class="p">.</span><span class="nx">Before</span><span class="p">(</span><span class="nx">end</span><span class="p">);</span> <span class="nx">t</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">()</span> <span class="p">{</span>
+</span><span class="line">            <span class="nx">rcvr</span><span class="p">.</span><span class="nx">QueueGauge</span><span class="p">(</span><span class="nx">serde</span><span class="p">.</span><span class="nx">Ident</span><span class="p">{</span><span class="s">&quot;name&quot;</span><span class="p">:</span><span class="s">&quot;foo.bar&quot;</span><span class="p">},</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Sub</span><span class="p">(</span><span class="nx">start</span><span class="p">)).</span><span class="nx">Seconds</span><span class="p">())</span>
+</span><span class="line">            <span class="nx">n</span><span class="o">++</span>
+</span><span class="line">        <span class="p">}</span>
+</span><span class="line">    <span class="p">}()</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And finally, as before, we need to hook up a couple of http handlers:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line">    <span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcher</span><span class="p">(</span><span class="nx">ms</span><span class="p">.</span><span class="nx">Fetcher</span><span class="p">())</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
+</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
+</span><span class="line">
+</span><span class="line">    <span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
+</span><span class="line">    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
+</span><span class="line">    <span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="nx">listenSpec</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="p">}</span> <span class="c1">// end of main()</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now if we run the above code with something like
+<code>go run simpletgres.go</code>, we’ll notice that unlike with the previous
+example, the web server starts right away, and the data points are
+being written while the server is running. If we aim Grafana at it,
+we should be able to see the chart update in real time.</p>
+
+<p>After a couple of minutes, mine looks like this:</p>
+
+<p><img src="http://grisha.org/images/simple-tgres01.png" /></p>
+
+<p>So my macbook can crank these out at about 2.5 million per second.</p>
+
+<p>In my experience instrumenting my apps with simple counters like this
+and having them available directly from the app without having to send
+them to a separate statsd server somewhere has been extremely useful in
+helping understand performance and other issues.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Why is there no Formal Definition of Time Series?]]></title>
+    <link href="http://grisha.org/blog/2016/12/23/time-series-what-is-it/"/>
+    <updated>2016-12-23T09:13:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/12/23/time-series-what-is-it</id>
+    <content type="html"><![CDATA[<p>If you’re reading this, chances are you may have searched for
+definition of “Time Series”. And, like me, you were probably
+disappointed by what you’ve found.</p>
+
+<p>The most popular “definition” I come across amongst our fellow
+programmer folk is that it’s “data points with timestamps”. Or something
+like that. And you can make charts from it. And that’s about it, alas.</p>
+
+<p>The word <em>time</em> suggests that is has something to do with time. At
+first it seems reasonable, I bite. The word <em>series</em> is a little more
+peculiar. A mathematician would argue that a series is a <a href="https://en.wikipedia.org/wiki/Series_(mathematics)"><em>sum</em> of a sequence</a>.
+Most people though think “series” and “sequence” are the
+same thing, and that’s fine. But it’s a clue that <em>time series</em> is
+not a scientific term, because it would have been called
+<em>time sequence</em> most likely.</p>
+
+<p>Lets get back to the time aspect of it. Why do data points need
+timestamps? Or do they? Isn’t it the time <em>interval</em> between points
+that is most essential, rather than the absolute time? And if the data
+points are spaced equally (which conforms to the most common definiton
+of time series), then what purpose would <em>any</em> time-related
+information attached to a data point serve?</p>
+
+<p>To understand this better, picture a time chart. Of anything -
+temperature, price of bitcoin over a week, whatever. Now think - does
+the absolute time of every point provide any useful information to
+you? Does the essential meaning of the chart change depending on
+whether it shows the price of bitcoin in the year 2016 or 2098 or
+10923?</p>
+
+<p>Doesn’t it seem like “time” in “time series” is a bit of a red
+herring?</p>
+
+<p>Here is another example. Let’s say I decide to travel from
+San-Francisco to New York taking measurements of elevation above the
+sea level at every mile. I then plot that sequence on a chart where
+x-axis is distance traveled and y-axis is elevation. You would agree
+that this chart is not a “time series” by any stretch, right? But then
+if I renamed x-axis to “time traveled” (let’s assume I moved at
+constant speed), the chart wouldn’t change at all, but now it’s okay
+to call it “time series”?</p>
+
+<p>So it’s no surprise that there is no formal definition of “time
+series”.  In the end a “time series” is just a <em>sequence</em>. There are
+no timestamps required and there is nothing at all special regarding a
+dimension being time as opposed to any other unit, which is why there
+is no mathematical definition of “time series”. Time series is a
+colloquial term etymological origins of which are not known to me, but
+it’s not a thing from a scientific perspective, I’m afraid.</p>
+
+<p>Next time you hear “time series” just substitute it with “sequence” and
+see how much sense that makes. For example a “time series database” is
+a “sequence database”, i.e. database optimized for sequences. Aren’t
+all relational databases optimized for sequences?</p>
+
+<p>Something to think about over the holidays…</p>
+
+<p>Edit: Someone brought up the subject of <a href="https://en.wikipedia.org/wiki/Unevenly_spaced_time_series"><em>unevenly-spaced time series</em></a>.
+All series are evenly spaced given proper resolution. An
+unevenly-spaced time series with timestamps accurate to 1 millisecond
+is a sparse evenly-spaced series with a 1 millisecond resolution.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Simple Time Series App with Tgres]]></title>
+    <link href="http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres/"/>
+    <updated>2016-12-21T19:55:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/12/21/simple-time-series-app-with-tgres</id>
+    <content type="html"><![CDATA[<p>Did you know you can use <a href="https://github.com/tgres/tgres">Tgres</a> components
+in your code without PostgreSQL, and in
+just a dozen lines of code instrument your program with a time
+series. This example shows a complete server emulating Graphite API
+which you can use with <a href="http://grafana.org/">Grafana</a> (or any other tool).</p>
+
+<p>In this example we will be using three Tgres packages like so (in addition to
+a few standard ones, I’m skipping them here for brevity - complete source code <a href="https://gist.github.com/grisha/9561e7837cff1340b218054f36430187">gist</a>):</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">import</span> <span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/dsl&quot;</span>
+</span><span class="line">    <span class="nx">h</span> <span class="s">&quot;github.com/tgres/tgres/http&quot;</span>
+</span><span class="line">    <span class="s">&quot;github.com/tgres/tgres/rrd&quot;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>First we need a <a href="https://godoc.org/github.com/tgres/tgres/rrd#DataSource">Data Source</a>.
+This will create a Data Source containing one Round Robin Archive with a 10 second resolution
+spanning 1000 seconds.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">step</span> <span class="o">:=</span> <span class="mi">10</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span>
+</span><span class="line"><span class="nx">span</span> <span class="o">:=</span> <span class="mi">100</span> <span class="o">*</span> <span class="nx">step</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">ds</span> <span class="o">:=</span> <span class="nx">rrd</span><span class="p">.</span><span class="nx">NewDataSource</span><span class="p">(</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DSSpec</span><span class="p">{</span>
+</span><span class="line">    <span class="nx">Step</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">,</span>
+</span><span class="line">    <span class="nx">RRAs</span><span class="p">:</span> <span class="p">[]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span>
+</span><span class="line">        <span class="nx">rrd</span><span class="p">.</span><span class="nx">RRASpec</span><span class="p">{</span><span class="nx">Step</span><span class="p">:</span> <span class="nx">step</span><span class="p">,</span> <span class="nx">Span</span><span class="p">:</span> <span class="nx">span</span><span class="p">},</span>
+</span><span class="line">    <span class="p">},</span>
+</span><span class="line"><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let’s shove a bunch of data points into it. To make it look extra
+nice, we can make these points look like a sinusoid with this little
+function:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kd">func</span> <span class="nx">sinTime</span><span class="p">(</span><span class="nx">t</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="p">,</span> <span class="nx">span</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span> <span class="kt">float64</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">x</span> <span class="o">:=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nx">math</span><span class="p">.</span><span class="nx">Pi</span> <span class="o">/</span> <span class="nx">span</span><span class="p">.</span><span class="nx">Seconds</span><span class="p">()</span> <span class="o">*</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">t</span><span class="p">.</span><span class="nx">Unix</span><span class="p">()</span><span class="o">%</span><span class="p">(</span><span class="nx">span</span><span class="p">.</span><span class="nx">Nanoseconds</span><span class="p">()</span><span class="o">/</span><span class="mf">1e9</span><span class="p">))</span>
+</span><span class="line">    <span class="k">return</span> <span class="nx">math</span><span class="p">.</span><span class="nx">Sin</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And now for the actual population of the series:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Now</span><span class="p">().</span><span class="nx">Add</span><span class="p">(</span><span class="o">-</span><span class="nx">span</span><span class="p">)</span>
+</span><span class="line">
+</span><span class="line"><span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="nx">span</span><span class="o">/</span><span class="nx">step</span><span class="p">);</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span><span class="line">    <span class="nx">t</span> <span class="o">:=</span> <span class="nx">start</span><span class="p">.</span><span class="nx">Add</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span> <span class="o">*</span> <span class="nx">step</span><span class="p">)</span>
+</span><span class="line">    <span class="nx">ds</span><span class="p">.</span><span class="nx">ProcessDataPoint</span><span class="p">(</span><span class="nx">sinTime</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span> <span class="nx">span</span><span class="p">),</span> <span class="nx">t</span><span class="p">)</span>
+</span><span class="line"><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We will also need to create a <a href="https://godoc.org/github.com/tgres/tgres/dsl#NamedDSFetcher">NamedDSFetcher</a>,
+the structure which knows how to search dot-separated series names a la Graphite.</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">db</span> <span class="o">:=</span> <span class="nx">dsl</span><span class="p">.</span><span class="nx">NewNamedDSFetcherMap</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">rrd</span><span class="p">.</span><span class="nx">DataSourcer</span><span class="p">{</span><span class="s">&quot;foo.bar&quot;</span><span class="p">:</span> <span class="nx">ds</span><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Finally, we need to create two http handlers which will mimic a
+Graphite server and start listening for requests:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/metrics/find&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteMetricsFindHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
+</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">HandleFunc</span><span class="p">(</span><span class="s">&quot;/render&quot;</span><span class="p">,</span> <span class="nx">h</span><span class="p">.</span><span class="nx">GraphiteRenderHandler</span><span class="p">(</span><span class="nx">db</span><span class="p">))</span>
+</span><span class="line">
+</span><span class="line"><span class="nx">listenSpec</span> <span class="o">:=</span> <span class="s">&quot;:8088&quot;</span>
+</span><span class="line"><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;Waiting for requests on %s\n&quot;</span><span class="p">,</span> <span class="nx">listenSpec</span><span class="p">)</span>
+</span><span class="line"><span class="nx">http</span><span class="p">.</span><span class="nx">ListenAndServe</span><span class="p">(</span><span class="nx">listenSpec</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now if you point Grafana at it, it will happily think it’s Graphite
+and should show you a chart like this:</p>
+
+<p><img src="http://grisha.org/images/simple-tgres00.png" /></p>
+
+<p>Note that you can use all kinds of Graphite functions at this point -
+it all “just works”.</p>
+
+<p>Enjoy!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Storing Time Series in PostgreSQL (Continued)]]></title>
+    <link href="http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/"/>
+    <updated>2016-12-16T19:35:00-05:00</updated>
+    <id>http://grisha.org/blog/2016/12/16/storing-time-series-in-postgresql-part-ii</id>
+    <content type="html"><![CDATA[<p>Edit: there is now a <a href="http://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write">part iii</a> in this series of articles.</p>
+
+<p>I have <a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previously written</a> how
+time series can be stored in PostgreSQL efficiently using <a href="https://www.postgresql.org/docs/current/static/arrays.html">arrays</a>.</p>
+
+<p>As a continuation of that article, I shall attempt to describe in detail the inner workings of an
+<a href="https://en.wikipedia.org/wiki/View_(SQL)">SQL view</a> that <a href="https://github.com/tgres/tgres">Tgres</a> uses to
+make an array of numbers appear as a regular table
+(<a href="https://github.com/tgres/tgres/blob/bc718e3999650b7aab934517179ea47632530d28/serde/postgres.go#L235-L242">link to code</a>).</p>
+
+<p>In short, I will explain how incomprehensible data like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">rra_id</span> <span class="o">|</span> <span class="n">n</span> <span class="o">|</span>           <span class="n">dp</span>
+</span><span class="line"><span class="c1">--------+---+------------------------</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">0</span> <span class="o">|</span> <span class="err">{</span><span class="mi">64</span><span class="p">,</span><span class="mi">67</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">71</span><span class="p">,</span><span class="mi">72</span><span class="p">,</span><span class="mi">69</span><span class="p">,</span><span class="mi">67</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">1</span> <span class="o">|</span> <span class="err">{</span><span class="mi">65</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">58</span><span class="p">,</span><span class="mi">59</span><span class="p">,</span><span class="mi">62</span><span class="p">,</span><span class="mi">68</span><span class="p">,</span><span class="mi">70</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2</span> <span class="o">|</span> <span class="err">{</span><span class="mi">71</span><span class="p">,</span><span class="mi">72</span><span class="p">,</span><span class="mi">77</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">71</span><span class="p">,</span><span class="mi">73</span><span class="p">,</span><span class="mi">75</span><span class="err">}</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">3</span> <span class="o">|</span> <span class="err">{</span><span class="mi">79</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">69</span><span class="p">,</span><span class="mi">75</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">81</span><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>… can be transformed in an SQL view to appear as so:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">select</span> <span class="o">*</span> <span class="k">from</span> <span class="n">tv</span> <span class="k">order</span> <span class="k">by</span> <span class="n">t</span><span class="p">;</span>
+</span><span class="line"> <span class="n">rra_id</span> <span class="o">|</span>           <span class="n">t</span>            <span class="o">|</span> <span class="n">r</span>
+</span><span class="line"><span class="c1">--------+------------------------+----</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">06</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">64</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">07</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">67</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">08</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">70</span>
+</span><span class="line">      <span class="mi">1</span> <span class="o">|</span> <span class="mi">2008</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">09</span> <span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span><span class="o">+</span><span class="mi">00</span> <span class="o">|</span> <span class="mi">71</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>This write up will make a lot more sense if you read the
+<a href="http://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">previous post</a> first.
+To recap, Tgres stores series in an array broken up over multiple
+table rows each containing an array representing a segment of the
+series. The series array is a round-robin structure, which means
+that it occupies a fixed amount of space and we do not need to worry
+about expiring data points: the round-robin nature of the array
+takes care of it by overwriting old data with new on assignment.</p>
+
+<p>An additional benefit of such a fixed interval round-robin structure
+is that we do not need to store timestamps for every data point. If we
+know the timestamp of the latest entry along with the series step and size,
+we can extrapolate the timestamp of any point in the series.</p>
+
+<p>Tgres creates an SQL view which takes care of this extrapolation and
+makes this data easy to query. Tgres actually uses this view as its
+only source of time series information when reading from the database
+thus delegating all the processing to the database server, where it is
+close to the data and most efficient.</p>
+
+<p>If you would like to follow along on the Postgres command line, feel
+free to create and populate the tables with the following SQL, which
+is nearly identical to the schema used by Tgres:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span>
+<span class="line-number">10</span>
+<span class="line-number">11</span>
+<span class="line-number">12</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">rra</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">id</span> <span class="nb">SERIAL</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+</span><span class="line">  <span class="n">step_s</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">steps_per_row</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="k">size</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">width</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">latest</span> <span class="n">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">ts</span> <span class="p">(</span>
+</span><span class="line">  <span class="n">rra_id</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">n</span> <span class="nb">INT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class="line">  <span class="n">dp</span> <span class="n">DOUBLE</span> <span class="k">PRECISION</span><span class="p">[]</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">DEFAULT</span> <span class="s1">&#39;{}&#39;</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">rra</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="s1">&#39;2008-04-02 00:00:00-00&#39;</span><span class="p">);</span>
+</span><span class="line">
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;{64,67,70,71,72,69,67}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;{65,60,58,59,62,68,70}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;{71,72,77,70,71,73,75}&#39;</span><span class="p">);</span>
+</span><span class="line"><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ts</span> <span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;{79,82,90,69,75,80,81}&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And finally create the view:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+<span class="line-number">7</span>
+<span class="line-number">8</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">tv</span> <span class="k">AS</span>
+</span><span class="line">  <span class="k">SELECT</span> <span class="n">rra</span><span class="p">.</span><span class="n">id</span> <span class="n">rra_id</span><span class="p">,</span>
+</span><span class="line">         <span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">           <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">           <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">,</span>
+</span><span class="line">         <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span>
+</span><span class="line">    <span class="k">FROM</span> <span class="n">rra</span>
+</span><span class="line">   <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">ts</span> <span class="n">ts</span> <span class="k">ON</span> <span class="n">ts</span><span class="p">.</span><span class="n">rra_id</span> <span class="o">=</span> <span class="n">rra</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Now give it a whirl with a <code>SELECT * FROM tv ORDER BY t</code>. Impressive? So how does it work?</p>
+
+<p>First let’s go over the columns of the rra table.</p>
+
+<ul>
+  <li><code>step_s</code>: the minimal unit of time expressed in seconds (60 or 1 minute in the above data).</li>
+  <li><code>steps_per_row</code>: the number of the <code>step_s</code> intervals in one slot of our time series.
+ In our example it is 1440, which is the number of minutes in a day, thus making our time series
+ resolution <em>one day</em>.</li>
+  <li><code>size</code>: number of slots in the series. Ours is 28, i.e. four weeks.</li>
+  <li><code>width</code>: size of a segment which will be stored in a single row, which in our case
+ is 7 (one week).</li>
+  <li><code>latest</code>: the timestamp of the last data point in the series.</li>
+</ul>
+
+<p>Next, let’s look at the <code>UNNEST</code> keyword in the SQL of the view. <code>UNNEST</code> takes an array and turns it into row, e.g.:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">SELECT</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span> <span class="k">FROM</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">r</span>
+</span><span class="line"><span class="c1">----</span>
+</span><span class="line"> <span class="mi">64</span>
+</span><span class="line"> <span class="mi">67</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p><code>UNNEST</code> works in conjunction with the <code>generate_subscripts</code>
+PostgreSQL function which generates index values:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span>
+<span class="line-number">6</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="o">=&gt;</span> <span class="k">SELECT</span> <span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="n">i</span><span class="p">,</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">r</span> <span class="k">FROM</span> <span class="n">ts</span><span class="p">;</span>
+</span><span class="line"> <span class="n">i</span> <span class="o">|</span> <span class="n">r</span>
+</span><span class="line"><span class="c1">---+----</span>
+</span><span class="line"> <span class="mi">1</span> <span class="o">|</span> <span class="mi">64</span>
+</span><span class="line"> <span class="mi">2</span> <span class="o">|</span> <span class="mi">67</span>
+</span><span class="line"><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Let us now zoom in on the very long expression in the view, here it is again:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">  <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>A perhaps not immediately apparent trick to how all this works is that all
+our series are aligned
+on the <a href="https://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a>.
+This means that at UNIX time 0, any series’ slot index is 0. From then on it
+increments sequentially until the series size is reached, at which point
+it wraps-around to 0 (thus “round-robin”). Armed with this information we
+can calculate the index for any point in time.</p>
+
+<p>The formula for calculating the index <code>i</code> for a given time <code>t</code> is:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">i</span> <span class="o">=</span> <span class="n">t</span><span class="o">/</span><span class="n">step</span> <span class="o">%</span> <span class="n">size</span><span class="o">.</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>We need time to be expressed as a UNIX time which is done
+with <code>EXTRACT(EPOCH FROM rra.latest)::BIGINT</code>. Now you should recognize
+the above formula in the more verbose expression</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>where <code>rra.step_s * rra.steps_per_row</code> is the size of our series in seconds.</p>
+
+<p>Next, we need to compute the <em>distance</em> between the current slot and the
+last slot (for which we know the timestamp). I.e. if the last slot is <code>i</code> and the slot we need the
+timestamp for is <code>j</code>, the distance between them is <code>i-j</code>, but with a
+caveat: it is possible for <code>j</code> to be greater than <code>i</code> if the series
+wraps around, in which case the distance is the sum of the distance from
+<code>j</code> to the end of the series and the distance from the beginning to
+<code>i</code>. If you ponder over it with a pencil and paper long enough, you
+will arrive at the following formula for distance between two slots
+<code>i</code> and <code>j</code> in a wrap-around array:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+</pre></td><td class="code"><pre><code class="python"><span class="line"><span class="n">distance</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="n">j</span><span class="p">)</span> <span class="o">%</span> <span class="n">size</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Another thing to consider is that we’re splitting our series across
+multiple rows, thus the actual index of any point is the subscript
+into the current segment plus the index of the segment itself (the <code>n</code>
+column) multiplied by the <code>wdith</code> of the segment: <code>generate_subscripts(dp,1) + n * width</code>.</p>
+
+<p>Which pieced together in SQL now looks like this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>Astute readers should notice an unexplained <code>+ 1</code>. This is because
+PostgreSQL arrays are 1-based.</p>
+
+<p>Now we need to convert the distance expressed in array slots into
+a time interval, which we do by multiplying it by
+<code>INTERVAL '1 SECOND' * rra.step_s * rra.steps_per_row</code>.</p>
+
+<p>And finally, we need to subtract the above time interval from the
+latest stamp which yields (ta-da!) the timestamp of the current slot:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+<span class="line-number">3</span>
+</pre></td><td class="code"><pre><code class="sql"><span class="line"><span class="n">latest</span> <span class="o">-</span> <span class="nb">INTERVAL</span> <span class="s1">&#39;1 SECOND&#39;</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span> <span class="o">*</span>
+</span><span class="line">  <span class="k">MOD</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="k">size</span> <span class="o">+</span> <span class="k">MOD</span><span class="p">(</span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span> <span class="k">FROM</span> <span class="n">rra</span><span class="p">.</span><span class="n">latest</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="o">/</span><span class="p">(</span><span class="n">rra</span><span class="p">.</span><span class="n">step_s</span> <span class="o">*</span> <span class="n">rra</span><span class="p">.</span><span class="n">steps_per_row</span><span class="p">),</span> <span class="k">size</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class="line">  <span class="o">-</span> <span class="p">(</span><span class="n">generate_subscripts</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">width</span><span class="p">),</span> <span class="n">rra</span><span class="p">.</span><span class="k">size</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>That’s it! And even though this may look complicated, from the
+computational view point it is very efficient, and PostgreSQL can
+handle it easily.</p>
+
+<p>As an exercise, try setting <code>latest</code> to various timestamps and observe
+how it affects the output of the view and see if you can explain how
+and why it happens.</p>
 ]]></content>
   </entry>
   
