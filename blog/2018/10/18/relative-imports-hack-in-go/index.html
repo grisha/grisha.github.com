@@ -5,13 +5,13 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Avro performance - Gregory Trubetskoy</title>
+  <title>Relative Imports Hack in Golang - Gregory Trubetskoy</title>
   <meta name="author" content="Gregory Trubetskoy">
 
   
-  <meta name="description" content="Here are some un-scientific results on how Avro performs with various
-codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
-was done &hellip;">
+  <meta name="description" content="If you have multiple packages in your program’s Go source code, you
+probably have come across a situation where if you create a fork on
+Github or &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +20,7 @@ was done &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://grisha.org/blog/2013/06/11/avro-performance">
+  <link rel="canonical" href="http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Gregory Trubetskoy" type="application/atom+xml">
@@ -99,7 +99,7 @@ was done &hellip;">
   
   <header>
     
-      <h1 class="entry-title">Avro Performance</h1>
+      <h1 class="entry-title">Relative Imports Hack in Golang</h1>
     
     
       <p class="meta">
@@ -115,7 +115,7 @@ was done &hellip;">
   
 
 
-<time datetime="2013-06-11T00:17:00-04:00" pubdate data-updated="true">Jun 11<span>th</span>, 2013</time>
+<time datetime="2018-10-18T12:42:00-04:00" pubdate data-updated="true">Oct 18<span>th</span>, 2018</time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -124,29 +124,41 @@ was done &hellip;">
   </header>
 
 
-<div class="entry-content"><p>Here are some un-scientific results on how Avro performs with various
-codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
-was done using a 100 million row table that was generated using random
-two strings and an integer.</p>
+<div class="entry-content"><p>If you have multiple packages in your program’s Go source code, you
+probably have come across a situation where if you create a fork on
+Github or move/rename your top level directory, all your import
+statements need to be adjusted.</p>
 
-<div class="bogus-wrapper"><notextile><figure class="code"><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<p>There is a simple hack to accomplish relative imports by using the
+<code>vendor</code> directory and symlinks. If you have a package directory
+called <code>mypkg</code>, then the following should work:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
+<span class="line-number">2</span>
+</pre></td><td class="code"><pre><code class="sh"><span class="line"><span class="nv">$ </span>mkdir -p vendor/relative
+</span><span class="line"><span class="nv">$ </span>ln -s ../../mypkg vendor/relative/mypkg
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+<p>And now, your Go code could do this:</p>
+
+<div class="bogus-wrapper"><notextile><figure class="code"> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class="line-number">1</span>
 <span class="line-number">2</span>
 <span class="line-number">3</span>
 <span class="line-number">4</span>
 <span class="line-number">5</span>
 <span class="line-number">6</span>
 <span class="line-number">7</span>
-<span class="line-number">8</span>
-</pre></td><td class="code"><pre><code class=""><span class="line">| Format    | Codec          | Data Size     | Hive count(1) time | Impala count(1) time
-</span><span class="line">|-----------|----------------|---------------|--------------------|----------------------
-</span><span class="line">| JSON      | null           | 686,769,821   | not tested         | N/A                  
-</span><span class="line">| JSON      | LZO            | 285,558,314   | 79s                | N/A                  
-</span><span class="line">| JSON      | Deflate (gzip) | 175,878,038   | not tested         | N/A                  
-</span><span class="line">| Avro      | null           | 301,710,126   | 40s                | .4s                  
-</span><span class="line">| Avro      | Snappy         | 260,450,980   | 38s                | .9s                  
-</span><span class="line">| Avro      | Deflate (gzip) | 156,550,144   | 64s                | 2.8s                 </span></code></pre></td></tr></table></div></figure></notextile></div>
+</pre></td><td class="code"><pre><code class="go"><span class="line"><span class="kn">package</span> <span class="nx">main</span>
+</span><span class="line">
+</span><span class="line"><span class="kn">import</span> <span class="p">(</span>
+</span><span class="line">    <span class="s">&quot;fmt&quot;</span>
+</span><span class="line">
+</span><span class="line">    <span class="s">&quot;relative/mypkg&quot;</span>
+</span><span class="line"><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
-<p>So the winner appears to be Avro/Snappy or uncompressed Avro.</p>
+<p>I cannot think of any downsides to this approach, if you know of any,
+please do comment!</p>
 </div>
 
 
@@ -169,7 +181,7 @@ two strings and an integer.</p>
   
 
 
-<time datetime="2013-06-11T00:17:00-04:00" pubdate data-updated="true">Jun 11<span>th</span>, 2013</time>
+<time datetime="2018-10-18T12:42:00-04:00" pubdate data-updated="true">Oct 18<span>th</span>, 2018</time>
       
 
 
@@ -177,7 +189,7 @@ two strings and an integer.</p>
     
       <div class="sharing">
   
-  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2013/06/11/avro-performance/" data-via="humblehack" data-counturl="http://grisha.org/blog/2013/06/11/avro-performance/" >Tweet</a>
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go/" data-via="humblehack" data-counturl="http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go/" >Tweet</a>
   
   
   
@@ -186,10 +198,8 @@ two strings and an integer.</p>
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2013/06/06/avro/" title="Previous Post: Apache Avro">&laquo; Apache Avro</a>
+        <a class="basic-alignment left" href="/blog/2018/01/23/explaining-proof-of-work/" title="Previous Post: Blockchain Proof-of-Work is a Decentralized Clock">&laquo; Blockchain Proof-of-Work is a Decentralized Clock</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2013/06/21/on-converting-json-to-avro/" title="Next Post: json2avro">json2avro &raquo;</a>
       
     </p>
   </footer>
@@ -285,8 +295,8 @@ two strings and an integer.</p>
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://grisha.org/blog/2013/06/11/avro-performance/';
-        var disqus_url = 'http://grisha.org/blog/2013/06/11/avro-performance/';
+        var disqus_identifier = 'http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go/';
+        var disqus_url = 'http://grisha.org/blog/2018/10/18/relative-imports-hack-in-go/';
         var disqus_script = 'embed.js';
       
     (function () {
