@@ -4,7 +4,7 @@ title: "Relative Imports Hack in Golang"
 date: 2018-10-18 12:42
 comments: true
 categories:
-published: false
+published: true
 ---
 
 If you have multiple packages in your program's Go source code, you
