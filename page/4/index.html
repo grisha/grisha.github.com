@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Gregory Trubetskoy</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="Notes to self." />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.146.0 with theme even" />
+
+
+<link rel="canonical" href="https://grisha.org/" />
+  <link href="https://grisha.org/atom.xml" rel="alternate" type="application/rss+xml" title="Gregory Trubetskoy" />
+  <link href="https://grisha.org/atom.xml" rel="feed" type="application/rss+xml" title="Gregory Trubetskoy" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:url" content="https://grisha.org/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Gregory Trubetskoy">
+  <meta property="og:description" content="Notes to self.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Gregory Trubetskoy">
+  <meta itemprop="description" content="Notes to self.">
+  <meta itemprop="datePublished" content="2020-05-08T12:22:00+00:00">
+  <meta itemprop="dateModified" content="2020-05-08T12:22:00+00:00">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Gregory Trubetskoy">
+  <meta name="twitter:description" content="Notes to self.">
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Gregory Trubetskoy</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/posts/">
+        <li class="mobile-menu-item">Archives</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">Gregory Trubetskoy</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/posts/">Archives</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2015/05/04/recording-time-series/">Time Series Accuracy - Graphite vs RRDTool</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2015-05-04 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn&rsquo;t try this with Graphite. In this write up I try
+to explain why it is so by comparing the method of recording time series
+used by
+<a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
+with the one used by <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a>.</p>
+<p>Graphite uses
+<a href="http://graphite.wikidot.com/whisper">Whisper</a> to store data, which in
+the FAQ is portrayed as a <a href="http://graphite.wikidot.com/whisper#toc1">better alternative</a> to RRDTool, but
+this is potentially misleading, because the flexibility afforded by the
+design of Whisper comes at the price of inaccuracy.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2015/05/04/recording-time-series/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2015/03/28/on-time-series/">On Time Series</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2015-03-28 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <h2 id="is-it-even-a-thing">Is it even a thing?</h2>
+<p>Time Series is on its way to becoming a buzzword in the Information
+Technology circles. This has to do with the looming Internet of Things
+which shall cause the Great Reversal of Internet whereby upstream flow
+of data produced by said Things is expected to exceed the downstream
+flow. Much of this data is expected to be of the Time Series kind.</p>
+<p>This, of course, is a money-making opportunity of the Big Data
+proportions all over again, and I predict we&rsquo;re going to see a lot of
+Time Series support of various shapes and forms appearing in all
+manners of (mostly commercial) software.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2015/03/28/on-time-series/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2015/03/20/influxdb-data/">How InfluxDB Stores Data</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2015-03-20 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>A nice, reliable, horizontally scalable database that is designed
+specifically to tackle the problem of Time Series data (and does not
+require you to stand up a Hadoop cluster) is very much missing from the
+Open Source Universe right now.</p>
+<p><a href="https://github.com/influxdb/influxdb">InfluxDB</a> might be able to fill this gap, it certainly aims to.</p>
+<p>I was curious about how it structures and stores data and since there
+wasn&rsquo;t much documentation on the subject and I ended up just reading
+the code, I figured I&rsquo;d write this up. I only looked at the new
+(currently 0.9.0 in RC stage) version, the previous versions are
+significantly different.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2015/03/20/influxdb-data/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/">Ruby, HiveServer2 and Kerberos</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2014-08-19 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Recently I found myself needing to connect to HiveServer2 with
+Kerberos authentication enabled from a Ruby app. As it turned out
+<a href="https://github.com/forward3d/rbhive">rbhive gem</a> we were using did not have
+support for Kerberos authentication. So I had to
+<a href="https://github.com/forward3d/rbhive/pull/23">roll my own</a>.</p>
+<p>This post is to document the experience of figuring out the details of
+a SASL/GSSAPI connection before it is lost forever in my neurons and synapses.</p>
+<p>First, the terminology. The authentication system that Hadoop uses is
+<em>Kerberos</em>. Note that <a href="http://www.ietf.org/rfc/rfc4120.txt">Kerberos</a> is not a
+network protocol. It describes the method by which
+authentication happens, but not the format of how to send Kerberos
+tickets and what not over the wire. For that, you need <em>SASL</em> and
+<em>GSSAPI</em>.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2014/08/19/ruby_hiveserver2_and_kerberos/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2014/06/03/graceful-restart-in-golang/">Graceful restart in Golang</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2014-06-03 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
+on occasion to upgrade the binary or change some configuration. And if
+you (like me) have been taking graceful restart for granted because
+the webserver took care of it, you may find this recipe very handy
+because with Golang you need to roll your own.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2014/06/03/graceful-restart-in-golang/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/11/07/mod-python-performance-revisited/">mod_python performance part 2: high(er) concurrency</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-11-07 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <h3 id="tldr">Tl;dr</h3>
+<p>As is evident from the table below, mod_python <a href="https://github.com/grisha/mod_python/tree/3.5.x">3.5</a>
+(in pre-release testing as of this writing) is currently the fastest tool when it
+comes to running Python in your web server, and second-fastest as a
+WSGI container.</p>
+<table border="1">
+  <tr>
+    <th>Server</th>
+    <th>Version</th>
+    <th>Req/s</th>
+    <th>% of httpd static</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <th><a href="https://bitbucket.org/yarosla/nxweb/wiki/Benchmarks">nxweb</a> static file</th>
+    <td>3.2.0-dev</td>
+    <td>512,767</td>
+    <td> 347.1 % </td>
+    <td>"memcache":false. (626,270 if true)</td>
+  </tr>
+  <tr>
+    <th><a href="http://nginx.com/">nginx</a> static file</th>
+    <td>1.0.15</td>
+    <td>430,135</td>
+    <td> 291.1 %</td>
+    <td>stock CentOS 6.3 rpm</td>
+  </tr>
+  <tr>
+    <th><a href="http://httpd.apache.org/">httpd</a> static file</th>
+    <td>2.4.4, mpm_event</td>
+    <td>147,746</td>
+    <td> 100.0 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>mod_python <a href="http://modpython.org/live/current/doc-html/pythonapi.html#overview-of-a-request-handler">handler</a></th>
+    <td>3.5, Python 2.7.5</td>
+    <td>125,139</td>
+    <td> 84.7 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th><a href="https://uwsgi-docs.readthedocs.org/en/latest/">uWSGI</a></th>
+    <td>1.9.18.2</td>
+    <td>119,175</td>
+    <td> 80.7 % </td>
+    <td>-p 16 --threads 1</td>
+  </tr>
+  <tr>
+    <th>mod_python <a href="http://modpython.org/live/current/doc-html/handlers.html#wsgi-handler">wsgi</a></th>
+    <td>3.5, Python 2.7.5</td>
+    <td>87,304</td>
+    <td> 59.1 % </td>
+    <td></td>
+  </tr>
+  <tr>
+    <th><a href="http://code.google.com/p/modwsgi/">mod_wsgi</a></th>
+    <td>3.4</td>
+    <td>76,251</td>
+    <td> 51.6 % </td>
+    <td>embedded mode</td>
+  </tr>
+  <tr>
+    <th>nxweb wsgi</th>
+    <td>3.2.0-dev, Python 2.7.5</td>
+    <td>15,141</td>
+    <td> 10.2 % </td>
+    <td>posibly misconfigured?</td>
+  </tr>
+</table>
+<h2 id="the-point-of-this-test">The point of this test</h2>
+<p>I wanted to see how mod_python compares to other tools of similar
+purpose on high-end hardware and with relatively high concurrency. As
+I&rsquo;ve <a href="http://grisha.org/blog/2013/10/10/mod-python-performance/">written before</a>
+you&rsquo;d be foolish to base your platform decision on these numbers
+because speed in this case matters very little. So the point of this
+is just make sure that mod_python is in the ballpark with the rest and
+that there isn&rsquo;t anything seriously wrong with it. And surprisingly,
+mod_python is actually pretty fast, <em>fastest</em>, even, though in its own
+category (a raw mod_python handler).</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/11/07/mod-python-performance-revisited/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/">Separate Request and Response or a single Request object?</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-10-30 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Are you in favor of a single request object, or two separate objects:
+request and response?  Could it be that the two options are not
+contradictory or even mutually exclusive?</p>
+<p>I thouhgt I always was in favor of a single request object which I
+<a href="https://mail.python.org/pipermail/web-sig/2003-October/000162.html">expressed on the Web-SIG mailing list thread</a>
+dating back to October 2003 (ten years ago!). But it is only now that
+I’ve come to realize that both proponents of a single object and two
+separate objects were correct, they were just talking about different
+things.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/10/26/my-thoughts-on-wsgi/">My thoughts on WSGI</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-10-26 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>I&rsquo;m not very fond of it. Here is why.</p>
+<h2 id="cgi-origins">CGI Origins</h2>
+<p>WSGI is based on CGI, as the &ldquo;GI&rdquo; (Gateway Interface) suggests right
+there in the name.</p>
+<p>CGI solved a very important problem using the very limited tools at
+hand available at the time. Though CGI wasn&rsquo;t a standard, it was
+ubiquitous in the early days of the WWW, despite its inherent slowness
+and other limitations. It became popular because it worked with any
+language, was easy to turn on and provided such a thick wall of
+isolation that admins could turn it on for their users without too much concern
+for problems caused by user-generated CGI scripts.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/10/26/my-thoughts-on-wsgi/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/10/25/mod-python-the-long-story/">mod_python: the long story</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-10-25 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>This story started back in 1996. I was in my early twenties, working
+as a programmer at a small company specializing in on-line reporting of
+certain pharmaceutical data.</p>
+<p>There was a web-based application (which was extremely cool
+considering how long ago this was), but unfortunately it was written
+in Visual Basic by a contractor and I was determined to do something
+about it. As was very fashionable at the time, I was very pro Open
+Source, had Linux running on my home 386 and had recently heard
+<a href="http://boston-linux-unix-general-discussion-list.996279.n3.nabble.com/fwd-LOCAL-Washington-DC-Linux-User-Group-meeting-and-Python-talk-td3733.html">Guido’s talk</a>
+at the DC Linux user group presenting his new language he called
+Python. Python seemed like a perfect alternative to the VB
+monstrosity.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/10/25/mod-python-the-long-story/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/10/10/mod-python-performance/">mod_python performance and why it matters not.</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-10-10 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p><em>TL;DR: mod_python is faster than you think.</em></p>
+<p>Tonight I thought I&rsquo;d spend some time looking into how the new
+<a href="http://www.modpython.org/">mod_python</a>
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+<em>why it really does not matter</em>.</p>
+<p>I am particularly interested in the following:</p>
+<ul>
+<li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
+<li>a mod_python wsgi app, because WSGI is so popular these days.</li>
+<li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
+<li>uWSGI, because it claims to be super fast.</li>
+<li>Apache serving a static file (as a point of reference).</li>
+</ul>
+<h1 id="the-test">The Test</h1>
+<p>I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU&rsquo;s and 6GB of RAM
+allocated to it. Granted this configuration can&rsquo;t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/10/10/mod-python-performance/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    </section>
+  
+  <nav class="pagination">
+    <a class="prev" href="/page/3/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text">Prev</span>
+      </a>
+    <a class="next" href="/page/5/">
+        <span class="next-text">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+  </nav>
+        </div>
+        
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+    <a href="/atom.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2013 - 
+    2026<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+  
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.5/es5/tex-mml-chtml.js" integrity="sha256-HGLuEfFcsUJGhvB8cQ8nr0gai9EucOOaIxFw7qxmd+w=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

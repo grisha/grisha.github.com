@@ -1,0 +1,18 @@
+html {
+  font-size: 18px;
+}
+
+.post-content {
+  text-align: justify;
+}
+
+/* Dark code blocks */
+.highlight pre,
+.highlight code {
+  background-color: #272822 !important;
+  color: #f8f8f2 !important;
+}
+
+.highlight {
+  background-color: #272822 !important;
+}

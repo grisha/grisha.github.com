@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Gregory Trubetskoy</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="" /><meta name="description" content="Notes to self." />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.146.0 with theme even" />
+
+
+<link rel="canonical" href="https://grisha.org/" />
+  <link href="https://grisha.org/atom.xml" rel="alternate" type="application/rss+xml" title="Gregory Trubetskoy" />
+  <link href="https://grisha.org/atom.xml" rel="feed" type="application/rss+xml" title="Gregory Trubetskoy" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+<link href="/sass/main.min.f92fd13721ddf72129410fd8250e73152cc6f2438082b6c0208dc24ee7c13fc4.css" rel="stylesheet">
+
+<link rel="stylesheet" href="/css/custom.css">
+
+
+<meta property="og:url" content="https://grisha.org/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Gregory Trubetskoy">
+  <meta property="og:description" content="Notes to self.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Gregory Trubetskoy">
+  <meta itemprop="description" content="Notes to self.">
+  <meta itemprop="datePublished" content="2020-05-08T12:22:00+00:00">
+  <meta itemprop="dateModified" content="2020-05-08T12:22:00+00:00">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Gregory Trubetskoy">
+  <meta name="twitter:description" content="Notes to self.">
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Gregory Trubetskoy</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">Home</li>
+      </a><a href="/posts/">
+        <li class="mobile-menu-item">Archives</li>
+      </a>
+  </ul>
+
+  
+
+
+</nav>
+
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">Gregory Trubetskoy</a>
+</div>
+
+
+
+
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">Home</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/posts/">Archives</a>
+      </li>
+  </ul>
+</nav>
+
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <section id="posts" class="posts">
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">Relational database on top of key-value store explained (or why B-trees are cool)</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-05-11 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>This post attempts to explain how a relational database can be
+implemented atop a key/value store, a subject that I&rsquo;ve long found
+rather mysterious.</p>
+<p>Every once in a while I would come across a mention that a relational
+database can be implemented using a key/value store (aka dictionary,
+hash table or hash map - for brevity I&rsquo;ll be using <em>map</em> from here on).</p>
+<p>Whenever I thought about it, it just didn&rsquo;t make sense. A relational
+database needs to store rows <em>in order</em>, and that&rsquo;s one feature that
+maps do not provide. Imagine we have a table keyed by employee id
+stored in a map and we need to traverse it by id in ascending order. A
+hypothetical keys() method would return us a list of ids ordered
+randomly. It&rsquo;s impossible to iterate over a hash map <em>in
+order</em>. So how would a relational database work then?</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/">MapJoin: a simple way to speed up your Hive queries</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-04-19 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Mapjoin is a little-known feature of Hive. It allows a table to be
+loaded into memory so that a (very fast) join could be performed
+entirely within a mapper without having to use a Map/Reduce step. If
+your queries frequently rely on small table joins (e.g. cities or
+countries, etc.)  you might see a very substantial speed-up from using
+mapjoins.</p>
+<p>There are two ways to enable it. First is by using a hint, which looks
+like <code>/*+ MAPJOIN(aliasname), MAPJOIN(anothertable) */</code>. This C-style comment
+should be placed immediately following the <code>SELECT</code>. It directs Hive
+to load <code>aliasname</code> (which is a table or alias of the query) into
+memory.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/04/19/mapjoin-a-simple-way-to-speed-up-your-hive-queries/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/04/02/linus-on-understanding-pointers/">Linus on understanding pointers</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-04-02 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>A while back <a href="http://en.wikipedia.org/wiki/Linus_Torvalds">Linus Torvalds</a> <a href="http://meta.slashdot.org/story/12/10/11/0030249/linus-torvalds-answers-your-questions">answered questions on Slashdot</a>.</p>
+<p>One of the answers was on the subject of understanding of pointers:</p>
+<blockquote>
+<p><small>At the opposite end of the spectrum, I actually wish more people
+understood the really core low-level kind of coding. Not big, complex
+stuff like the lockless name lookup, but simply good use of
+pointers-to-pointers etc. For example, I&rsquo;ve seen too many people who
+delete a singly-linked list entry by keeping track of the &ldquo;prev&rdquo;
+entry, and then to delete the entry, doing something like</small></p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/04/02/linus-on-understanding-pointers/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/04/01/storm-notes/">Storm Notes</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-04-01 </span>
+      
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Some random thoughts on having tinkered with
+<a href="http://storm-project.net/">Storm</a> over the past few weeks.</p>
+<p>It took me some time to understand what Storm is, and I am still not
+clear I have found a perfect use for it. (This is not
+a criticism of Storm, the point is that the concepts it introduces are
+new, somewhat diffuclt and will need some time so sync in). The best way to get the basic
+understanding of Storm concepts is to watch Nathan Marz&rsquo;s <a href="https://www.youtube.com/watch?v=bdps8tE0gYo">excellent presentation</a>.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/04/01/storm-notes/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/03/27/on-prioritization/">on prioritization - important vs urgent</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-03-27 </span>
+      <div class="post-category">
+          <a href="/categories/time-management/"> time management </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Every item on a TODO list can be classified as <em>urgent</em>, <em>important</em>
+or <em>neither</em>. We should act on important items first, urgent second and
+ignore the rest.</p>
+<p>Sometimes an item lands on our TODO list described as extremely urgent
+without any explanation of importance. In this case the important item
+(and thus to be done <em>first</em>) becomes <em>determining the importance of the
+extremely urgent item in question</em>, even if it means delaying it.</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/03/27/on-prioritization/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/">On keeping lots of integers in memory</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-03-25 </span>
+      <div class="post-category">
+          <a href="/categories/redis/"> redis </a>
+          <a href="/categories/big-memory/"> big memory </a>
+          <a href="/categories/recommendations/"> recommendations </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Once upon a time (over a year ago) I found myself needing to store large numbers of
+integers in memory. The goal was to store a graph of all our
+purchasers and items purchased, so that we could quickly identify
+like-minded purchasers based on common purchases and make real-time
+recommendations of the form &ldquo;people like you also bought&rdquo;. This
+approach is commonly known as <a href="http://en.wikipedia.org/wiki/Collaborative_filtering">collaborative filtering</a>,
+and exactly how we did it would be a subject of some future post
+(perhaps).</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    <article class="post">
+  <header class="post-header">
+    <h1 class="post-title"><a class="post-link" href="/blog/2013/03/25/how-does-this-work/">Testing out Octopress</a></h1>
+    <div class="post-meta">
+      <span class="post-time"> 2013-03-25 </span>
+      <div class="post-category">
+          <a href="/categories/test/"> test </a>
+          </div>
+    </div>
+  </header>
+  
+  <div class="post-content">
+    <div class="post-summary">
+      <p>Thanks to <a href="http://octopress.org">Octopress</a> and <a href="http://github.com">Github</a> I blog&hellip;.</p>
+<p>And I Tweet, too?</p>
+<blockquote class="twitter-tweet"><p>Thanks to Octopress and Github pages I now have a blog: <a href="http://t.co/yKm0TVRMMu" title="http://grisha.org/">grisha.org</a></p>&mdash; Grisha Trubetskoy (@humblehack) <a href="https://twitter.com/humblehack/status/316339220371349508">March 26, 2013</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+<p>
+<a href="https://www.youtube.com/channel/UCPL5zsiUm0Psny8xD3mK1pg">A link to Gregory Trubetskoy videos</a>
+or <a href="https://youtu.be/qFi8j3ebTng">a particular video</a>
+</p>
+    </div>
+    <div class="read-more">
+      <a href="/blog/2013/03/25/how-does-this-work/" class="read-more-link">Read more...</a>
+    </div>
+  </div>
+</article>
+
+    </section>
+  
+  <nav class="pagination">
+    <a class="prev" href="/page/5/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text">Prev</span>
+      </a>
+    
+  </nav>
+        </div>
+        
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+  
+    <a href="/atom.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  
+
+  <span class="copyright-year">
+    &copy; 
+    2013 - 
+    2026<span class="heart"><i class="iconfont icon-heart"></i></span><span></span>
+  </span>
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+  
+
+
+
+<script type="text/javascript" src="/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.5/es5/tex-mml-chtml.js" integrity="sha256-HGLuEfFcsUJGhvB8cQ8nr0gai9EucOOaIxFw7qxmd+w=" crossorigin="anonymous"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
