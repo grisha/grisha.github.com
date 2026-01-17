@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Storing Time Series in PostgreSQL efficiently | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="With the latest advances in PostgreSQL (and other db&rsquo;s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a part 2 of this article.)
+A TS is a series of [timestamp, measurement] pairs, where measurement
+is typically a floating point number. These pairs (aka &ldquo;data points&rdquo;)
+usually arrive at a high and steady rate. As time goes on, detailed
+data usually becomes less interesting and is often consolidated into
+larger time intervals until ultimately it is expired.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Storing Time Series in PostgreSQL efficiently">
+  <meta property="og:description" content="With the latest advances in PostgreSQL (and other db’s), a relational database begins to look like a very viable TS storage platform. In this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update: there is a part 2 of this article.)
+A TS is a series of [timestamp, measurement] pairs, where measurement is typically a floating point number. These pairs (aka “data points”) usually arrive at a high and steady rate. As time goes on, detailed data usually becomes less interesting and is often consolidated into larger time intervals until ultimately it is expired.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2015-09-23T22:01:00+00:00">
+    <meta property="article:modified_time" content="2015-09-23T22:01:00+00:00">
+
+  <meta itemprop="name" content="Storing Time Series in PostgreSQL efficiently">
+  <meta itemprop="description" content="With the latest advances in PostgreSQL (and other db’s), a relational database begins to look like a very viable TS storage platform. In this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update: there is a part 2 of this article.)
+A TS is a series of [timestamp, measurement] pairs, where measurement is typically a floating point number. These pairs (aka “data points”) usually arrive at a high and steady rate. As time goes on, detailed data usually becomes less interesting and is often consolidated into larger time intervals until ultimately it is expired.">
+  <meta itemprop="datePublished" content="2015-09-23T22:01:00+00:00">
+  <meta itemprop="dateModified" content="2015-09-23T22:01:00+00:00">
+  <meta itemprop="wordCount" content="1134">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Storing Time Series in PostgreSQL efficiently">
+  <meta name="twitter:description" content="With the latest advances in PostgreSQL (and other db’s), a relational database begins to look like a very viable TS storage platform. In this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update: there is a part 2 of this article.)
+A TS is a series of [timestamp, measurement] pairs, where measurement is typically a floating point number. These pairs (aka “data points”) usually arrive at a high and steady rate. As time goes on, detailed data usually becomes less interesting and is often consolidated into larger time intervals until ultimately it is expired.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Storing Time Series in PostgreSQL efficiently</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2015-09-23T22:01:00Z">September 23, 2015</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>With the latest advances in PostgreSQL (and other db&rsquo;s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a <a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
+<p>A TS is a series of [timestamp, measurement] pairs, where measurement
+is typically a floating point number. These pairs (aka &ldquo;data points&rdquo;)
+usually arrive at a high and steady rate. As time goes on, detailed
+data usually becomes less interesting and is often consolidated into
+larger time intervals until ultimately it is expired.</p>
+<h2 id="the-obvious-approach">The obvious approach</h2>
+<p>The &ldquo;naive&rdquo; approach is a three-column table, like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span> <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> ts (id INT, time TIMESTAMPTZ, value REAL);
+</span></span></code></pre></div><p>(Let&rsquo;s gloss over some details such as an index on the time column and
+choice of data type for time and value as it&rsquo;s not relevant to this
+discussion.)</p>
+<p>One problem with this is the inefficiency of appending data. An insert
+requires a look up of the new id, locking and (usually) blocks until
+the data is synced to disk. Given the TS&rsquo;s &ldquo;firehose&rdquo; nature, the
+database can quite quickly get overwhelmed.</p>
+<p>This approach also does not address consolidation and eventual
+expiration of older data points.</p>
+<h2 id="round-robin-database">Round-robin database</h2>
+<p>A better alternative is something called a <em>round-robin database</em>.  An
+RRD is a circular structure with a separately stored pointer denoting
+the last element and its timestamp.</p>
+<p>A everyday life example of an RRD is a week. Imagine a structure of 7
+slots, one for each day of the week. If you know today&rsquo;s date and day
+of the week, you can easily infer the date for each slot. For example
+if today is Tuesday, April 1, 2008, then the Monday slot refers to
+March 31st, Sunday to March 30th and (most notably) Wednesday to March
+26.</p>
+<p>Here&rsquo;s what a 7-day RRD of average temperature might look as of
+Tuesday, April 1:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Week day: Sun  Mon  Tue  Wed  Thu  Fri  Sat
+</span></span><span style="display:flex;"><span>Date:     3/30 3/31 4/1  3/26 3/27 3/28 3/29
+</span></span><span style="display:flex;"><span>Temp F:   79   82   90   69   75   80   81
+</span></span><span style="display:flex;"><span>                    ^
+</span></span><span style="display:flex;"><span>                    last entry
+</span></span></code></pre></div><p>Come Wednesday, April 2nd, our RRD now loooks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Week day: Sun  Mon  Tue  Wed  Thu  Fri  Sat
+</span></span><span style="display:flex;"><span>Date:     3/30 3/31 4/1  4/2  3/27 3/28 3/29
+</span></span><span style="display:flex;"><span>Temp F:   79   82   90   92   75   80   81
+</span></span><span style="display:flex;"><span>                         ^
+</span></span><span style="display:flex;"><span>                         last entry
+</span></span></code></pre></div><p>Note how little has changed, and that the update required no
+allocation of space: all we did to record 92F on Wednesday is
+overwrite one value. Even more remarkably, the previous value
+automatically &ldquo;expired&rdquo; when we overwrote it, thus solving the
+eventual expiration problem without any additional operations.</p>
+<p>RRD&rsquo;s are also very space-efficient. In the above example we specified
+the date of every slot for clarity. In an actual implementation only
+the date of the last slot needs to be stored, thus the RRD can be kept
+as a sequence of 7 numbers plus the position of the last entry and
+it&rsquo;s timestamp. In Python syntax it&rsquo;d look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>[[<span style="color:#ae81ff">79</span>,<span style="color:#ae81ff">82</span>,<span style="color:#ae81ff">90</span>,<span style="color:#ae81ff">92</span>,<span style="color:#ae81ff">75</span>,<span style="color:#ae81ff">80</span>,<span style="color:#ae81ff">81</span>], <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1207022400</span>]
+</span></span></code></pre></div><h2 id="round-robin-in-postgresql">Round-robin in PostgreSQL</h2>
+<p>Here is a naive approach to having a round-robin table. Carrying on
+with our 7 day RRD example, it might look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>week_day | temp_f
+</span></span><span style="display:flex;"><span>---------+--------
+</span></span><span style="display:flex;"><span>     1   |   79
+</span></span><span style="display:flex;"><span>     2   |   82
+</span></span><span style="display:flex;"><span>     3   |   90
+</span></span><span style="display:flex;"><span>     4   |   69
+</span></span><span style="display:flex;"><span>     5   |   75
+</span></span><span style="display:flex;"><span>     6   |   80
+</span></span><span style="display:flex;"><span>     7   |   81
+</span></span></code></pre></div><p>Somewhere separately we&rsquo;d also need to record that the last entry is
+week_day 3 (Tuesday) and it&rsquo;s 2008-04-01. Come April 2, we could
+record the temperature using:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">UPDATE</span> series <span style="color:#66d9ef">SET</span> temp_f <span style="color:#f92672">=</span> <span style="color:#ae81ff">92</span> <span style="color:#66d9ef">WHERE</span> week_day <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;
+</span></span></code></pre></div><p>This might be okay for a 7-slot RRD, but a more typical TS might have
+a slot per minute going back 90 days, which would require 129600
+rows. For recording data points one at a time it might be fast enough,
+but to copy the whole RRD would require 129600 UPDATE statements which
+is not very efficient.</p>
+<p>This is where using PostgrSQL <em>arrays</em> become very useful.</p>
+<h2 id="using-postgresql-arrays">Using PostgreSQL arrays</h2>
+<p>An array would allow us to store the whole series in a single
+row. Sticking with the 7-day RRD example, our table would be created
+as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> ts (dp DOUBLE <span style="color:#66d9ef">PRECISION</span>[] <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;{}&#39;</span>,
+</span></span><span style="display:flex;"><span>                 last_date DATE,
+</span></span><span style="display:flex;"><span>                 pos INT);
+</span></span></code></pre></div><p>(Nevemind that there is no id column for now)</p>
+<p>We could populate the whole RRD in a single statement:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span>(<span style="color:#e6db74">&#39;{79,82,90,69,75,80,81}&#39;</span>, <span style="color:#e6db74">&#39;2008-08-01&#39;</span>, <span style="color:#ae81ff">3</span>);
+</span></span></code></pre></div><p>&hellip;or record 92F for Wednesday as so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">UPDATE</span> ts <span style="color:#66d9ef">SET</span> dp[<span style="color:#ae81ff">4</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">92</span>, last_date <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;2008-04-02&#39;</span>, pos <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;
+</span></span></code></pre></div><p>(In PostgreSQL arrays are 1-based, not 0-based like in most
+programming languages)</p>
+<h2 id="but-it-could-be-even-more-efficient">But it could be even more efficient</h2>
+<p>Under the hood, PostgreSQL data is stored in pages of 8K. It would
+make sense to keep chunks in which our RRD is written to disk in line
+with page size, or at least smaller than one page. (PostgreSQL provides
+configuration parameters for how much of a page is used, etc, but this
+is way beyond the scope of this article).</p>
+<p>Having the series split into chunks also paves the way for some kind
+of a caching layer, we could have a server which waits for one row
+worth of data points to accumulate, then flushes then all at once.</p>
+<p>For simplicity, let&rsquo;s take the above example and expand the RRD to 4
+weeks, while keeping 1 week per row. In our table definition we need
+provide a way for keeping the order of every row of the TS with a
+column named n, and while we&rsquo;re at it, we might as well introduce a
+notion of an id, so as to be able to store multiple TS in the same
+table.</p>
+<p>Let&rsquo;s start with two tables, one called rrd where we would store the
+last position and date, and another called ts which would store the
+actual data.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> rrd (
+</span></span><span style="display:flex;"><span>  id SERIAL <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+</span></span><span style="display:flex;"><span>  last_date DATE,
+</span></span><span style="display:flex;"><span>  last_pos INT);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> ts (
+</span></span><span style="display:flex;"><span>  rrd_id INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  n INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  dp DOUBLE <span style="color:#66d9ef">PRECISION</span>[] <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;{}&#39;</span>);
+</span></span></code></pre></div><p>We could then populate the TS with fictitious data like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> rrd (id, last_date, last_pos) <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;2008-04-01&#39;</span>, <span style="color:#ae81ff">24</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;{64,67,70,71,72,69,67}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#39;{65,60,58,59,62,68,70}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#39;{71,72,77,70,71,73,75}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#39;{79,82,90,69,75,80,81}&#39;</span>);
+</span></span></code></pre></div><p>To update the data for April 2, we would:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">UPDATE</span> ts <span style="color:#66d9ef">SET</span> dp[<span style="color:#ae81ff">4</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">92</span> <span style="color:#66d9ef">WHERE</span> rrd_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">AND</span> n <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">UPDATE</span> rrd <span style="color:#66d9ef">SET</span> last_date <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;2008-04-02&#39;</span>, last_pos <span style="color:#f92672">=</span> <span style="color:#ae81ff">25</span> <span style="color:#66d9ef">WHERE</span> id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+</span></span></code></pre></div><p>The last_pos of 25 is n * 7 + 1 (since arrays are 1-based).</p>
+<p>This article omits a lot of detail such as having resolution finer
+than one day, but it does describe the general idea. For an actual
+implementation of this you might want to check out a project I&rsquo;ve been
+working on: <a href="https://github.com/tgres/tgres">tgres</a></p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

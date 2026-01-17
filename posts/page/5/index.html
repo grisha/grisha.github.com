@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Notes to self.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+    
+      <link href="/posts/atom.xml" rel="alternate" type="application/rss+xml" title="Gregory Trubetskoy" />
+      <link href="/posts/atom.xml" rel="feed" type="application/rss+xml" title="Gregory Trubetskoy" />
+      
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/posts/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/posts/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Posts">
+  <meta property="og:description" content="Notes to self.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Posts">
+  <meta itemprop="description" content="Notes to self.">
+  <meta itemprop="datePublished" content="2020-05-08T12:22:00+00:00">
+  <meta itemprop="dateModified" content="2020-05-08T12:22:00+00:00">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Posts">
+  <meta name="twitter:description" content="Notes to self.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+
+  <header>
+    <div class="pb3-m pb6-l bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+      <div class="tc-l pv3 ph3 ph4-ns">
+        <h1 class="f2 f-subheadline-l fw2 light-silver mb0 lh-title">
+          Posts
+        </h1>
+        
+      </div>
+    </div>
+  </header>
+
+
+    <main class="pb7" role="main">
+      
+
+  <article class="pa3 pa4-ns nested-copy-line-height">
+    <section class="cf ph3 ph5-l pv3 pv4-l f4 tc-l center measure-wide lh-copy nested-links mid-gray">
+      
+    </section>
+    <aside class="flex-ns mt5 flex-wrap justify-around">
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        September 25, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/" class="link black dim">
+        Running a WSGI app on Apache should not be this hard
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>If I have a Django app in <code>/home/grisha/mysite</code>, then all I should
+need to do to run it under Apache is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ mod_python create /home/grisha/mysite_httpd <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --listen<span style="color:#f92672">=</span><span style="color:#ae81ff">8888</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --pythonpath<span style="color:#f92672">=</span>/home/grisha/mysite <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --pythonhandler<span style="color:#f92672">=</span>mod_python.wsgi <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --pythonoption<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mod_python.wsgi.application mysite.wsgi::application&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ mod_python start /home/grisha/mysite_httpd/conf/httpd.conf
+</span></span></code></pre></div><p>That&rsquo;s all. There should be no need to become root, tweak various
+configurations, place files in the right place, check permissions,
+none of that.</p>
+<p>Well&hellip; With <a href="http://www.modpython.org/">mod_python</a> 3.4.0 (alpha)
+that&rsquo;s exactly how it is&hellip;</p>
+    </div>
+  <a href="/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        August 10, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/08/10/the-next-smallest-step-problem/" class="link black dim">
+        The Next Smallest Step Problem
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p><em><a href="http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step">&ldquo;A journey of a thousand miles begins with a single step&rdquo;</a></em></p>
+<p>Most of my journeys never begin, or cannot continue because of that one
+single step, be it first or next. Because it is hard, at times
+excruciatingly so.</p>
+<p>Here I speak of software, but this applies to many other aspects of my
+life just as well.</p>
+<p>I recon it&rsquo;s because I do not think in steps. I think of a
+destination.  I imagine the end-result. I can picture it with clarity
+and in great detail. I know where I need to be. But what is the next
+step to get there? And it doesn&rsquo;t help that where I travel, there are
+no signs.</p>
+    </div>
+  <a href="/blog/2013/08/10/the-next-smallest-step-problem/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        August 2, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/08/02/hacking-on-mod-python-again/" class="link black dim">
+        Hacking on mod_python (again)
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
+to <a href="http://www.modpython.org/">Mod_python</a> I&rsquo;ve decided to spend some time hacking on it again.</p>
+<p>Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.</p>
+    </div>
+  <a href="/blog/2013/08/02/hacking-on-mod-python-again/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        June 21, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/06/21/on-converting-json-to-avro/" class="link black dim">
+        json2avro
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>As you embark on converting vast quantities of JSON to Avro, you soon
+discover that things are not as simple as they seem. Here is how it might happen.</p>
+<p>A quick Google
+search eventually leads you to the
+<a href="http://www.us.apache.org/dist/avro/avro-1.7.4/java/avro-tools-1.7.4.jar">avro-tools</a>
+jar, and you find yourself attempting to convert some JSON, such as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-javascript" data-lang="javascript"><span style="display:flex;"><span>{<span style="color:#e6db74">&#34;first&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;John&#34;</span>, <span style="color:#e6db74">&#34;middle&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;X&#34;</span>, <span style="color:#e6db74">&#34;last&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Doe&#34;</span>}
+</span></span><span style="display:flex;"><span>{<span style="color:#e6db74">&#34;first&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Jane&#34;</span>, <span style="color:#e6db74">&#34;last&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Doe&#34;</span>}
+</span></span></code></pre></div><p>Having read Avro documentation and being the clever being that you are, you start out with:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>java -jar ~/src/avro/java/avro-tools-1.7.4.jar fromjson input.json --schema <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span> <span style="color:#e6db74">&#39;{&#34;type&#34;:&#34;record&#34;,&#34;name&#34;:&#34;whatever&#34;,
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">   &#34;fields&#34;:[{&#34;name&#34;:&#34;first&#34;, &#34;type&#34;:&#34;string&#34;},
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">             {&#34;name&#34;:&#34;middle&#34;,&#34;type&#34;:&#34;string&#34;},
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">             {&#34;name&#34;:&#34;last&#34;,&#34;type&#34;:&#34;string&#34;}]}&#39;</span> &gt; output.avro
+</span></span><span style="display:flex;"><span>Exception in thread <span style="color:#e6db74">&#34;main&#34;</span> org.apache.avro.AvroTypeException: Expected field name not found: middle
+</span></span><span style="display:flex;"><span>        at org.apache.avro.io.JsonDecoder.doAction<span style="color:#f92672">(</span>JsonDecoder.java:477<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        at org.apache.avro.io.parsing.Parser.advance<span style="color:#f92672">(</span>Parser.java:88<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>        ...
+</span></span></code></pre></div><p>A brief moment of disappointment is followed by the bliss of
+enlightment: Duh, the &ldquo;middle&rdquo; element needs a default! And so you try
+again, this time having tacked on a default to the definition of &ldquo;middle&rdquo;, so it looks like <code>{&quot;name&quot;:&quot;middle&quot;,&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;}</code>:</p>
+    </div>
+  <a href="/blog/2013/06/21/on-converting-json-to-avro/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        June 11, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/06/11/avro-performance/" class="link black dim">
+        Avro performance
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>Here are some un-scientific results on how Avro performs with various
+codecs, as well as vs JSON-lzo files in Hive and Impala. This testing
+was done using a 100 million row table that was generated using random
+two strings and an integer.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>| Format    | Codec          | Data Size     | Hive count(1) time | Impala count(1) time
+</span></span><span style="display:flex;"><span>|-----------|----------------|---------------|--------------------|----------------------
+</span></span><span style="display:flex;"><span>| JSON      | null           | 686,769,821   | not tested         | N/A                  
+</span></span><span style="display:flex;"><span>| JSON      | LZO            | 285,558,314   | 79s                | N/A                  
+</span></span><span style="display:flex;"><span>| JSON      | Deflate (gzip) | 175,878,038   | not tested         | N/A                  
+</span></span><span style="display:flex;"><span>| Avro      | null           | 301,710,126   | 40s                | .4s                  
+</span></span><span style="display:flex;"><span>| Avro      | Snappy         | 260,450,980   | 38s                | .9s                  
+</span></span><span style="display:flex;"><span>| Avro      | Deflate (gzip) | 156,550,144   | 64s                | 2.8s                 
+</span></span></code></pre></div><p>So the winner appears to be Avro/Snappy or uncompressed Avro.</p>
+    </div>
+  <a href="/blog/2013/06/11/avro-performance/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        June 6, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/06/06/avro/" class="link black dim">
+        Apache Avro
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <h2 id="short-version">Short version</h2>
+<ul>
+<li>Avro is better than Json for storing table data</li>
+<li>Avro supports schema resolution so that the schema can evolve over time</li>
+<li>Hive supports Avro and schema resolution nicely</li>
+<li>Impala (1.0) can read Avro tables, but does <em>not</em> support schema resolution</li>
+<li>Mixing compression codecs in the same table works in both Hive and Impala</li>
+</ul>
+<h2 id="the-tldr-version">The TL;DR version</h2>
+<h3 id="introduction">Introduction</h3>
+<p>If you&rsquo;re logging data into Hadoop to be analyzed, chances are you&rsquo;re
+using JSON. JSON is great because it&rsquo;s easy to generate in most any
+language, it&rsquo;s human-readable, it&rsquo;s universally supported and
+infinitely flexible.</p>
+    </div>
+  <a href="/blog/2013/06/06/avro/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        May 31, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/05/31/simple-solution-to-password-reuse/" class="link black dim">
+        Simple Solution to Password Reuse
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>
+Here's a <a href="http://en.wikipedia.org/wiki/KISS_principle">KISS</a> solution to all your password reuse
+problems. It requires remembering only *one* strong password, lets you
+have a virtually limitless number of passwords, and, most importantly,
+does NOT store anything anywhere or transfer anything over the
+network (100% browser-side Javascript).
+</p>
+<script type="text/javascript" src="/javascripts/sha.js"></script>
+<script type="text/javascript" src="/javascripts/zxcvbn-async.js"></script>
+<script type="text/javascript">
+function calc_pw(n) {
+  try {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var keyword = document.getElementById("keyword"+n);
+    var pw = document.getElementById("pw"+n);
+    var strength = document.getElementById("strength");
+    var hmacObj = new jsSHA(pw_phrase.value, "TEXT");
+    pw.value = hmacObj.getHMAC(keyword.value, "TEXT", "SHA-512", "B64").substring(5,15);
+    if (pw.value.search('!') === -1) pw.value = pw.value + '!'
+    if (pw.value.search(/[0-9]/) === -1) pw.value = pw.value + '0'
+  } catch(e) {
+    pw.value = "ERROR: " + e;
+  }
+}
+function pw_strength() {
+    var pw_phrase = document.getElementById("pw_phrase");
+    var score = zxcvbn(pw_phrase.value).score;
+    if (score == '0') {strength.value = 'Very Weak'; strength.style.color = 'red'; }
+    else if (score == '1') {strength.value = 'Weak'; strength.style.color = 'red'; }
+    else if (score == '2') {strength.value = 'So so'; strength.style.color = 'orange'; }
+    else if (score == '3') {strength.value = 'Okay'; strength.style.color = 'blue'; }
+    else if (score == '4') {strength.value = 'Strong'; strength.style.color = 'green'; }
+    else strength.value = '';
+}
+function check_pw2_same() {
+  var pw_phrase = document.getElementById("pw_phrase");
+  var pw_phrase2 = document.getElementById("pw_phrase2");
+  var pw_same = document.getElementById("pw_same");
+  if (pw_phrase.value === pw_phrase2.value)
+    pw_same.value = 'Correct';
+  else
+    pw_same.value = 'Incorrect';
+}
+function clear_all() {
+  document.getElementById("pw_phrase").value = '';
+  document.getElementById("pw_phrase2").value = '';
+  document.getElementById("strength").value = '';
+  document.getElementById("pw_same").value = '';
+  document.getElementById("keyword1").value = 'amazon';
+  document.getElementById("keyword2").value = 'gmail';
+  document.getElementById("keyword3").value = 'yahoo';
+  document.getElementById("keyword4").value = 'foo';
+  document.getElementById("keyword5").value = 'bar';
+  document.getElementById("pw1").value = '';
+  document.getElementById("pw2").value = '';
+  document.getElementById("pw3").value = '';
+  document.getElementById("pw4").value = '';
+  document.getElementById("pw5").value = '';
+}
+</script>
+<form action="#" method="get">
+<fieldset style="margin: 3px 0px; border: 1px solid #000000; padding: 10px;">
+<legend>Stupid Simple Password Generator</legend>
+<h3>Step 1:</h3>
+<p>
+Think of a phrase you will always remember. Keep typing until the text
+on the right says "strong". Punctuation, spaces, unusual words and
+mixed case while not required, are generally a good idea. The most
+important thing is that the script considers it <span style="color: green; font-weight: bold;">strong</span>.
+</p>
+    </div>
+  <a href="/blog/2013/05/31/simple-solution-to-password-reuse/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        May 31, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/05/31/compiling-impala-from-github/" class="link black dim">
+        Compiling Impala from Github
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I&rsquo;m presuming that code gets
+released to Github once undergone some level of internal scrutiny, but
+I&rsquo;ve not seen any documentation on how one could tie publically
+available code to the official Impala (binary) release, currently 1.0.</p>
+<p>Anyway, I tried compiling the github code last night, and here are the
+steps that worked for me.</p>
+    </div>
+  <a href="/blog/2013/05/31/compiling-impala-from-github/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        May 29, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/" class="link black dim">
+        SQLite DB stored in a Redis hash
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>In a <a href="/blog/2013/05/11/relational-database-on-top-of-key-value-store-explained/">recent post</a>
+I explained how a relational database could be backed by a key-value
+store by virtue of B-Trees. This sounded great in theory, but I wanted
+to see that it actually works. And so last night I wrote a
+<a href="https://github.com/grisha/thredis/commit/2beaee3a13f0dbe0c161470da04ef8af21d78fc9">commit</a> to
+<a href="http://thredis.org/">Thredis</a>, which does exactly that.</p>
+<p>If you&rsquo;re not familiar with Thredis - it&rsquo;s something I hacked together
+last Christmas. Thredis started out as threaded Redis, but eventually
+evolved into SQLite + Redis. Thredis uses a separate file to save
+SQLite data. But with this patch it&rsquo;s no longer necessary - a SQLite
+DB is entirely stored in a Redis Hash object.</p>
+    </div>
+  <a href="/blog/2013/05/29/sqlite-db-stored-in-a-redis-hash/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        May 23, 2013
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2013/05/23/checking-out-cloudera-impala/" class="link black dim">
+        Checking out Cloudera Impala
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>I&rsquo;ve decided to check out
+<a href="http://blog.cloudera.com/blog/2012/10/cloudera-impala-real-time-queries-in-apache-hadoop-for-real/">Impala</a>
+last week and here&rsquo;s some notes on how that went.</p>
+<h2 id="first-thoughts">First thoughts</h2>
+<p>I was very impressed with how easy it was to install, even considering
+our unusual set up (see below). In my simple ad-hoc tests Impala
+performed orders of magnitude faster than Hive. So far it seems solid
+down to the little details, like the shell prompt with a fully
+functional libreadline and column headers nicely formatted.</p>
+    </div>
+  <a href="/blog/2013/05/23/checking-out-cloudera-impala/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+    </aside>
+    
+    
+    <ul class="pagination pagination-default">
+      <li class="page-item">
+        <a href="/posts/" aria-label="First" class="page-link" role="button"><span aria-hidden="true">&laquo;&laquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/4/" aria-label="Previous" class="page-link" role="button"><span aria-hidden="true">&laquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/2/" aria-label="Page 2" class="page-link" role="button">2</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/3/" aria-label="Page 3" class="page-link" role="button">3</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/4/" aria-label="Page 4" class="page-link" role="button">4</a>
+      </li>
+      <li class="page-item active">
+        <a aria-current="page" aria-label="Page 5" class="page-link" role="button">5</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/6/" aria-label="Page 6" class="page-link" role="button">6</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/6/" aria-label="Next" class="page-link" role="button"><span aria-hidden="true">&raquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/6/" aria-label="Last" class="page-link" role="button"><span aria-hidden="true">&raquo;&raquo;</span></a>
+      </li>
+    </ul>
+  </article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

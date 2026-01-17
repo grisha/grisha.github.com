@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>PostgreSQL vs Whisper, which is Faster? | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Note: there is an update to this post.
+TL;DR
+On a 8 CPU / 16 GB EC2 instance,
+Tgres can process 150,000 data
+points per second across 300,000 series (Postgres running on the same
+machine). With some tweaks we were able to get the number of series to
+half a million, flushing ~60K data points per second.
+Now the long version&hellip;
+If you were to ask me whether Tgres could outperform Graphite, just a
+couple of months ago my answer would have been &ldquo;No&rdquo;. Tgres uses
+Postgres to store time series data, while Graphite stores data by
+writing to files directly, the overhead of the relational database
+just seemed too great.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="noindex, nofollow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="http://localhost:1313/blog/1/01/01/postgresql-vs-whisper-which-is-faster/">
+    
+
+    
+    
+    <meta property="og:url" content="http://localhost:1313/blog/1/01/01/postgresql-vs-whisper-which-is-faster/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="PostgreSQL vs Whisper, which is Faster?">
+  <meta property="og:description" content="Note: there is an update to this post.
+TL;DR On a 8 CPU / 16 GB EC2 instance, Tgres can process 150,000 data points per second across 300,000 series (Postgres running on the same machine). With some tweaks we were able to get the number of series to half a million, flushing ~60K data points per second.
+Now the long version… If you were to ask me whether Tgres could outperform Graphite, just a couple of months ago my answer would have been “No”. Tgres uses Postgres to store time series data, while Graphite stores data by writing to files directly, the overhead of the relational database just seemed too great.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+
+  <meta itemprop="name" content="PostgreSQL vs Whisper, which is Faster?">
+  <meta itemprop="description" content="Note: there is an update to this post.
+TL;DR On a 8 CPU / 16 GB EC2 instance, Tgres can process 150,000 data points per second across 300,000 series (Postgres running on the same machine). With some tweaks we were able to get the number of series to half a million, flushing ~60K data points per second.
+Now the long version… If you were to ask me whether Tgres could outperform Graphite, just a couple of months ago my answer would have been “No”. Tgres uses Postgres to store time series data, while Graphite stores data by writing to files directly, the overhead of the relational database just seemed too great.">
+  <meta itemprop="wordCount" content="2203">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PostgreSQL vs Whisper, which is Faster?">
+  <meta name="twitter:description" content="Note: there is an update to this post.
+TL;DR On a 8 CPU / 16 GB EC2 instance, Tgres can process 150,000 data points per second across 300,000 series (Postgres running on the same machine). With some tweaks we were able to get the number of series to half a million, flushing ~60K data points per second.
+Now the long version… If you were to ask me whether Tgres could outperform Graphite, just a couple of months ago my answer would have been “No”. Tgres uses Postgres to store time series data, while Graphite stores data by writing to files directly, the overhead of the relational database just seemed too great.">
+
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white development">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">PostgreSQL vs Whisper, which is Faster?</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Note: there is an <a href="/blog/2017/02/28/tgres-load-testing-follow-up/">update</a> to this post.</p>
+<h2 id="tldr">TL;DR</h2>
+<p>On a 8 CPU / 16 GB EC2 instance,
+<a href="https://github.com/tgres/tgres">Tgres</a> can process 150,000 data
+points per second across 300,000 series (Postgres running on the same
+machine). With some tweaks we were able to get the number of series to
+half a million, flushing ~60K data points per second.</p>
+<h2 id="now-the-long-version">Now the long version&hellip;</h2>
+<p>If you were to ask me whether Tgres could outperform Graphite, just a
+couple of months ago my answer would have been &ldquo;No&rdquo;. Tgres uses
+Postgres to store time series data, while Graphite stores data by
+writing to files directly, the overhead of the relational database
+just seemed too great.</p>
+<p>Well, I think I&rsquo;ve managed to prove myself wrong. After re-working
+Tgres to use the
+<a href="/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">write-optimized layout</a>,
+I&rsquo;ve run some tests on AWS yielding unexpectedly promising results.</p>
+<p>As a benchmark I targeted the excellent <a href="http://obfuscurity.com/2016/08/Benchmarking-Carbon-and-Whisper-on-AWS">blog post</a>
+by Jason Dixon describing his AWS Graphite test. My goal was to get to at least half the
+level of performance described therein. But it appears the combination of Go, Postgres and some
+clever data structuring has been able to beat it, not without breaking
+a little sweat, but it has.</p>
+<p>My test was conducted on a
+<a href="https://aws.amazon.com/ec2/instance-types/">c4.2xlarge</a> instance,
+which has 8 cores and 16 GB, using 100GB EBS (which, if I understood it
+correctly, comes with 300 IOPS, please comment if I&rsquo;m wrong). The &ldquo;c4&rdquo;
+instances are supposed to be some of the highest speed CPU AWS has to
+offer, but compare this with the instance used in the Graphite test,
+an i2.4xlarge (16 CPU/ 122GB), it had half the CPU cores and nearly
+one tenth of the RAM.</p>
+<p>Before I go any further, here is the obligatory screenshot, then my
+observations and lessons learned in the process, as well as a
+screenshot depicting even better performance.</p>
+<p>{% img /images/tgres_aws1.png %}</p>
+<p>The Tgres version running was <a href="https://github.com/tgres/tgres/tree/1c57cba3fe4cdb0b96bf5054cfd01cb2a41e2bba">this one</a>,
+with the config detailed at the bottom of the post.</p>
+<p>Postgres was whatever <code>yum install postgresql95-server</code> brings your
+way, with the <code>data</code> directory moved to the EBS volume formatted using
+ext4 (not that I think it matters). The Postgres config was modified to
+allow a 100ms commit delay and to make autovacuum extra aggressive. I
+did not increase any memory buffers and left everything else as
+is. Specifically, these were the changes:</p>
+
+
+
+<div class="goat svg-container ">
+  
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      font-family="Menlo,Lucida Console,monospace"
+      
+        viewBox="0 0 296 137"
+      >
+      <g transform='translate(8,16)'>
+<text text-anchor='middle' x='0' y='4' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='0' y='20' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='0' y='36' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='0' y='52' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='0' y='68' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='0' y='84' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='0' y='100' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='0' y='116' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='8' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='8' y='20' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='8' y='36' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='8' y='52' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='8' y='68' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='8' y='84' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='8' y='100' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='8' y='116' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='16' y='4' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='16' y='20' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='16' y='36' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='16' y='52' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='16' y='68' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='16' y='84' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='16' y='100' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='16' y='116' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='24' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='24' y='20' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='24' y='36' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='24' y='52' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='24' y='68' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='24' y='84' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='24' y='100' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='24' y='116' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='32' y='4' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='32' y='20' fill='currentColor' style='font-size:1em'>h</text>
+<text text-anchor='middle' x='32' y='36' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='32' y='52' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='32' y='68' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='32' y='84' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='32' y='100' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='32' y='116' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='40' y='4' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='20' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='40' y='36' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='40' y='52' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='68' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='84' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='100' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='116' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='48' y='4' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='48' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='48' y='36' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='48' y='52' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='48' y='68' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='48' y='84' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='48' y='100' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='48' y='116' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='56' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='56' y='20' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='56' y='36' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='56' y='52' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='56' y='68' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='56' y='84' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='56' y='100' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='56' y='116' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='64' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='64' y='52' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='68' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='84' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='100' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='64' y='116' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='72' y='4' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='72' y='20' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='72' y='36' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='72' y='52' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='72' y='68' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='72' y='84' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='72' y='100' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='72' y='116' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='80' y='4' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='80' y='20' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='80' y='36' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='80' y='52' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='80' y='68' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='80' y='84' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='80' y='100' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='80' y='116' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='88' y='4' fill='currentColor' style='font-size:1em'>w</text>
+<text text-anchor='middle' x='88' y='20' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='88' y='36' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='88' y='52' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='88' y='68' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='88' y='84' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='88' y='100' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='88' y='116' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='96' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='96' y='20' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='96' y='52' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='96' y='68' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='96' y='84' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='96' y='100' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='96' y='116' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='104' y='4' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='104' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='104' y='36' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='104' y='52' fill='currentColor' style='font-size:1em'>x</text>
+<text text-anchor='middle' x='104' y='68' fill='currentColor' style='font-size:1em'>p</text>
+<text text-anchor='middle' x='104' y='84' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='104' y='100' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='104' y='116' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='112' y='4' fill='currentColor' style='font-size:1em'>k</text>
+<text text-anchor='middle' x='112' y='20' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='112' y='52' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='112' y='68' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='112' y='84' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='112' y='100' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='112' y='116' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='120' y='4' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='120' y='20' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='120' y='36' fill='currentColor' style='font-size:1em'>1</text>
+<text text-anchor='middle' x='120' y='52' fill='currentColor' style='font-size:1em'>w</text>
+<text text-anchor='middle' x='120' y='68' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='120' y='84' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='120' y='100' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='120' y='116' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='128' y='4' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='128' y='20' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='128' y='36' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='128' y='52' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='128' y='68' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='128' y='84' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='128' y='100' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='128' y='116' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='136' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='136' y='20' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='136' y='36' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='136' y='52' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='136' y='68' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='136' y='84' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='136' y='100' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='136' y='116' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='144' y='4' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='144' y='36' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='144' y='52' fill='currentColor' style='font-size:1em'>k</text>
+<text text-anchor='middle' x='144' y='84' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='144' y='100' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='144' y='116' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='152' y='20' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='152' y='36' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='152' y='52' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='152' y='68' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='152' y='84' fill='currentColor' style='font-size:1em'>h</text>
+<text text-anchor='middle' x='152' y='100' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='152' y='116' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='160' y='4' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='160' y='36' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='160' y='52' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='160' y='84' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='160' y='100' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='160' y='116' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='168' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='168' y='52' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='168' y='68' fill='currentColor' style='font-size:1em'>1</text>
+<text text-anchor='middle' x='168' y='84' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='168' y='100' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='168' y='116' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='176' y='4' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='176' y='20' fill='currentColor' style='font-size:1em'>f</text>
+<text text-anchor='middle' x='176' y='68' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='176' y='84' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='176' y='100' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='176' y='116' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='184' y='4' fill='currentColor' style='font-size:1em'>1</text>
+<text text-anchor='middle' x='184' y='20' fill='currentColor' style='font-size:1em'>f</text>
+<text text-anchor='middle' x='184' y='52' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='184' y='84' fill='currentColor' style='font-size:1em'>h</text>
+<text text-anchor='middle' x='184' y='100' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='184' y='116' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='192' y='84' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='192' y='100' fill='currentColor' style='font-size:1em'>f</text>
+<text text-anchor='middle' x='192' y='116' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='200' y='52' fill='currentColor' style='font-size:1em'>1</text>
+<text text-anchor='middle' x='200' y='84' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='200' y='100' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='200' y='116' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='208' y='52' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='208' y='84' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='208' y='100' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='208' y='116' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='216' y='100' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='216' y='116' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='224' y='84' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='224' y='100' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='232' y='100' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='232' y='116' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='240' y='84' fill='currentColor' style='font-size:1em'>2</text>
+<text text-anchor='middle' x='248' y='84' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='248' y='100' fill='currentColor' style='font-size:1em'>=</text>
+<text text-anchor='middle' x='248' y='116' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='256' y='84' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='264' y='84' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='264' y='100' fill='currentColor' style='font-size:1em'>0</text>
+<text text-anchor='middle' x='272' y='100' fill='currentColor' style='font-size:1em'>.</text>
+<text text-anchor='middle' x='280' y='100' fill='currentColor' style='font-size:1em'>0</text>
+</g>
+
+    </svg>
+  
+</div>
+<p>The data points for the test were generated by a <a href="https://github.com/tgres/tgres/blob/06a9f5805a934c304b11f44a32792414ceafe6f0/blaster/blaster.go#L55">goroutine</a>
+in the Tgres process itself. In the past I&rsquo;ve found that blasting a server
+with this many UDP packets can be tricky and hardware/network
+intensive. It&rsquo;s also hard to tell when/if they get dropped and why,
+etc. Since Go is not known for having problems in its network stack, I
+was not too worried about it, I just wanted a reliable and
+configurable source of incoming packets, and in Go world writing a
+simple goroutine seemed like the right answer.</p>
+<h2 id="somewhat-random-notes-and-making-tgres-even-faster">Somewhat Random Notes and Making Tgres Even Faster</h2>
+<h3 id="determining-failure">Determining failure</h3>
+<p>Determining when we are &ldquo;at capacity&rdquo; is tricky. I&rsquo;ve mostly looked at
+two factors (aside from the obvious - running out of memory/disk,
+becoming unresponsive, etc): receiver queue size
+and Postgres <a href="https://www.keithf4.com/checking-for-postgresql-bloat/">table bloat</a>.</p>
+<h4 id="queue-size">Queue size</h4>
+<p>Tgres uses &ldquo;elastic channels&rdquo; (so eloquently
+<a href="https://github.com/npat-efault/musings/wiki/Elastic-channels">described here</a> by Nick Patavalis)
+for incoming data points and to load series from Postgres.  These are
+channel-like structures that can grow to arbitrary length only limited
+by the memory available. This is done so as to be able to take maximum
+advantage of the hardware at hand. If any of those queues starts
+growing out of control, we are failing. You can see in the picture
+that at about 140K data points per second the receiver queue started
+growing, though it did stay steady at this size and never spun out of
+control (the actual test was left overnight at this rate just to make
+sure).</p>
+<h4 id="pg-table-bloat">PG Table Bloat</h4>
+<p>Table bloat is a phenomenon affecting Postgres in write-intensive
+situations because of its adherence to the <a href="https://en.wikipedia.org/wiki/Multiversion_concurrency_control">MVCC</a>.
+It basically means that pages on disk are being updated faster than the autovacuum
+process can keep up with them and the table starts growing out of
+control.</p>
+<p>To monitor for table bloat, I used a simple formula which determined
+the approximate size of the table based on the row count (our data is
+all floats, which makes it very predictable) and compared it with the
+actual size. If the actual size exceeded the estimated size, that&rsquo;s
+considered bloat. Bloat is reported in the &ldquo;TS Table Size&rdquo; chart. A
+little bloat is fine, and you can see that it stayed in fairly low
+percent throughout the test.</p>
+<p>In the end, though more research is warranted, it may just turn out
+that contrary to every expectation PostgreSQL was <em>not</em> the limiting
+factor here. The <code>postmaster</code> processes stayed below 170MB RSS, which
+is absolutely remarkable, and Grafana refreshes were very quick even
+at peak loads.</p>
+<h4 id="memory-consumption">Memory consumption</h4>
+<p>Tgres has a slight limitation in that creating a series is
+expensive. It needs to check with Postgres and for reasons I don&rsquo;t
+want to bore you with it&rsquo;s always a SELECT, optionally followed by an
+&ldquo;UPSERT&rdquo;. This takes time, and during the ramp-up period when the
+number of series is growing fast and lots of them need to be created,
+the Go runtime ends up consuming a lot of memory. You can see that
+screenshot image reports 4.69GB. If I were to restart Tgres (which
+would cause all existing DS names to be pre-cached) its memory
+footprint stayed at about 1.7GB. More work needs to be done to figure
+out what accounts for the difference.</p>
+<h4 id="data-point-rate-and-number-of-series">Data Point Rate and Number of Series</h4>
+<p>The rate of data points that need to be saved to disk is a function of
+the number of series and the resolution of the RRAs. To illustrate, if
+I have one series at 1 point per second, even if I blast a million
+data points per second, still only 1 data point per second needs to be
+saved.</p>
+<p>There is an important difference between Graphite and Tgres in that
+Tgres actually adjusts the final value considering the every data
+point value using weighted mean, while Graphite just ignores all
+points but the last. So Tgres does a bit more work, which adds up
+quickly at 6-figure rates per second.</p>
+<p>The Graphite test if I read the chart correctly was able to process
+~70K data points per second across 300K series. My test had 300K
+series and data points were coming in at over 150K/s. But just out of
+curiosity, I tried to push it to its limit.</p>
+<p>At 400 series, you can see clear signs of deterioration. You can see
+how vcache isn&rsquo;t flushed fast enough leaving gaps at the end of
+series. If we stop the data blast, it does eventually catch up,
+so long as there is memory for the cache.</p>
+<p>{% img /images/tgres_aws1_det.png %}</p>
+<p>If you don&rsquo;t catch this condition in time, Tgres will die with:</p>
+<p>{% codeblock lang:sh %}
+fatal error: runtime: out of memory</p>
+<p>runtime stack:
+runtime.throw(0xa33e5a, 0x16)
+/home/grisha/.gvm/gos/go1.8/src/runtime/panic.go:596 +0x95
+&hellip;
+{% endcodeblock %}</p>
+<h3 id="segment-width">Segment Width</h3>
+<p>There is still one easy performance card we can play here. Segment
+width is how many data points are stored in one row, it is also the
+limit on how many points we can transfer in a single SQL operation.
+Segment width by default is 200, because a width higher than that
+causes rows to exceed a page and trigger
+<a href="https://www.postgresql.org/docs/current/static/storage-toast.html">TOAST</a>.
+TOAST can be good or bad because it means data is stored in a separate table
+(not so good), but it also means it&rsquo;s compressed, which may be an I/O
+win.</p>
+<h4 id="so-what-would-happen-if-we-set-the-segment-width-to-1000">So what would happen if we set the segment width to 1000?</h4>
+<p>The picture changes significantly (see below). I was able to get the
+number of series to 500K, note the whopping 52,602 data points being
+written to the database per second! You can see we&rsquo;re pushing it to
+the limit because the receiver queue is beginning to grow. I <em>really</em>
+wanted to get the rate up to 150K/sec, but it just didn&rsquo;t want to go
+there.</p>
+<p>{% img /images/tgres_aws1_1k.png %}</p>
+<h4 id="and-what-would-happen-if-we-set-the-segment-width-to-4096">And what would happen if we set the segment width to 4096?</h4>
+<p>Interestingly, the memory footprint is a tad larger while the vcache
+is leaner, the number of data points flushed per second is about same,
+though in fewer SQL statements, and the overall picture is about the
+same and the incoming queue still skyrockets at just about 100K/sec
+over 500K series.</p>
+<p>{% img /images/tgres_aws1_4k.png %}</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>There is plenty of places in Tgres code that could still be
+optimized.</p>
+<p>One issue that would be worth looking into is exposing Tgres to the
+firehose on an empty database. The current code runs out of memory in
+under a minute when suddenly exposed to 300K new series at
+150K/s. Probably the simplest solution to this would be to somehow
+detect that we&rsquo;ve unable to keep up and start dropping data
+points. Eventually, when all the series are created and cached,
+performance should even out after the initial spike and all should be
+well.</p>
+<p>In any event, it&rsquo;s nice to be able to do something like this and know
+that it is performant as well:</p>
+<p>{% codeblock lang:sql %}
+tgres=&gt; select t, r from ds
+join tv  on tv.ds_id = ds.id
+where ident @&gt; &lsquo;{&ldquo;name&rdquo;:&ldquo;tgres.0_0_0_0.runtime.load.five&rdquo;}&rsquo;
+and tv.step_ms = 10000
+order by t desc
+limit 5;
+t            |       r
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;+&mdash;&mdash;&mdash;&mdash;&mdash;-
+2017-02-23 22:31:50+00 | 1.256833462648
+2017-02-23 22:26:30+00 | 1.305209492142
+2017-02-23 22:24:10+00 | 1.554056287975
+2017-02-23 22:24:00+00 | 1.453365774931
+2017-02-23 22:23:50+00 | 1.380504724386
+(5 rows)
+{% endcodeblock %}</p>
+<h2 id="reference">Reference</h2>
+<p>For completness sake, the instance was created using Terraform config
+approximately like this:</p>
+<p>{% codeblock lang:go %}
+variable &ldquo;aws_region&rdquo; { default = &ldquo;us-east-1&rdquo; }
+variable &ldquo;aws_zone&rdquo; { default = &ldquo;us-east-1a&rdquo; }
+variable &ldquo;key_name&rdquo; { default = &ldquo;REDACTED&rdquo;</p>
+<p>provider &ldquo;aws&rdquo; {
+region = &ldquo;${var.aws_region}&rdquo;
+}</p>
+<p>resource &ldquo;aws_ebs_volume&rdquo; &ldquo;ebs_volume&rdquo; {
+availability_zone = &ldquo;${var.aws_zone}&rdquo;
+size = 100
+}</p>
+<p>resource &ldquo;aws_volume_attachment&rdquo; &ldquo;ebs_att&rdquo; {
+device_name = &ldquo;/dev/sdh&rdquo;
+volume_id = &ldquo;${aws_ebs_volume.ebs_volume.id}"
+  instance_id = "${aws_instance.tgres-test-tmp.id}&rdquo;
+}</p>
+<p>resource &ldquo;aws_instance&rdquo; &ldquo;tgres-test-tmp&rdquo; {
+ami = &ldquo;ami-0b33d91d&rdquo;
+instance_type = &ldquo;c4.2xlarge&rdquo;
+subnet_id = &ldquo;REDACTED&rdquo;
+vpc_security_group_ids = [
+&ldquo;REDACTED&rdquo;
+]
+associate_public_ip_address = true
+key_name = &ldquo;${var.key_name}&rdquo;
+}
+{% endcodeblock %}</p>
+<p>And then the following commands were used to prime everyting:</p>
+<p>{% codeblock lang:sh %}
+sudo mke2fs /dev/sdh
+sudo mkdir /ebs
+sudo mount /dev/sdh /ebs</p>
+<p>sudo yum install -y postgresql95-server
+sudo service postgresql95 initdb
+sudo mkdir /ebs/pg
+sudo mv /var/lib/pgsql95/data /ebs/pg/data
+sudo ln -s /ebs/pg/data /var/lib/pgsql95/data</p>
+<p>sudo vi /var/lib/pgsql95/data/postgresql.conf</p>
+<h1 id="begin-postgres-config---paste-this-somewhere-in-the-file">BEGIN postgres config - paste this somewhere in the file</h1>
+<p>autovacuum_work_mem = -1
+synchronous_commit = off
+commit_delay = 100000
+autovacuum_max_workers = 10
+autovacuum_naptime = 1s
+autovacuum_vacuum_threshold = 2000
+autovacuum_vacuum_scale_factor = 0.0
+autovacuum_vacuum_cost_delay = 0</p>
+<h1 id="end-postgres-config">END postgres config</h1>
+<p>sudo service postgresql95 restart</p>
+<h1 id="create-pg-database">create PG database</h1>
+<p>sudo su - postgres
+createuser -s ec2-user   # note -s is superuser - not necessary for tgres but just in case
+createdb tgres
+exit</p>
+<h1 id="tgres-requires-go---i-used-18">Tgres (requires Go - I used 1.8)</h1>
+<h1 id="or-you-can-just-scp-it-from-some-machine-where-you-already-have-go-environment">(or you can just scp it from some machine where you already have go environment)</h1>
+<p>mkdir golang
+export GOPATH=~/golang/
+go get github.com/tgres/tgres
+cd /home/ec2-user/golang/src/github.com/tgres/tgres
+go build
+cp etc/tgres.conf.sample etc/tgres.conf</p>
+<p>{% endcodeblock %}</p>
+<p>The <code>tgres.conf</code> file looked like this:</p>
+<p>{% codeblock lang:sh %}
+min-step                = &ldquo;10s&rdquo;</p>
+<p>pid-file =                 &ldquo;tgres.pid&rdquo;
+log-file =                 &ldquo;log/tgres.log&rdquo;
+log-cycle-interval =       &ldquo;24h&rdquo;</p>
+<p>max-flushes-per-second      = 1000000 # NB - Deprecated setting
+workers                     = 4       # NB - Deprecated setting</p>
+<p>http-listen-spec            = &ldquo;0.0.0.0:8888&rdquo;
+graphite-line-listen-spec   = &ldquo;0.0.0.0:2003&rdquo;
+graphite-text-listen-spec   = &ldquo;0.0.0.0:2003&rdquo;
+graphite-udp-listen-spec    = &ldquo;0.0.0.0:2003&rdquo;
+graphite-pickle-listen-spec = &ldquo;0.0.0.0:2004&rdquo;</p>
+<p>statsd-text-listen-spec     = &ldquo;0.0.0.0:8125&rdquo;
+statsd-udp-listen-spec      = &ldquo;0.0.0.0:8125&rdquo;
+stat-flush-interval         = &ldquo;10s&rdquo;
+stats-name-prefix           = &ldquo;stats&rdquo;</p>
+<p>db-connect-string = &ldquo;host=/tmp dbname=tgres sslmode=disable&rdquo;</p>
+<p>[[ds]]
+regexp = &ldquo;.*&rdquo;
+step = &ldquo;10s&rdquo;
+#heartbeat = &ldquo;2h&rdquo;
+rras = [&ldquo;10s:6h&rdquo;, &ldquo;1m:7d&rdquo;, &ldquo;1h:1y&rdquo;]
+{% endcodeblock %}</p>
+<p>Tgres was running with the following. The <code>TGRES_BLASTER</code> starts the
+blaster goroutine.</p>
+<p>{% codeblock lang:sh %}
+TGRES_BIND=0.0.0.0 TGRES_BLASTER=1 ./tgres
+{% endcodeblock %}</p>
+<p>Once you have Tgres with the blaster running, you can control it via
+HTTP, e.g. the following would set it to 50K/s data points across 100K
+series. Setting rate to 0 pauses it.</p>
+<p>{% codeblock lang:sh %}
+curl -v &ldquo;http://127.0.0.1:8888/blaster/set?rate=50000&amp;n=100000&rdquo;
+{% endcodeblock %}</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="http://localhost:1313/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

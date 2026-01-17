@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Graceful restart in Golang | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Update (Apr 2015): Florian von Bock has
+turned what is described in this article into a nice Go package called
+endless.
+If you have a Golang HTTP service, chances are, you will need to restart it
+on occasion to upgrade the binary or change some configuration. And if
+you (like me) have been taking graceful restart for granted because
+the webserver took care of it, you may find this recipe very handy
+because with Golang you need to roll your own.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="noindex, nofollow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="http://localhost:1313/blog/1/01/01/graceful-restart-in-golang/">
+    
+
+    
+    
+    <meta property="og:url" content="http://localhost:1313/blog/1/01/01/graceful-restart-in-golang/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Graceful restart in Golang">
+  <meta property="og:description" content="Update (Apr 2015): Florian von Bock has turned what is described in this article into a nice Go package called endless.
+If you have a Golang HTTP service, chances are, you will need to restart it on occasion to upgrade the binary or change some configuration. And if you (like me) have been taking graceful restart for granted because the webserver took care of it, you may find this recipe very handy because with Golang you need to roll your own.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+
+  <meta itemprop="name" content="Graceful restart in Golang">
+  <meta itemprop="description" content="Update (Apr 2015): Florian von Bock has turned what is described in this article into a nice Go package called endless.
+If you have a Golang HTTP service, chances are, you will need to restart it on occasion to upgrade the binary or change some configuration. And if you (like me) have been taking graceful restart for granted because the webserver took care of it, you may find this recipe very handy because with Golang you need to roll your own.">
+  <meta itemprop="wordCount" content="1001">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Graceful restart in Golang">
+  <meta name="twitter:description" content="Update (Apr 2015): Florian von Bock has turned what is described in this article into a nice Go package called endless.
+If you have a Golang HTTP service, chances are, you will need to restart it on occasion to upgrade the binary or change some configuration. And if you (like me) have been taking graceful restart for granted because the webserver took care of it, you may find this recipe very handy because with Golang you need to roll your own.">
+
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white development">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Graceful restart in Golang</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Update (Apr 2015): <a href="https://github.com/fvbock">Florian von Bock</a> has
+turned what is described in this article into a nice Go package called
+<a href="https://github.com/fvbock/endless">endless</a>.</p>
+<p>If you have a Golang HTTP service, chances are, you will need to restart it
+on occasion to upgrade the binary or change some configuration. And if
+you (like me) have been taking graceful restart for granted because
+the webserver took care of it, you may find this recipe very handy
+because with Golang you need to roll your own.</p>
+<p>There are actually two problems that need to be solved here. First is
+the UNIX side of the graceful restart, i.e. the mechanism by which a
+process can restart itself without closing the listening socket. The
+second problem is ensuring that all in-progress requests are properly
+completed or timed-out.</p>
+<h2 id="restarting-without-closing-the-socket">Restarting without closing the socket</h2>
+<ul>
+<li>Fork a new process which inherits the listening socket.</li>
+<li>The child performs initialization and starts accepting connections on
+the socket.</li>
+<li>Immediately after, child sends a signal to the parent causing the
+parent to stop accepting connecitons and terminate.</li>
+</ul>
+<h3 id="forking-a-new-process">Forking a new process</h3>
+<p>There is more than one way to fork a process using the Golang lib, but
+for this particular case
+<a href="http://golang.org/pkg/os/exec/#Command">exec.Command</a> is the way to
+go. This is because the <a href="http://golang.org/pkg/os/exec/#Cmd">Cmd struct</a> this function returns has
+this <code>ExtraFiles</code> member, which specifies open files (in addition to
+stdin/err/out) to be inherited by new process.</p>
+<p>Here is what this looks like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#a6e22e">file</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">netListener</span>.<span style="color:#a6e22e">File</span>() <span style="color:#75715e">// this returns a Dup()</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">path</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;/path/to/executable&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">args</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">string</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;-graceful&#34;</span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">cmd</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">exec</span>.<span style="color:#a6e22e">Command</span>(<span style="color:#a6e22e">path</span>, <span style="color:#a6e22e">args</span><span style="color:#f92672">...</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">cmd</span>.<span style="color:#a6e22e">Stdout</span> = <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stdout</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">cmd</span>.<span style="color:#a6e22e">Stderr</span> = <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stderr</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">cmd</span>.<span style="color:#a6e22e">ExtraFiles</span> = []<span style="color:#f92672">*</span><span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">File</span>{<span style="color:#a6e22e">file</span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">cmd</span>.<span style="color:#a6e22e">Start</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatalf</span>(<span style="color:#e6db74">&#34;gracefulRestart: Failed to launch, error: %v&#34;</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>In the above code <code>netListener</code> is a pointer to
+<a href="http://golang.org/pkg/net/#Listener">net.Listener</a> listening for HTTP
+requests. The <code>path</code> variable should contain the path to the new
+executable if you&rsquo;re upgrading (which may be the same as the currently
+running one).</p>
+<p>An important point in the above code is that <code>netListener.File()</code>
+returns a
+<a href="http://pubs.opengroup.org/onlinepubs/009695399/functions/dup.html">dup(2)</a>
+of the file descriptor. The duplicated file descriptor will not have
+the <a href="http://pubs.opengroup.org/onlinepubs/009695399/functions/fcntl.html"><code>FD_CLOEXEC</code> flag</a> set,
+which would cause the file to be closed in the child (not what we want).</p>
+<p>You may come across examples that pass the inherited file descriptor
+number to the child via a command line argument, but the way
+<code>ExtraFiles</code> is implemented makes it unnecessary. The documentation
+states that &ldquo;If non-nil, entry i becomes file descriptor 3+i.&rdquo; This
+means that in the above code snippet, the inherited file descriptor in
+the child will always be 3, thus no need to explicitely pass it.</p>
+<p>Finally, <code>args</code> array contains a <code>-graceful</code> option: your program will
+need some way of informing the child that this is a part of a graceful
+restart and the child should re-use the socket rather than try opening
+a new one. Another way to do this might be via an environment
+variable.</p>
+<h3 id="child-initialization">Child initialization</h3>
+<p>Here is part of the program startup sequence</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">server</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Server</span>{<span style="color:#a6e22e">Addr</span>: <span style="color:#e6db74">&#34;0.0.0.0:8888&#34;</span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">gracefulChild</span> <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">l</span> <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Listever</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">BoolVar</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">gracefulChild</span>, <span style="color:#e6db74">&#34;graceful&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;listen on fd open 3 (internal use only)&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">gracefulChild</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#e6db74">&#34;main: Listening to existing file descriptor 3.&#34;</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">f</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">NewFile</span>(<span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#34;&#34;</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">l</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">FileListener</span>(<span style="color:#a6e22e">f</span>)
+</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#e6db74">&#34;main: Listening on a new file descriptor.&#34;</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">l</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Listen</span>(<span style="color:#e6db74">&#34;tcp&#34;</span>, <span style="color:#a6e22e">server</span>.<span style="color:#a6e22e">Addr</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><h3 id="signal-parent-to-stop">Signal parent to stop</h3>
+<p>At this point we&rsquo;re ready to accept requests, but just before we do
+that, we need to tell our parent to stop accepting requests and exit,
+which could be something like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">gracefulChild</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">parent</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">syscall</span>.<span style="color:#a6e22e">Getppid</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;main: Killing parent pid: %v&#34;</span>, <span style="color:#a6e22e">parent</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">syscall</span>.<span style="color:#a6e22e">Kill</span>(<span style="color:#a6e22e">parent</span>, <span style="color:#a6e22e">syscall</span>.<span style="color:#a6e22e">SIGTERM</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">server</span>.<span style="color:#a6e22e">Serve</span>(<span style="color:#a6e22e">l</span>)
+</span></span></code></pre></div><h2 id="in-progress-requests-completiontimeout">In-progress requests completion/timeout</h2>
+<p>For this we will need to keep track of open connections with a
+<a href="http://golang.org/pkg/sync/#WaitGroup">sync.WaitGroup</a>. We will need
+to increment the wait group on every accepted connection and decrement
+it on every connection close.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">httpWg</span> <span style="color:#a6e22e">sync</span>.<span style="color:#a6e22e">WaitGroup</span>
+</span></span></code></pre></div><p>At first glance, the Golang standard http package does not provide any
+hooks to take action on Accept() or Close(), but this is where the
+interface magic comes to the rescue. (Big thanks and credit to <a href="http://nella.org/jra/">Jeff R. Allen</a>
+for <a href="http://blog.nella.org/zero-downtime-upgrades-of-tcp-servers-in-go/">this post</a>).</p>
+<p>Here is an example of a listener which increments a wait group on
+every Accept(). First, we &ldquo;subclass&rdquo; <code>net.Listener</code> (you&rsquo;ll see why we
+need <code>stop</code> and <code>stopped</code> below):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">gracefulListener</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Listener</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">stop</span>    <span style="color:#66d9ef">chan</span> <span style="color:#66d9ef">error</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">stopped</span> <span style="color:#66d9ef">bool</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Next we &ldquo;override&rdquo; the Accept method. (Nevermind <code>gracefulConn</code> for
+now, it will be introduced later).</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">gl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gracefulListener</span>) <span style="color:#a6e22e">Accept</span>() (<span style="color:#a6e22e">c</span> <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Conn</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">Listener</span>.<span style="color:#a6e22e">Accept</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">c</span> = <span style="color:#a6e22e">gracefulConn</span>{<span style="color:#a6e22e">Conn</span>: <span style="color:#a6e22e">c</span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">httpWg</span>.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>We also need a &ldquo;constructor&rdquo;:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">newGracefulListener</span>(<span style="color:#a6e22e">l</span> <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Listener</span>) (<span style="color:#a6e22e">gl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gracefulListener</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gl</span> = <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">gracefulListener</span>{<span style="color:#a6e22e">Listener</span>: <span style="color:#a6e22e">l</span>, <span style="color:#a6e22e">stop</span>: make(<span style="color:#66d9ef">chan</span> <span style="color:#66d9ef">error</span>)}
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">go</span> <span style="color:#66d9ef">func</span>() {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">_</span> = <span style="color:#f92672">&lt;-</span><span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stop</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stopped</span> = <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stop</span> <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">Listener</span>.<span style="color:#a6e22e">Close</span>()
+</span></span><span style="display:flex;"><span>    }()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The reason the function above starts a goroutine is because this
+cannot be done in our <code>Accept()</code> above since it will block on
+<code>gl.Listener.Accept()</code>. The goroutine will unblock it by closing file
+descriptor.</p>
+<p>Our <code>Close()</code> method simply sends a <code>nil</code> to the stop channel for the
+above goroutine to do the rest of the work.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">gl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gracefulListener</span>) <span style="color:#a6e22e">Close</span>() <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stopped</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">syscall</span>.<span style="color:#a6e22e">EINVAL</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stop</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">nil</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#f92672">&lt;-</span><span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">stop</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Finally, this little convenience method extracts the file descriptor
+from the <code>net.TCPListener</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">gl</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">gracefulListener</span>) <span style="color:#a6e22e">File</span>() <span style="color:#f92672">*</span><span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">File</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">tl</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">gl</span>.<span style="color:#a6e22e">Listener</span>.(<span style="color:#f92672">*</span><span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">TCPListener</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fl</span>, <span style="color:#a6e22e">_</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">tl</span>.<span style="color:#a6e22e">File</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">fl</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>And, of course we also need a variant of a
+<a href="http://golang.org/pkg/net/#Conn"><code>net.Conn</code></a> which decrements the
+wait group on <code>Close()</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">gracefulConn</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">net</span>.<span style="color:#a6e22e">Conn</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">w</span> <span style="color:#a6e22e">gracefulConn</span>) <span style="color:#a6e22e">Close</span>() <span style="color:#66d9ef">error</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">httpWg</span>.<span style="color:#a6e22e">Done</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">w</span>.<span style="color:#a6e22e">Conn</span>.<span style="color:#a6e22e">Close</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>To start using the above graceful version of the Listener, all we need
+is to change the <code>server.Serve(l)</code> line to:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#a6e22e">netListener</span> = <span style="color:#a6e22e">newGracefulListener</span>(<span style="color:#a6e22e">l</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">server</span>.<span style="color:#a6e22e">Serve</span>(<span style="color:#a6e22e">netListener</span>)
+</span></span></code></pre></div><p>And there is one more thing. You should avoid hanging connections that
+the client has no intention of closing (or not this week). It is
+better to create your server as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#a6e22e">server</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">Server</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">Addr</span>:           <span style="color:#e6db74">&#34;0.0.0.0:8888&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">ReadTimeout</span>:    <span style="color:#ae81ff">10</span> <span style="color:#f92672">*</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">WriteTimeout</span>:   <span style="color:#ae81ff">10</span> <span style="color:#f92672">*</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">MaxHeaderBytes</span>: <span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">16</span>}
+</span></span></code></pre></div><ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="http://localhost:1313/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Separate Request and Response or a single Request object? | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Are you in favor of a single request object, or two separate objects:
+request and response?  Could it be that the two options are not
+contradictory or even mutually exclusive?
+I thouhgt I always was in favor of a single request object which I
+expressed on the Web-SIG mailing list thread
+dating back to October 2003 (ten years ago!). But it is only now that
+I’ve come to realize that both proponents of a single object and two
+separate objects were correct, they were just talking about different
+things.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="noindex, nofollow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="http://localhost:1313/blog/1/01/01/separate-request-and-response-or-a-single-request-object/">
+    
+
+    
+    
+    <meta property="og:url" content="http://localhost:1313/blog/1/01/01/separate-request-and-response-or-a-single-request-object/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Separate Request and Response or a single Request object?">
+  <meta property="og:description" content="Are you in favor of a single request object, or two separate objects: request and response? Could it be that the two options are not contradictory or even mutually exclusive?
+I thouhgt I always was in favor of a single request object which I expressed on the Web-SIG mailing list thread dating back to October 2003 (ten years ago!). But it is only now that I’ve come to realize that both proponents of a single object and two separate objects were correct, they were just talking about different things.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+
+  <meta itemprop="name" content="Separate Request and Response or a single Request object?">
+  <meta itemprop="description" content="Are you in favor of a single request object, or two separate objects: request and response? Could it be that the two options are not contradictory or even mutually exclusive?
+I thouhgt I always was in favor of a single request object which I expressed on the Web-SIG mailing list thread dating back to October 2003 (ten years ago!). But it is only now that I’ve come to realize that both proponents of a single object and two separate objects were correct, they were just talking about different things.">
+  <meta itemprop="wordCount" content="848">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Separate Request and Response or a single Request object?">
+  <meta name="twitter:description" content="Are you in favor of a single request object, or two separate objects: request and response? Could it be that the two options are not contradictory or even mutually exclusive?
+I thouhgt I always was in favor of a single request object which I expressed on the Web-SIG mailing list thread dating back to October 2003 (ten years ago!). But it is only now that I’ve come to realize that both proponents of a single object and two separate objects were correct, they were just talking about different things.">
+
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white development">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Separate Request and Response or a single Request object?</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Are you in favor of a single request object, or two separate objects:
+request and response?  Could it be that the two options are not
+contradictory or even mutually exclusive?</p>
+<p>I thouhgt I always was in favor of a single request object which I
+<a href="https://mail.python.org/pipermail/web-sig/2003-October/000162.html">expressed on the Web-SIG mailing list thread</a>
+dating back to October 2003 (ten years ago!). But it is only now that
+I’ve come to realize that both proponents of a single object and two
+separate objects were correct, they were just talking about different
+things.</p>
+<p>The confusion lies in the distinction between what I am going to term
+a web application and a request handler.</p>
+<p>A <em>request handler</em> exists in the realm of an HTTP server, which
+(naturally) serves HTTP requests. An HTTP request consists of a
+request (a method, such as “GET”, along with some HTTP headers and
+possibly a body) and a response (a status line, some HTTP headers and
+possibly a body) sent over the TCP connection. There is a one-to-one
+correspondence between a request and a response established by the
+commonality of the connection. An HTTP request is incomplete if the
+response is missing, and a response cannot exist without a
+request. (Yes, the term &ldquo;request&rdquo; is used to denote both the request
+and response, as well as just the request part of the request, and
+that&rsquo;s confusing).</p>
+<p>A <em>web application</em> is a layer on top of the HTTP request handler. A web
+application operates in requests and responses as well, but those
+should not be confused with the HTTP request/response pairs.</p>
+<p>Making the conceptual distinction between a web application request
+and an HTTP request is difficult because both web applications and
+request handlers use HTTP headers and status to accomplish their
+objectives. The difference is that strictly speaking a web application
+does not have to use HTTP and ideally should be protocol-agnostic,
+though it is very common for a web application to rely on
+HTTP-specific features these days. Not every HTTP request exists as
+part of a web application. But because it is difficult to imagine a
+web application without HTTP, we tend to lump the two concepts
+together. It is also exacerbated by the fact that HTTP headers carry
+both application-specific and HTTP-specific information.</p>
+<p>A good example of the delineation between a web application response
+and an HTTP response is handling of an error condition. A web
+application error is typically not an HTTP error.  Imagine an “invalid
+login” page. It is a web application error, but not an HTTP error. An
+“invalid login” page should send a “200 OK” status line and a body
+explaining that the credentials supplied were not valid. But then HTTP
+provides its own authentication mechanism, and an HTTP “401
+Unauthorized” (which ought not be used by web applications) is often
+misunderstood as something that web applications should incorporate
+into how they do things.</p>
+<p>Another example of a place where the line gets blurry is a redirect. A
+redirect is quite common in a web application, and it is typically
+accomplished by way of an HTTP redirect (3XX status code), yet the two
+are not the same. An HTTP redirect, for example, may happen
+unbeknownst to the web application for purely infrastructural reasons,
+and a web application redirect does not always cause an HTTP redirect.</p>
+<p>Yet another example: consider a website serving static content where
+same URI responds with different content according to the
+Accept-Language header in the request. Is this a “web application”?
+Hardly. Could you have some Python (or whatever you favorite language
+is) help along with this process? Certainly. Wouldn’t this code be
+part of a “web application”?  Good question. It is not uncommon for a
+web application to consider the Accept-Language header in its
+response. You could also accomplish this entirely in an http server by
+configuring it correctly. Sometimes whether something is a web
+application just depends on how you&rsquo;re looking at it, but you do have
+to decide for yourself which it is.</p>
+<p>Getting to the original problem, the answer to the question of whether
+to use separate response/request objects or not depends very much on
+which realm you’re operating in. A request handler only needs one
+request object representing the HTTP request because it is
+conceptually similar to a file - you don’t typically open a file twice
+once for reading and once for writing. Whereas a web application,
+which may chose between different responses depending on what’s in the
+request is possibly best served with two separate objects.</p>
+<p>I think that misunderstanding of what a “web application” is happens
+to be the cause of a lot of bad decisions plaguing the world of web
+development these days. It is not uncommon to see people get stuck on
+low-level HTTP subtleties while referring to web application issues and
+vise-versa. We’d all get along better if we took some time to think
+about the distinction between web applications and HTTP request
+handlers.</p>
+<p>P.S. This will get even more complicated when HTTP 2.0 comes around
+where responses may exist without a request. And I haven’t even
+mentioned SSL/TLS.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="http://localhost:1313/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

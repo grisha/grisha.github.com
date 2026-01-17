@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Holt-Winters Forecasting for Dummies (or Developers) - Part I | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="This three part write up [Part II
+Part III]
+is my attempt at a down-to-earth explanation (and Python code) of the
+Holt-Winters method for those of us who while hypothetically might be
+quite good at math, still try to avoid it at every opportunity. I had
+to dive into this subject while tinkering on
+tgres (which features a Golang implementation). And
+having found it somewhat complex (and yet so brilliantly
+simple), figured that it&rsquo;d be good to share this knowledge, and
+in the process, to hopefully solidify it in my head as well.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Holt-Winters Forecasting for Dummies (or Developers) - Part I">
+  <meta property="og:description" content="This three part write up [Part II Part III] is my attempt at a down-to-earth explanation (and Python code) of the Holt-Winters method for those of us who while hypothetically might be quite good at math, still try to avoid it at every opportunity. I had to dive into this subject while tinkering on tgres (which features a Golang implementation). And having found it somewhat complex (and yet so brilliantly simple), figured that it’d be good to share this knowledge, and in the process, to hopefully solidify it in my head as well.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2016-01-29T15:36:00+00:00">
+    <meta property="article:modified_time" content="2016-01-29T15:36:00+00:00">
+
+  <meta itemprop="name" content="Holt-Winters Forecasting for Dummies (or Developers) - Part I">
+  <meta itemprop="description" content="This three part write up [Part II Part III] is my attempt at a down-to-earth explanation (and Python code) of the Holt-Winters method for those of us who while hypothetically might be quite good at math, still try to avoid it at every opportunity. I had to dive into this subject while tinkering on tgres (which features a Golang implementation). And having found it somewhat complex (and yet so brilliantly simple), figured that it’d be good to share this knowledge, and in the process, to hopefully solidify it in my head as well.">
+  <meta itemprop="datePublished" content="2016-01-29T15:36:00+00:00">
+  <meta itemprop="dateModified" content="2016-01-29T15:36:00+00:00">
+  <meta itemprop="wordCount" content="2490">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Holt-Winters Forecasting for Dummies (or Developers) - Part I">
+  <meta name="twitter:description" content="This three part write up [Part II Part III] is my attempt at a down-to-earth explanation (and Python code) of the Holt-Winters method for those of us who while hypothetically might be quite good at math, still try to avoid it at every opportunity. I had to dive into this subject while tinkering on tgres (which features a Golang implementation). And having found it somewhat complex (and yet so brilliantly simple), figured that it’d be good to share this knowledge, and in the process, to hopefully solidify it in my head as well.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Holt-Winters Forecasting for Dummies (or Developers) - Part I</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2016-01-29T15:36:00Z">January 29, 2016</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>This three part write up [<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+<a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
+is my attempt at a down-to-earth explanation (and Python code) of the
+Holt-Winters method for those of us who while hypothetically might be
+quite good at math, still try to avoid it at every opportunity. I had
+to dive into this subject while tinkering on
+<a href="https://github.com/tgres/tgres">tgres</a> (which features a Golang implementation). And
+having found it somewhat complex (and yet so brilliantly
+simple), figured that it&rsquo;d be good to share this knowledge, and
+in the process, to hopefully solidify it in my head as well.</p>
+<p><a href="https://en.wikipedia.org/wiki/Exponential_smoothing#Triple_exponential_smoothing">Triple Exponential Smoothing</a>,
+also known as the Holt-Winters method, is one of the many methods or
+algorithms that can be used to forecast data points in a series,
+provided that the series is &ldquo;seasonal&rdquo;, i.e. repetitive over some
+period.</p>
+<p><img src="/images/hw00.png" alt=""></p>
+<h1 id="a-little-history">A little history</h1>
+<p>Еxponential smoothing in some form or another dates back to the work
+of <a href="https://en.wikipedia.org/wiki/Sim%C3%A9on_Denis_Poisson">Siméon Poisson</a> (1781-1840),
+while its application in forecasting appears to have been pioneered over a century later in 1956 by
+<a href="https://en.wikipedia.org/wiki/Robert_Goodell_Brown">Robert Brown</a> (1923–2013)
+in his publication
+<a href="https://industrydocuments.library.ucsf.edu/tobacco/docs/#id=jzlc0130">Exponential Smoothing for Predicting Demand</a>,
+(Cambridge, Massachusetts). [Based on the URL it seems Brown was working on forecasting tobacco demand?]</p>
+<p>In 1957 an <a href="http://web.mit.edu/">MIT</a> and <a href="http://www.uchicago.edu/">University of Chicago</a>
+graduate, professor <a href="https://en.wikipedia.org/wiki/Charles_C._Holt">Charles C Holt</a>
+(1921-2010) was working at <a href="http://www.cmu.edu/">CMU</a> (then known as CIT) on forecasting trends in production,
+inventories and labor force.
+It appears that Holt and Brown worked independently  and knew not of each-other&rsquo;s work.
+Holt published a paper &ldquo;Forecasting trends
+and seasonals by exponentially weighted moving averages&rdquo; (Office of Naval Research Research
+Memorandum No. 52, Carnegie Institute of Technology) describing
+double exponential smoothing. Three years later, in 1960, a student of
+Holts (?) Peter R. Winters improved the algorithm by adding seasonality and
+published
+<a href="http://pubsonline.informs.org/doi/abs/10.1287/mnsc.6.3.324">Forecasting sales by exponentially weighted moving averages</a>
+(Management Science 6, 324–342), citing Dr. Holt&rsquo;s 1957 paper as earlier work on the same subject.
+This algorithm became known as triple exponential smoothing or the Holt-Winters method,
+the latter probably because it was described in a 1960 Prentice-Hall book &ldquo;Planning Production, Inventories, and Work Force&rdquo;
+by Holt, <a href="https://en.wikipedia.org/wiki/Franco_Modigliani">Modigliani</a>, <a href="https://en.wikipedia.org/wiki/John_Muth">Muth</a>,
+<a href="https://en.wikipedia.org/wiki/Herbert_A._Simon">Simon</a>,
+<a href="https://www.gsb.stanford.edu/faculty-research/faculty/charles-puis-bonini">Bonini</a> and Winters - good luck finding a copy!</p>
+<p>Curiously, I&rsquo;ve not been able to find any personal information on Peter R. Winters online. If you find anything, please let me
+know, I&rsquo;ll add a reference here.</p>
+<p>In 2000 the Holt-Winters method became well known in the <a href="https://en.wikipedia.org/wiki/Internet_service_provider">ISP</a>
+circles at the height of the <a href="https://en.wikipedia.org/wiki/Dot-com_bubble">.com boom</a> when Jake D. Brutlag (then of WebTV) published
+<a href="https://www.google.com/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=1&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwiAx9SNoezKAhXCC5oKHZZ4A84QFgghMAA&amp;url=https%3A%2F%2Fwww.usenix.org%2Fevents%2Flisa00%2Ffull_papers%2Fbrutlag%2Fbrutlag.pdf&amp;usg=AFQjCNEg-ynB5Ok0Sf4ATBB77PcGwT4OLw&amp;bvm=bv.113943665,d.bGs">Aberrant Behavior Detection in Time Series for Network Monitoring</a>
+(Proceedings of the 14th Systems Administration Conference, LISA
+2000). It described how an open source <a href="https://en.wikipedia.org/wiki/C_%28programming_language%29">C</a>
+implementation [<a href="https://github.com/oetiker/rrdtool-1.x/commit/cafbbce69d9d1d4a1772299d97138b5a81d343f5">link to the actual commit</a>]
+of a variant of the Holt-Winters seasonal method, which he contributed as a feature
+to the very popular at ISPs <a href="http://oss.oetiker.ch/rrdtool/">RRDTool</a>, could be used to
+monitor network traffic.</p>
+<p>In 2003, a remarkable 40+ years since the publication of Winters
+paper, professor <a href="http://www.sbs.ox.ac.uk/community/people/james-taylor">James W Taylor</a>
+of <a href="http://www.ox.ac.uk/">Oxford University</a> extended the
+Holt-Winters method to multiple seasonalities (i.e. $n$-th exponential
+smoothing) and published <a href="http://users.ox.ac.uk/~mast0315/ExpSmDoubleSeasonal.pdf">Short-term electricity demand forecasting using double seasonal exponential smoothing</a>
+(Journal of Operational
+Research Society, vol. 54, pp. 799–805). (But we won&rsquo;t cover Taylors
+method here).</p>
+<p>In 2011 the RRDTool implementation contributed by Brutlag was
+<a href="https://github.com/graphite-project/graphite-web/commit/4e7a0d664ea2153ea65173138ab8f337716e21fa">ported</a>
+to <a href="http://graphite.readthedocs.org/en/latest/">Graphite</a> by Matthew Graham thus making it even more popular in the
+devops community.</p>
+<p>So&hellip; how does it work?</p>
+<h1 id="forecasting-baby-steps">Forecasting, Baby Steps</h1>
+<p>The best way to explain triple exponential smoothing is to gradually
+build up to it starting with the simplest forecasting methods. Lest
+this text gets too long, we will stop at triple exponential smoothing,
+though there are quite a few other methods known.</p>
+<p>I used mathematical notation only where I thought it made best sense, sometimes
+accompanied by an &ldquo;English translation&rdquo;, and where appropriate
+supplemented with a bit of <a href="http://www.python.org">Python</a> code.
+In Python I refrain from using any non-standard packages, keeping the
+examples plain. I chose not to use <a href="https://wiki.python.org/moin/Generators">generators</a>
+for clarity. The objective here is to explain
+the inner working of the algorithm so that you can implement it
+yourself in whatever language you prefer.</p>
+<p>I also hope to demonstrate that this is simple enough that you do not
+need to resort to <a href="http://www.scipy.org/">SciPy</a> or <a href="https://en.wikipedia.org/wiki/R_%28programming_language%29">whatever</a>
+(not that there is anything wrong with that).</p>
+<h2 id="but-first-some-terminology">But First, Some Terminology</h2>
+<h3 id="series"><em>Series</em></h3>
+<p>The main subject here is a <em>series</em>. In the real world we are most
+likely to be applying this to a <em>time series</em>, but for this discussion
+the time aspect is irrelevant. A series is merely an ordered sequence
+of numbers. We might be using words that are chronological in nature
+(past, future, yet, already, <em>time</em> even!), but only because it makes it easer to
+understand. So forget about time, timestamps, intervals,
+<a href="http://www.preposterousuniverse.com/blog/2013/10/18/is-time-real/">time does not exist</a>,
+the only property each data point has (other than the value) is its order: first,
+next, previous, last, etc.</p>
+<p>It is useful to think of a series as a list of two-dimensional $x,y$
+coordinates, where $x$ is order (always going up by 1), and $y$ is
+value. For this reason in our math formulas we will be sticking to $y$
+for value and $x$ for order.</p>
+<h3 id="observed-vs-expected"><em>Observed</em> vs <em>Expected</em></h3>
+<p>Forecasting is estimating values that we do not yet know based on the
+the values we do know. The values we know are referred to as
+<em>observed</em> while the values we forecast as <em>expected</em>. The math
+convention to denote expected values is with the
+<a href="https://en.wikipedia.org/wiki/Circumflex">circumflex</a> a.k.a. &ldquo;hat&rdquo;: $\hat{y}$</p>
+<p>For example, if we have a series that looks like <code>[1,2,3]</code>, we might
+forecast the next value to be 4. Using this terminology, given
+observed series <code>[1,2,3]</code> the next expected value ${\hat{y}\_4}$ is 4.</p>
+<h3 id="method"><em>Method</em></h3>
+<p>We may have intuited based on <code>[1,2,3]</code> that in this series each value
+is 1 greater than the previous, which in math notation can
+be expressed as and $\hat{y}\_{x + 1} = y\_x + 1$.  This equation, the
+result of our intuition, is known as a forecast <em>method</em>.</p>
+<p>If our method is correct then the next observed value would indeed be
+4, but if <code>[1,2,3]</code> is actually part of a
+<a href="https://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci sequence</a>, then where we
+expected ${\hat{y}\_4 = 4}$, we would observe $y\_4 = 5$. Note the hatted
+${\hat{y}}$ (expected) in the former and $y$ (observed) in the latter expression.</p>
+<h3 id="error-sse-and-mse"><em>Error</em>, <em>SSE</em> and <em>MSE</em></h3>
+<p>It is perfectly normal to compute expected values where we already
+have observed values. Comparing the two lets you compute the <em>error</em>,
+which is the <em>difference</em> between observed and expected and is an
+indispensable indication of the accuracy of the method.</p>
+<p>Since difference can be negative or positive, the common convention is
+to use the absolute value or square the error so that the number is always
+positive. For a whole series the squared errors are typically summed
+resulting in <em><a href="https://en.wikipedia.org/wiki/Residual_sum_of_squares">Sum of Squared Errors</a> (SSE)</em>.
+Sometimes you may come across _<a href="https://en.wikipedia.org/wiki/Mean_squared_error">Mean Squared Error</a>
+(MSE).</p>
+<h2 id="and-now-the-methods-where-the-fun-begins">And Now the Methods (where the fun begins!)</h2>
+<p>In the next few examples we are going to be using this tiny series:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>series <span style="color:#f92672">=</span> [<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">12</span>,<span style="color:#ae81ff">13</span>,<span style="color:#ae81ff">12</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">12</span>]
+</span></span></code></pre></div><p>(Feel free to paste it and any of the following code snippets into your Python
+<a href="https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop">repl</a>)</p>
+<h3 id="naive-method">Naive Method</h3>
+<p>This is the most primitive forecasting method. The premise of the
+<em>naive</em> method is that the expected point is equal to the last
+observed point:</p>
+$$
+\hat{y}_{x+1} = y_x
+$$<p>Using this method we would forecast the next point to be 12.</p>
+<h3 id="simple-average">Simple Average</h3>
+<p>A less primitive method is the <a href="https://en.wikipedia.org/wiki/Arithmetic_mean">arithmetic average</a>
+of all the previously observed data points. We take all the values we
+know, calculate the average and bet that that&rsquo;s going to be the next value. Of course it won&rsquo;t be it exactly,
+but it probably will be somewhere in the ballpark, hopefully you can see the reasoning behind this
+simplistic approach.</p>
+$$
+\hat{y}_{x+1} = \dfrac{1}{x}\sum_{i=1}^{x}y_i
+$$<p>(Okay, this formula is only here because I think the <a href="https://en.wikipedia.org/wiki/Summation">capital Sigma</a>
+looks cool. I am sincerely hoping that the average requires no explanation.) In Python:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">average</span>(series):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> float(sum(series))<span style="color:#f92672">/</span>len(series)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Given the above series, the average is:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; average(series)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 10.285714285714286</span>
+</span></span></code></pre></div><p>As a forecasting method, there are actually situations where it&rsquo;s spot
+on. For example your final school grade may be the average of all the
+previous grades.</p>
+<h3 id="moving-average">Moving Average</h3>
+<p>An improvement over simple average is the average of $n$ last
+points. Obviously the thinking here is that only the recent values
+matter. Calculation of the moving average involves what is sometimes
+called a &ldquo;sliding window&rdquo; of size $n$:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># moving average using n last points</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">moving_average</span>(series, n):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> average(series[<span style="color:#f92672">-</span>n:])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; moving_average(series, 3)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 11.333333333333334</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; moving_average(series, 4)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 11.75</span>
+</span></span></code></pre></div><p>A moving average can actually be quite effective, especially if you
+pick the right $n$ for the series. Stock analysts adore it.</p>
+<p>Also note that simple average is a variation of a moving average, thus
+the two functions above could be re-written as a single recursive one
+(just for fun):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">average</span>(series, n<span style="color:#f92672">=</span><span style="color:#66d9ef">None</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> n <span style="color:#f92672">is</span> <span style="color:#66d9ef">None</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> average(series, len(series))
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> float(sum(series[<span style="color:#f92672">-</span>n:]))<span style="color:#f92672">/</span>n
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; average(series, 3)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 11.333333333333334</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; average(series)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 10.285714285714286</span>
+</span></span></code></pre></div><h3 id="weighted-moving-average">Weighted Moving Average</h3>
+<p>A <em>weighted</em> moving average is a moving average where within the
+sliding window values are given different weights, typically so that
+more recent points matter more.</p>
+<p>Instead of selecting a window size, it requires a list of weights
+(which should add up to 1). For example if we picked <code>[0.1, 0.2, 0.3, 0.4]</code> as weights, we would be giving 10%, 20%, 30% and 40%
+to the last 4 points respectively. In Python:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># weighted average, weights is a list of weights</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">weighted_average</span>(series, weights):
+</span></span><span style="display:flex;"><span>    result <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+</span></span><span style="display:flex;"><span>    weights<span style="color:#f92672">.</span>reverse()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(len(weights)):
+</span></span><span style="display:flex;"><span>        result <span style="color:#f92672">+=</span> series[<span style="color:#f92672">-</span>n<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> weights[n]
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> result
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; weights = [0.1, 0.2, 0.3, 0.4]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; weighted_average(series, weights)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 11.5</span>
+</span></span></code></pre></div><p>Weighted moving average is fundamental to what follows, please take a
+moment to understand it, give it a think before reading on.</p>
+<p>I would also like to stress the importance of the weights adding up
+to 1. To demonstrate why, let&rsquo;s say we pick weights <code>[0.9, 0.8, 0.7, 0.6]</code> (which add up to 3.0). Watch what happens:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">&gt;&gt;&gt;</span> weighted_average(series, [<span style="color:#ae81ff">0.9</span>, <span style="color:#ae81ff">0.8</span>, <span style="color:#ae81ff">0.7</span>, <span style="color:#ae81ff">0.6</span>])
+</span></span><span style="display:flex;"><span><span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">35.5</span>  <span style="color:#75715e"># &lt;--- this is clearly bogus</span>
+</span></span></code></pre></div><h3 id="picture-time">Picture time!</h3>
+<p>Here is a picture that demonstrates our tiny series and all of the above
+forecasts (except for naive).</p>
+<p><img src="/images/hw01.png" alt=""></p>
+<p>It&rsquo;s important to understand that which of the above methods is better
+very much depends on the nature of the series. The order in which I
+presented them was from simple to complex, but &ldquo;more complex&rdquo; doesn&rsquo;t
+necessarily mean &ldquo;better&rdquo;.</p>
+<h3 id="single-exponential-smoothing">Single Exponential Smoothing</h3>
+<p>Here is where things get interesting. Imagine a weighted average where
+we consider <em>all</em> of the data points, while assigning exponentially
+smaller weights as we go back in time. For example if we started with
+0.9, our weights would be (going back in time):</p>
+$$
+0.9^1, 0.9^2, 0.9^3, 0.9^4, 0.9^5, 0.9^6... \\
+\mbox{or: } 0.9, 0.81, 0.729, 0.6561, 0.59049, 0.531441, ...
+$$<p>&hellip;eventually approaching the big old zero. In some way this is very
+similar to the weighted average above, only the weights are dictated
+by math, decaying uniformly. The smaller the starting weight, the
+faster it approaches zero.</p>
+<p>Only&hellip; there is a problem: weights do not add up to 1. The sum of
+the first 3 numbers alone is already 2.439! (Exercise for the reader: what number
+does the sum of the weights approach and why?)</p>
+<p>What earned Poisson, Holts or Roberts a permanent place in the history
+of Mathematics is solving this with a succinct and elegant formula:</p>
+$$
+\hat{y}_x = \alpha \cdot y_x + (1-\alpha) \cdot \hat{y}_{x-1} \\
+$$<p>If you stare at it just long enough, you will see that the expected
+value $\hat{y}\_x$ is the sum of two products: $\alpha \cdot y\_x$ and
+$(1-\alpha) \cdot \hat{y}\_{x-1}$. You can think of $\alpha$ (alpha)
+as a sort of a starting weight 0.9 in the above (problematic)
+example. It is called the <em>smoothing factor</em> or <em>smoothing
+coefficient</em> (depending on who wrote your text book).</p>
+<p>So essentially we&rsquo;ve got a weighted moving average with two weights:
+$\alpha$ and $1-\alpha$.  The sum of $\alpha$ and $1-\alpha$ is 1, so
+all is well.</p>
+<p>Now let&rsquo;s zoom in on the right side of the sum. Cleverly, $1-\alpha$
+is multiplied by the <em>previous</em> expected value
+$\hat{y}\_{x-1}$. Which, if you think about it, is the result of the
+same formula, which makes the expression recursive (and programmers
+love recursion), and if you were to write it all out on paper you would
+quickly see that $(1-\alpha)$ is multiplied by itself again and again
+all the way to beginning of the series, if there is one, infinitely
+otherwise. And this is why this method is called
+<em>exponential</em>.</p>
+<p>Another important thing about $\alpha$ is that its value dictates how
+much weight we give the most recent observed value versus the last
+expected. It&rsquo;s a kind of a lever that gives more weight to the left
+side when it&rsquo;s higher (closer to 1) or the right side when it&rsquo;s lower
+(closer to 0).</p>
+<p>Perhaps $\alpha$ would be better referred to as <em>memory decay rate</em>: the
+higher the $\alpha$, the faster the method &ldquo;forgets&rdquo;.</p>
+<h4 id="why-is-it-called-smoothing">Why is it called &ldquo;smoothing&rdquo;?</h4>
+<p>To the best of my understanding this simply refers to the effect these
+methods have on a graph if you were to plot the values: jagged lines
+become smoother.  Moving average also has the same effect, so it
+deserves the right to be called smoothing just as well.</p>
+<h4 id="implementation">Implementation</h4>
+<p>There is an aspect of this method that programmers would appreciate
+that is of no concern to mathematicians: it&rsquo;s simple and efficient to
+implement. Here is some Python. Unlike the previous examples, this
+function returns expected values for the whole series, not just one
+point.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># given a series and alpha, return series of smoothed points</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">exponential_smoothing</span>(series, alpha):
+</span></span><span style="display:flex;"><span>    result <span style="color:#f92672">=</span> [series[<span style="color:#ae81ff">0</span>]] <span style="color:#75715e"># first value is same as series</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, len(series)):
+</span></span><span style="display:flex;"><span>        result<span style="color:#f92672">.</span>append(alpha <span style="color:#f92672">*</span> series[n] <span style="color:#f92672">+</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> alpha) <span style="color:#f92672">*</span> result[n<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> result
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; exponential_smoothing(series, 0.1)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># [3, 3.7, 4.53, 5.377, 6.0393, 6.43537, 6.991833]</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt;&gt;&gt; exponential_smoothing(series, 0.9)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># [3, 9.3, 11.73, 12.873000000000001, 12.0873, 10.20873, 11.820873]</span>
+</span></span></code></pre></div><p>The figure below shows exponentially smoothed version of our series
+with $\alpha$ of 0.9 (red) and $\alpha$ of 0.1 (orange).</p>
+<p><img src="/images/hw02.png" alt=""></p>
+<p>Looking at the above picture it is apparent that the $\alpha$ value of 0.9
+follows the observed values much closer than 0.1. This isn&rsquo;t going to
+be true for any series, each series has its best $\alpha$ (or
+several). The process of finding the best $\alpha$ is referred to as
+<em>fitting</em> and we will discuss it later separately.</p>
+<h2 id="quick-review">Quick Review</h2>
+<p>We&rsquo;ve learned some history, basic terminology (series and how it knows
+no time, method, error SSE, MSE and fitting). And we&rsquo;ve learned some
+basic forecasting methods: naive, simple average, moving average,
+weighted moving average and, finally, single exponential smoothing.</p>
+<p>One very important characteristic of all of the above methods is that
+remarkably, they can only forecast a <em>single</em> point. That&rsquo;s correct,
+just one.</p>
+<p>In <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a> we will focus on methods that can forecast more than
+one point.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

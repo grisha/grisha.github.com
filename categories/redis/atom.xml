@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Redis on Gregory Trubetskoy</title>
+    <link>https://grisha.org/categories/redis/</link>
+    <description>Recent content in Redis on Gregory Trubetskoy</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 25 Mar 2013 22:09:00 +0000</lastBuildDate>
+    <atom:link href="https://grisha.org/categories/redis/atom.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>On keeping lots of integers in memory</title>
+      <link>https://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</link>
+      <pubDate>Mon, 25 Mar 2013 22:09:00 +0000</pubDate>
+      <guid>https://grisha.org/blog/2013/03/25/on-keeping-lots-of-integers-in-memory/</guid>
+      <description>&lt;p&gt;Once upon a time (over a year ago) I found myself needing to store large numbers of&#xA;integers in memory. The goal was to store a graph of all our&#xA;purchasers and items purchased, so that we could quickly identify&#xA;like-minded purchasers based on common purchases and make real-time&#xA;recommendations of the form &amp;ldquo;people like you also bought&amp;rdquo;. This&#xA;approach is commonly known as &lt;a href=&#34;http://en.wikipedia.org/wiki/Collaborative_filtering&#34;&gt;collaborative filtering&lt;/a&gt;,&#xA;and exactly how we did it would be a subject of some future post&#xA;(perhaps).&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.146.0"><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Gregory Trubetskoy</title>
+
+<meta name="description" content="Notes to self.">
+<meta name="author" content="Gregory Trubetskoy">
+<link rel="canonical" href="http://localhost:1313/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/atom.xml" title="rss">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="Gregory Trubetskoy (Alt + H)">Gregory Trubetskoy</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Ruby, HiveServer2 and Kerberos
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Recently I found myself needing to connect to HiveServer2 with Kerberos authentication enabled from a Ruby app. As it turned out rbhive gem we were using did not have support for Kerberos authentication. So I had to roll my own.
+This post is to document the experience of figuring out the details of a SASL/GSSAPI connection before it is lost forever in my neurons and synapses.
+First, the terminology. The authentication system that Hadoop uses is Kerberos. Note that Kerberos is not a network protocol. It describes the method by which authentication happens, but not the format of how to send Kerberos tickets and what not over the wire. For that, you need SASL and GSSAPI.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2014-08-19 08:03:00 +0000 UTC'>August 19, 2014</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Ruby, HiveServer2 and Kerberos" href="http://localhost:1313/blog/2014/08/19/ruby-hiveserver2-and-kerberos/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Graceful restart in Golang
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Update (Apr 2015): Florian von Bock has turned what is described in this article into a nice Go package called endless.
+If you have a Golang HTTP service, chances are, you will need to restart it on occasion to upgrade the binary or change some configuration. And if you (like me) have been taking graceful restart for granted because the webserver took care of it, you may find this recipe very handy because with Golang you need to roll your own.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2014-06-03 12:49:00 +0000 UTC'>June 3, 2014</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Graceful restart in Golang" href="http://localhost:1313/blog/2014/06/03/graceful-restart-in-golang/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">mod_python performance part 2: high(er) concurrency
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Tl;dr As is evident from the table below, mod_python 3.5 (in pre-release testing as of this writing) is currently the fastest tool when it comes to running Python in your web server, and second-fastest as a WSGI container.
+Server Version Req/s % of httpd static Notes nxweb static file 3.2.0-dev 512,767 347.1 % &#34;memcache&#34;:false. (626,270 if true) nginx static file 1.0.15 430,135 291.1 % stock CentOS 6.3 rpm httpd static file 2.4.4, mpm_event 147,746 100.0 % mod_python handler 3.5, Python 2.7.5 125,139 84.7 % uWSGI 1.9.18.2 119,175 80.7 % -p 16 --threads 1 mod_python wsgi 3.5, Python 2.7.5 87,304 59.1 % mod_wsgi 3.4 76,251 51.6 % embedded mode nxweb wsgi 3.2.0-dev, Python 2.7.5 15,141 10.2 % posibly misconfigured? The point of this test I wanted to see how mod_python compares to other tools of similar purpose on high-end hardware and with relatively high concurrency. As I’ve written before you’d be foolish to base your platform decision on these numbers because speed in this case matters very little. So the point of this is just make sure that mod_python is in the ballpark with the rest and that there isn’t anything seriously wrong with it. And surprisingly, mod_python is actually pretty fast, fastest, even, though in its own category (a raw mod_python handler).
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-11-07 17:51:00 +0000 UTC'>November 7, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to mod_python performance part 2: high(er) concurrency" href="http://localhost:1313/blog/2013/11/07/mod_python-performance-part-2-higher-concurrency/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Separate Request and Response or a single Request object?
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Are you in favor of a single request object, or two separate objects: request and response? Could it be that the two options are not contradictory or even mutually exclusive?
+I thouhgt I always was in favor of a single request object which I expressed on the Web-SIG mailing list thread dating back to October 2003 (ten years ago!). But it is only now that I’ve come to realize that both proponents of a single object and two separate objects were correct, they were just talking about different things.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-10-30 13:18:00 +0000 UTC'>October 30, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Separate Request and Response or a single Request object?" href="http://localhost:1313/blog/2013/10/30/separate-request-and-response-or-a-single-request-object/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">My thoughts on WSGI
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>I’m not very fond of it. Here is why.
+CGI Origins WSGI is based on CGI, as the “GI” (Gateway Interface) suggests right there in the name.
+CGI solved a very important problem using the very limited tools at hand available at the time. Though CGI wasn’t a standard, it was ubiquitous in the early days of the WWW, despite its inherent slowness and other limitations. It became popular because it worked with any language, was easy to turn on and provided such a thick wall of isolation that admins could turn it on for their users without too much concern for problems caused by user-generated CGI scripts.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-10-26 11:24:00 +0000 UTC'>October 26, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to My thoughts on WSGI" href="http://localhost:1313/blog/2013/10/26/my-thoughts-on-wsgi/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">mod_python: the long story
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>This story started back in 1996. I was in my early twenties, working as a programmer at a small company specializing in on-line reporting of certain pharmaceutical data.
+There was a web-based application (which was extremely cool considering how long ago this was), but unfortunately it was written in Visual Basic by a contractor and I was determined to do something about it. As was very fashionable at the time, I was very pro Open Source, had Linux running on my home 386 and had recently heard Guido’s talk at the DC Linux user group presenting his new language he called Python. Python seemed like a perfect alternative to the VB monstrosity.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-10-25 20:05:00 +0000 UTC'>October 25, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to mod_python: the long story" href="http://localhost:1313/blog/2013/10/25/mod_python-the-long-story/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">mod_python performance and why it matters not.
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>TL;DR: mod_python is faster than you think.
+Tonight I thought I’d spend some time looking into how the new mod_python fares against other frameworks of similar purpose. In this article I am going to show the results of my findings, and then I will explain why it really does not matter.
+I am particularly interested in the following:
+a pure mod_python handler, because this is as fast as mod_python gets. a mod_python wsgi app, because WSGI is so popular these days. mod_wsgi, because it too runs under Apache and is written entirely in C. uWSGI, because it claims to be super fast. Apache serving a static file (as a point of reference). The Test I am testing this on a CentOS instance running inside VirtualBox on an early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM allocated to it. Granted this configuration can’t possibly be very performant [if there is such a word], but it should be enough to compare.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-10-10 13:04:00 +0000 UTC'>October 10, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to mod_python performance and why it matters not." href="http://localhost:1313/blog/2013/10/10/mod_python-performance-and-why-it-matters-not./"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Running a WSGI app on Apache should not be this hard
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>If I have a Django app in /home/grisha/mysite, then all I should need to do to run it under Apache is:
+$ mod_python create /home/grisha/mysite_httpd \ --listen=8888 \ --pythonpath=/home/grisha/mysite \ --pythonhandler=mod_python.wsgi \ --pythonoption=&#34;mod_python.wsgi.application mysite.wsgi::application&#34; $ mod_python start /home/grisha/mysite_httpd/conf/httpd.conf That’s all. There should be no need to become root, tweak various configurations, place files in the right place, check permissions, none of that.
+Well… With mod_python 3.4.0 (alpha) that’s exactly how it is…
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-09-25 20:08:00 +0000 UTC'>September 25, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Running a WSGI app on Apache should not be this hard" href="http://localhost:1313/blog/2013/09/25/running-a-wsgi-app-on-apache-should-not-be-this-hard/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">The Next Smallest Step Problem
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>“A journey of a thousand miles begins with a single step”
+Most of my journeys never begin, or cannot continue because of that one single step, be it first or next. Because it is hard, at times excruciatingly so.
+Here I speak of software, but this applies to many other aspects of my life just as well.
+I recon it’s because I do not think in steps. I think of a destination. I imagine the end-result. I can picture it with clarity and in great detail. I know where I need to be. But what is the next step to get there? And it doesn’t help that where I travel, there are no signs.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-08-10 15:10:00 +0000 UTC'>August 10, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to The Next Smallest Step Problem" href="http://localhost:1313/blog/2013/08/10/the-next-smallest-step-problem/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Hacking on mod_python (again)
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Nearly eight years after my last commit to Mod_python I’ve decided to spend some time hacking on it again.
+Five years without active development and thirteen since its first release, it still seems to me an entirely useful and viable tool. The code is exceptionally clean, the documentation is amazing, and the test suite is awesome. Which is a real testament to the noble efforts of all the people who contributed to its development.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2013-08-02 16:19:00 +0000 UTC'>August 2, 2013</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Hacking on mod_python (again)" href="http://localhost:1313/blog/2013/08/02/hacking-on-mod_python-again/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="http://localhost:1313/page/4/">
+      «&nbsp;Prev&nbsp;
+    </a>
+    <a class="next" href="http://localhost:1313/page/6/">Next&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">Gregory Trubetskoy</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

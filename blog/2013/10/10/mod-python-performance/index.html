@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>mod_python performance and why it matters not. | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="TL;DR: mod_python is faster than you think.
+Tonight I thought I&rsquo;d spend some time looking into how the new
+mod_python
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+why it really does not matter.
+I am particularly interested in the following:
+
+a pure mod_python handler, because this is as fast as mod_python gets.
+a mod_python wsgi app, because WSGI is so popular these days.
+mod_wsgi, because it too runs under Apache and is written entirely in C.
+uWSGI, because it claims to be super fast.
+Apache serving a static file (as a point of reference).
+
+The Test
+I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU&rsquo;s and 6GB of RAM
+allocated to it. Granted this configuration can&rsquo;t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2013/10/10/mod-python-performance/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2013/10/10/mod-python-performance/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="mod_python performance and why it matters not.">
+  <meta property="og:description" content="TL;DR: mod_python is faster than you think.
+Tonight I thought I’d spend some time looking into how the new mod_python fares against other frameworks of similar purpose. In this article I am going to show the results of my findings, and then I will explain why it really does not matter.
+I am particularly interested in the following:
+a pure mod_python handler, because this is as fast as mod_python gets. a mod_python wsgi app, because WSGI is so popular these days. mod_wsgi, because it too runs under Apache and is written entirely in C. uWSGI, because it claims to be super fast. Apache serving a static file (as a point of reference). The Test I am testing this on a CentOS instance running inside VirtualBox on an early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM allocated to it. Granted this configuration can’t possibly be very performant [if there is such a word], but it should be enough to compare.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2013-10-10T13:04:00+00:00">
+    <meta property="article:modified_time" content="2013-10-10T13:04:00+00:00">
+
+  <meta itemprop="name" content="mod_python performance and why it matters not.">
+  <meta itemprop="description" content="TL;DR: mod_python is faster than you think.
+Tonight I thought I’d spend some time looking into how the new mod_python fares against other frameworks of similar purpose. In this article I am going to show the results of my findings, and then I will explain why it really does not matter.
+I am particularly interested in the following:
+a pure mod_python handler, because this is as fast as mod_python gets. a mod_python wsgi app, because WSGI is so popular these days. mod_wsgi, because it too runs under Apache and is written entirely in C. uWSGI, because it claims to be super fast. Apache serving a static file (as a point of reference). The Test I am testing this on a CentOS instance running inside VirtualBox on an early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM allocated to it. Granted this configuration can’t possibly be very performant [if there is such a word], but it should be enough to compare.">
+  <meta itemprop="datePublished" content="2013-10-10T13:04:00+00:00">
+  <meta itemprop="dateModified" content="2013-10-10T13:04:00+00:00">
+  <meta itemprop="wordCount" content="979">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="mod_python performance and why it matters not.">
+  <meta name="twitter:description" content="TL;DR: mod_python is faster than you think.
+Tonight I thought I’d spend some time looking into how the new mod_python fares against other frameworks of similar purpose. In this article I am going to show the results of my findings, and then I will explain why it really does not matter.
+I am particularly interested in the following:
+a pure mod_python handler, because this is as fast as mod_python gets. a mod_python wsgi app, because WSGI is so popular these days. mod_wsgi, because it too runs under Apache and is written entirely in C. uWSGI, because it claims to be super fast. Apache serving a static file (as a point of reference). The Test I am testing this on a CentOS instance running inside VirtualBox on an early 2011 MacBook Pro. The VirtualBox has 2 CPU’s and 6GB of RAM allocated to it. Granted this configuration can’t possibly be very performant [if there is such a word], but it should be enough to compare.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">mod_python performance and why it matters not.</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2013-10-10T13:04:00Z">October 10, 2013</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p><em>TL;DR: mod_python is faster than you think.</em></p>
+<p>Tonight I thought I&rsquo;d spend some time looking into how the new
+<a href="http://www.modpython.org/">mod_python</a>
+fares against other frameworks of similar purpose. In this article I
+am going to show the results of my findings, and then I will explain
+<em>why it really does not matter</em>.</p>
+<p>I am particularly interested in the following:</p>
+<ul>
+<li>a pure mod_python handler, because this is as fast as mod_python gets.</li>
+<li>a mod_python wsgi app, because WSGI is so popular these days.</li>
+<li>mod_wsgi, because it too runs under Apache and is written entirely in C.</li>
+<li>uWSGI, because it claims to be super fast.</li>
+<li>Apache serving a static file (as a point of reference).</li>
+</ul>
+<h1 id="the-test">The Test</h1>
+<p>I am testing this on a CentOS instance running inside VirtualBox on an
+early 2011 MacBook Pro. The VirtualBox has 2 CPU&rsquo;s and 6GB of RAM
+allocated to it. Granted this configuration can&rsquo;t possibly be very
+performant [if there is such a word], but it should be enough to
+compare.</p>
+<p>Real-life performance is very much affected by issues related to
+concurrency and load. I don&rsquo;t have the resources or tools to
+comprehensively test such scenarios, and so I&rsquo;m just using concurrency
+of 1 and seeing how fast each of the afore-listed set ups can process
+small requests.</p>
+<p>I&rsquo;m using mod_python 3.4.1 (pre-release), revision
+<a href="https://github.com/grisha/mod_python/tree/35f35dc2a8d23e92e5c8dc7dccea2a1b6bcc353e">35f35dc</a>,
+compiled against Apache 2.4.4 and Python 2.7.5. Version of mod_wsgi is
+3.4, for uWSGI I use 1.9.17.1.</p>
+<p>The Apache configuration is pretty minimal (It could probably trimmed
+even more, but this is good enough):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>LoadModule unixd_module /home/grisha/mp_test/modules/mod_unixd.so
+</span></span><span style="display:flex;"><span>LoadModule authn_core_module /home/grisha/mp_test/modules/mod_authn_core.so
+</span></span><span style="display:flex;"><span>LoadModule authz_core_module /home/grisha/mp_test/modules/mod_authz_core.so
+</span></span><span style="display:flex;"><span>LoadModule authn_file_module /home/grisha/mp_test/modules/mod_authn_file.so
+</span></span><span style="display:flex;"><span>LoadModule authz_user_module /home/grisha/mp_test/modules/mod_authz_user.so
+</span></span><span style="display:flex;"><span>LoadModule auth_basic_module /home/grisha/mp_test/modules/mod_auth_basic.so
+</span></span><span style="display:flex;"><span>LoadModule python_module /home/grisha/src/mod_python/src/mod_python/src/mod_python.so
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ServerRoot /home/grisha/mp_test
+</span></span><span style="display:flex;"><span>PidFile logs/httpd.pid
+</span></span><span style="display:flex;"><span>ServerName 127.0.0.1
+</span></span><span style="display:flex;"><span>Listen 8888
+</span></span><span style="display:flex;"><span>MaxRequestsPerChild 1000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>&lt;Location /&gt;
+</span></span><span style="display:flex;"><span>      SetHandler mod_python
+</span></span><span style="display:flex;"><span>      PythonHandler mp
+</span></span><span style="display:flex;"><span>      PythonPath &#34;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&#34;
+</span></span><span style="display:flex;"><span>&lt;/Location&gt;
+</span></span></code></pre></div><p>I should note that <code>&lt;Location /&gt;</code> is there for a purpose - the latest
+mod_python forgoes the map_to_storage phase when inside a <code>&lt;Location&gt;</code>
+section, so this makes it a little bit faster.</p>
+<p>And the <code>mp.py</code> file referred to by the <code>PythonHandler</code> in the config
+above looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> mod_python <span style="color:#f92672">import</span> apache
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handler</span>(req):
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    req<span style="color:#f92672">.</span>content_type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;text/plain&#39;</span>
+</span></span><span style="display:flex;"><span>    req<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;Hello World!&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> apache<span style="color:#f92672">.</span>OK
+</span></span></code></pre></div><p>As the benchmark tool, I&rsquo;m using the good old
+<a href="http://httpd.apache.org/docs/2.4/programs/ab.html">ab</a>, as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>$ ab -n <span style="color:#ae81ff">10</span>  http://localhost:8888/
+</span></span></code></pre></div><p>For each test in this article I run 500 requests first as a &ldquo;warm up&rdquo;,
+then another 500K for the actual measurement.</p>
+<p>For the mod_python WSGI handler test I use the following config (relevant section):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>&lt;Location /&gt;
+</span></span><span style="display:flex;"><span>    PythonHandler mod_python.wsgi
+</span></span><span style="display:flex;"><span>    PythonPath &#34;sys.path+[&#39;/home/grisha/mp_test/htdocs&#39;]&#34;
+</span></span><span style="display:flex;"><span>    PythonOption mod_python.wsgi.application mp_wsgi
+</span></span><span style="display:flex;"><span>&lt;/Location&gt;
+</span></span></code></pre></div><p>And the <code>mp_wsgi.py</code> file looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">application</span>(environ, start_response):
+</span></span><span style="display:flex;"><span>    status <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;200 OK&#39;</span>
+</span></span><span style="display:flex;"><span>    output <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Hello World!&#39;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    response_headers <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;Content-type&#39;</span>, <span style="color:#e6db74">&#39;text/plain&#39;</span>),
+</span></span><span style="display:flex;"><span>                        (<span style="color:#e6db74">&#39;Content-Length&#39;</span>, str(len(output)))]
+</span></span><span style="display:flex;"><span>    start_response(status, response_headers)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> [output]
+</span></span></code></pre></div><p>For mod_wsgi test I use the exact same file, and the config as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>LoadModule wsgi_module /home/grisha/mp_test/modules/mod_wsgi.so
+</span></span><span style="display:flex;"><span>WSGIScriptAlias / /home/grisha/mp_test/htdocs/mp_wsgi.py
+</span></span></code></pre></div><p>For uWSGI (I am not an expert), I first used the following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>/home/grisha/src/mp_test/bin/uwsgi \
+</span></span><span style="display:flex;"><span>   --http 0.0.0.0:8888 \
+</span></span><span style="display:flex;"><span>   -M -p 1 -w mysite.wsgi -z 30 -l 120 -L
+</span></span></code></pre></div><p>Which yielded a pretty dismal result, so I tried using a unix socket
+<code>-s /home/grisha/mp_test/uwsgi.sock</code> and ngnix as
+the front end as described
+<a href="http://nichol.as/benchmark-of-python-web-servers">here</a>, which did
+make uWSGI come out on top (even if proxied uWSGI is an orange among
+the apples).</p>
+<p>###The results, requests per second, fastest at the top:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>| uWSGI/nginx         | 2391 |
+</span></span><span style="display:flex;"><span>| mod_python handler  | 2332 |
+</span></span><span style="display:flex;"><span>| static file         | 2312 |
+</span></span><span style="display:flex;"><span>| mod_wsgi            | 2143 |
+</span></span><span style="display:flex;"><span>| mod_python wsgi     | 1937 |
+</span></span><span style="display:flex;"><span>| uWSGI --http        | 1779 |
+</span></span></code></pre></div><p>What&rsquo;s interesting and unexpected at first is that uWSGI and the
+mod_python handler perform better than sending a static file, which I
+expected to be the fastest. On a second thought though it does make
+sense, once you consider that no (on average pretty expensive)
+filesystem operations are performed to serve the request.</p>
+<p>Mod_wsgi performs better than the mod_python WSGI handler, and that is
+expected, because the mod_python version is mostly Python, vs
+mod_wsgi&rsquo;s C version.</p>
+<p>I think that with a little work mod_python wsgi handler could perform
+on par with uWSGI, though I&rsquo;m not sure the effort would be worth
+it. Because as we all know,
+<a href="http://en.wikiquote.org/wiki/Donald_Knuth#Computer_Programming_as_an_Art_.281974.29">premature optimization is the root of all evil</a>.</p>
+<h1 id="why-it-doesnt-really-matter">Why It Doesn&rsquo;t Really Matter</h1>
+<p>Having seen the above you may be tempted to jump on the uWSGI wagon,
+because after all, what matters more than speed?</p>
+<p>But let&rsquo;s imagine a more real world scenario, because it&rsquo;s not likely
+that all your application does is send <code>&quot;Hello World!&quot;.</code></p>
+<p>To illustrate the point a little better I created a very simple Django
+app, which too sends <code>&quot;Hello World!&quot;</code>, only it does it using a template:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>(request):
+</span></span><span style="display:flex;"><span>    t <span style="color:#f92672">=</span> get_template(<span style="color:#e6db74">&#34;hello.txt&#34;</span>)
+</span></span><span style="display:flex;"><span>    c <span style="color:#f92672">=</span> Context({<span style="color:#e6db74">&#39;name&#39;</span>:<span style="color:#e6db74">&#39;World&#39;</span>})
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> HttpResponse(t<span style="color:#f92672">.</span>render(c))
+</span></span></code></pre></div><p>Using the mod_python wsgi handler (the slowest), we can process 455
+req/s, using uWSGI (the fastest) 474. This means that by moving this
+&ldquo;application&rdquo; from mod_pyhton to uWSGI we would improve performance by
+a measley 5%.</p>
+<p>Now let&rsquo;s add some database action to our so-called &ldquo;application&rdquo;. For
+every request I&rsquo;m going to pull my user record from the Django
+auth_users table:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> django.contrib.auth.models <span style="color:#f92672">import</span> User
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>(request):
+</span></span><span style="display:flex;"><span>    grisha <span style="color:#f92672">=</span> User<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>get(username<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;grisha&#39;</span>)
+</span></span><span style="display:flex;"><span>    t <span style="color:#f92672">=</span> get_template(<span style="color:#e6db74">&#34;hello.txt&#34;</span>)
+</span></span><span style="display:flex;"><span>    c <span style="color:#f92672">=</span> Context({<span style="color:#e6db74">&#39;name&#39;</span>:str(grisha)[<span style="color:#ae81ff">0</span>:<span style="color:#ae81ff">5</span>]}) <span style="color:#75715e"># world was 5 characters</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> HttpResponse(t<span style="color:#f92672">.</span>render(c))
+</span></span></code></pre></div><p>Now we are down to 237 req/s for the mod_python WSGI handler and 245
+req/s in uWSGI, and the difference between the two has shrunk to just
+over 3%.</p>
+<p>Mind you, our &ldquo;application&rdquo; still has less than 10 lines of code. In a
+real-world situation the difference in performance is more likely to
+amount to less than a tenth of a percent.</p>
+<p>Bottom line: it&rsquo;s foolish to pick your web server based on speed
+alone. Factors such as your comfort level with using it, features,
+documentation, security, etc., are far more important than how fast it
+can crank out &ldquo;Hello world!&rdquo;.</p>
+<p>Last, but not least, mod_python 3.4.1 (used in this article) is
+ready for pre-release testing, please help me <a href="https://github.com/grisha/mod_python/issues/8">test it</a>!</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

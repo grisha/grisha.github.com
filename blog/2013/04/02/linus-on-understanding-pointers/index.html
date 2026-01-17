@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Linus on understanding pointers | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="A while back Linus Torvalds answered questions on Slashdot.
+One of the answers was on the subject of understanding of pointers:
+
+At the opposite end of the spectrum, I actually wish more people
+understood the really core low-level kind of coding. Not big, complex
+stuff like the lockless name lookup, but simply good use of
+pointers-to-pointers etc. For example, I&rsquo;ve seen too many people who
+delete a singly-linked list entry by keeping track of the &ldquo;prev&rdquo;
+entry, and then to delete the entry, doing something like">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Linus on understanding pointers">
+  <meta property="og:description" content="A while back Linus Torvalds answered questions on Slashdot.
+One of the answers was on the subject of understanding of pointers:
+At the opposite end of the spectrum, I actually wish more people understood the really core low-level kind of coding. Not big, complex stuff like the lockless name lookup, but simply good use of pointers-to-pointers etc. For example, I’ve seen too many people who delete a singly-linked list entry by keeping track of the “prev” entry, and then to delete the entry, doing something like">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2013-04-02T10:52:00+00:00">
+    <meta property="article:modified_time" content="2013-04-02T10:52:00+00:00">
+
+  <meta itemprop="name" content="Linus on understanding pointers">
+  <meta itemprop="description" content="A while back Linus Torvalds answered questions on Slashdot.
+One of the answers was on the subject of understanding of pointers:
+At the opposite end of the spectrum, I actually wish more people understood the really core low-level kind of coding. Not big, complex stuff like the lockless name lookup, but simply good use of pointers-to-pointers etc. For example, I’ve seen too many people who delete a singly-linked list entry by keeping track of the “prev” entry, and then to delete the entry, doing something like">
+  <meta itemprop="datePublished" content="2013-04-02T10:52:00+00:00">
+  <meta itemprop="dateModified" content="2013-04-02T10:52:00+00:00">
+  <meta itemprop="wordCount" content="568">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Linus on understanding pointers">
+  <meta name="twitter:description" content="A while back Linus Torvalds answered questions on Slashdot.
+One of the answers was on the subject of understanding of pointers:
+At the opposite end of the spectrum, I actually wish more people understood the really core low-level kind of coding. Not big, complex stuff like the lockless name lookup, but simply good use of pointers-to-pointers etc. For example, I’ve seen too many people who delete a singly-linked list entry by keeping track of the “prev” entry, and then to delete the entry, doing something like">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Linus on understanding pointers</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2013-04-02T10:52:00Z">April 2, 2013</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>A while back <a href="http://en.wikipedia.org/wiki/Linus_Torvalds">Linus Torvalds</a> <a href="http://meta.slashdot.org/story/12/10/11/0030249/linus-torvalds-answers-your-questions">answered questions on Slashdot</a>.</p>
+<p>One of the answers was on the subject of understanding of pointers:</p>
+<blockquote>
+<p><small>At the opposite end of the spectrum, I actually wish more people
+understood the really core low-level kind of coding. Not big, complex
+stuff like the lockless name lookup, but simply good use of
+pointers-to-pointers etc. For example, I&rsquo;ve seen too many people who
+delete a singly-linked list entry by keeping track of the &ldquo;prev&rdquo;
+entry, and then to delete the entry, doing something like</small></p></blockquote>
+<blockquote>
+<p><small>if (prev)<br/>
+prev-&gt;next = entry-&gt;next;<br/>
+else<br/>
+list_head = entry-&gt;next;<br/>
+</small></p></blockquote>
+<blockquote>
+<p><small>and whenever I see code like that, I just go &ldquo;This person doesn&rsquo;t
+understand pointers&rdquo;. And it&rsquo;s sadly quite common.</small></p></blockquote>
+<blockquote>
+<p><small>People who understand pointers just use a &ldquo;pointer to the entry
+pointer&rdquo;, and initialize that with the address of the list_head. And
+then as they traverse the list, they can remove the entry without
+using any conditionals, by just doing a &ldquo;*pp = entry-&gt;next&rdquo;</small></p></blockquote>
+<p>There were a few comments, but none explained what he really
+meant. So here it is.</p>
+<p>Imagine you have a linked list defined as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> list_entry {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> list_entry <span style="color:#f92672">*</span>next;
+</span></span><span style="display:flex;"><span>} list_entry;
+</span></span></code></pre></div><p>You need to iterate over it from the begining to end and remove a
+specific element whose value equals the value of <code>to_remove</code>. The more
+obvious way to do this would be:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    list_entry <span style="color:#f92672">*</span>entry <span style="color:#f92672">=</span> head; <span style="color:#75715e">/* assuming head exists and is the first entry of the list */</span>
+</span></span><span style="display:flex;"><span>    list_entry <span style="color:#f92672">*</span>prev <span style="color:#f92672">=</span> NULL;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> (entry) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (entry<span style="color:#f92672">-&gt;</span>val <span style="color:#f92672">==</span> to_remove)     <span style="color:#75715e">/* this is the one to remove */</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> (prev)
+</span></span><span style="display:flex;"><span>               prev<span style="color:#f92672">-&gt;</span>next <span style="color:#f92672">=</span> entry<span style="color:#f92672">-&gt;</span>next; <span style="color:#75715e">/* remove the entry */</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>                head <span style="color:#f92672">=</span> entry<span style="color:#f92672">-&gt;</span>next;      <span style="color:#75715e">/* special case - first entry */</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/* move on to the next entry */</span>
+</span></span><span style="display:flex;"><span>        prev <span style="color:#f92672">=</span> entry;
+</span></span><span style="display:flex;"><span>        entry <span style="color:#f92672">=</span> entry<span style="color:#f92672">-&gt;</span>next;
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>What we are doing above is iterating over the list until <code>entry</code> is
+NULL, which means we&rsquo;ve reached the end of the list (line 4). When we
+come across an entry we want removed (line 5), we assign the value of
+current <code>next</code> pointer to the previous one, thus eliminating the
+current element (line 7).</p>
+<p>There is a special case above - at the beginning of the iteration
+there is no previous entry (<code>prev</code> is NULL), and so to remove the
+first entry in the list you have to modify <code>head</code> itself (line 9).</p>
+<p>What Linus was saying is that the above code could be simplified by
+making the previous element a <em>pointer to a pointer</em> rather than just a
+pointer. The code then looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    list_entry <span style="color:#f92672">**</span>pp <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>head; <span style="color:#75715e">/* pointer to a pointer */</span>
+</span></span><span style="display:flex;"><span>    list_entry <span style="color:#f92672">*</span>entry <span style="color:#f92672">=</span> head;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> (entry) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (entry<span style="color:#f92672">-&gt;</span>val <span style="color:#f92672">==</span> to_remove)
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">*</span>pp <span style="color:#f92672">=</span> entry<span style="color:#f92672">-&gt;</span>next;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        pp <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>entry<span style="color:#f92672">-&gt;</span>next;
+</span></span><span style="display:flex;"><span>        entry <span style="color:#f92672">=</span> entry<span style="color:#f92672">-&gt;</span>next;
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>The above code is very similar to the previous variant, but notice how
+we no longer need to watch for the special case of the first element
+of the list, since <code>pp</code> is not NULL at the beginning. Simple and
+clever.</p>
+<p>Also, someone in that thread commented that the reason this is better
+is because <code>*pp = entry-&gt;next</code> is <em>atomic</em>.  It is most certainly NOT
+atomic. The above expression contains two dereference operators (<code>*</code>
+and <code>-&gt;</code>) and one assignment, and neither of those three things is
+atomic. This is a common misconception, but alas pretty much <em>nothing</em>
+in C should ever be assumed to be atomic (including the <code>++</code> and <code>--</code>
+operators)!</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

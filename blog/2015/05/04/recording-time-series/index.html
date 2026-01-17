@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Time Series Accuracy - Graphite vs RRDTool | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn&rsquo;t try this with Graphite. In this write up I try
+to explain why it is so by comparing the method of recording time series
+used by
+Graphite,
+with the one used by RRDTool.
+Graphite uses
+Whisper to store data, which in
+the FAQ is portrayed as a better alternative to RRDTool, but
+this is potentially misleading, because the flexibility afforded by the
+design of Whisper comes at the price of inaccuracy.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2015/05/04/recording-time-series/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2015/05/04/recording-time-series/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Time Series Accuracy - Graphite vs RRDTool">
+  <meta property="og:description" content="Back in my ISP days, we used data stored in RRDs to bill our customers. I wouldn’t try this with Graphite. In this write up I try to explain why it is so by comparing the method of recording time series used by Graphite, with the one used by RRDTool.
+Graphite uses Whisper to store data, which in the FAQ is portrayed as a better alternative to RRDTool, but this is potentially misleading, because the flexibility afforded by the design of Whisper comes at the price of inaccuracy.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2015-05-04T17:40:00+00:00">
+    <meta property="article:modified_time" content="2015-05-04T17:40:00+00:00">
+
+  <meta itemprop="name" content="Time Series Accuracy - Graphite vs RRDTool">
+  <meta itemprop="description" content="Back in my ISP days, we used data stored in RRDs to bill our customers. I wouldn’t try this with Graphite. In this write up I try to explain why it is so by comparing the method of recording time series used by Graphite, with the one used by RRDTool.
+Graphite uses Whisper to store data, which in the FAQ is portrayed as a better alternative to RRDTool, but this is potentially misleading, because the flexibility afforded by the design of Whisper comes at the price of inaccuracy.">
+  <meta itemprop="datePublished" content="2015-05-04T17:40:00+00:00">
+  <meta itemprop="dateModified" content="2015-05-04T17:40:00+00:00">
+  <meta itemprop="wordCount" content="1684">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Time Series Accuracy - Graphite vs RRDTool">
+  <meta name="twitter:description" content="Back in my ISP days, we used data stored in RRDs to bill our customers. I wouldn’t try this with Graphite. In this write up I try to explain why it is so by comparing the method of recording time series used by Graphite, with the one used by RRDTool.
+Graphite uses Whisper to store data, which in the FAQ is portrayed as a better alternative to RRDTool, but this is potentially misleading, because the flexibility afforded by the design of Whisper comes at the price of inaccuracy.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Time Series Accuracy - Graphite vs RRDTool</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2015-05-04T17:40:00Z">May 4, 2015</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Back in my ISP days, we used data stored in RRDs to bill our
+customers. I wouldn&rsquo;t try this with Graphite. In this write up I try
+to explain why it is so by comparing the method of recording time series
+used by
+<a href="http://graphite.readthedocs.org/en/latest/overview.html">Graphite</a>,
+with the one used by <a href="https://oss.oetiker.ch/rrdtool/">RRDTool</a>.</p>
+<p>Graphite uses
+<a href="http://graphite.wikidot.com/whisper">Whisper</a> to store data, which in
+the FAQ is portrayed as a <a href="http://graphite.wikidot.com/whisper#toc1">better alternative</a> to RRDTool, but
+this is potentially misleading, because the flexibility afforded by the
+design of Whisper comes at the price of inaccuracy.</p>
+<p>A time series is most often described as a sequence of <code>(time, value)</code>
+tuples [1]. The most naive method of recording a time series is to
+store timestamps as is. Since the data points might arrive at
+arbitrary and inexact intervals, to correlate the series with a
+particular point in time might be tricky. If data points are arriving
+somewhere in between one minute bounaries (as they always naturally
+would), to answer the question of what happened during a particular
+minute would require specifying a range, which is not as clean as
+being able to specify a precise value. To join two series on a range
+is even more problematic.</p>
+<p>One way to improve upon this is to divide time into equal intervals
+and assign data points to the intervals. We could then use the
+beginning of the interval instead of the actual data point timestamp,
+thereby giving us more uniformity. For example, if our interval size
+is 10 seconds (I may sometimes refer to it as the <em>step</em>), we could
+divide the entire timeline starting from the
+<a href="http://en.wikipedia.org/wiki/Unix_time">beginning of the epoch</a>
+and until the end of
+universe into 10 second slots. Since the first slot begins at 0, any
+10-second-step time series will have slots starting at the exact same
+times. Now correlation across series or other time values becomes much
+easier.</p>
+<p>Calculating the slot is trivially easy: <code>time - time % step</code> (<code>%</code> being
+the <a href="https://docs.python.org/3.4/reference/expressions.html#index-51">modulo operator</a>).
+There is, however, a subtle complexity lurking when it comes to
+storing the datapoint with the adjusted (or <em>aligned</em>) timestamp.
+Graphite simply changes the timestamp of the data point to the
+aligned one. If multiple data points arrive in the same
+step, then the last one &ldquo;wins&rdquo;.</p>
+<p>On the surface there is little wrong with Graphite&rsquo;s approach. In fact,
+under right circumstances, there is absolutely nothing wrong with
+it. Consider the following example:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Graphite, 10 second step.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Actual Time   Aligned Time
+</span></span><span style="display:flex;"><span>1430701282    1430701280     50  &lt;-- This data point is lost
+</span></span><span style="display:flex;"><span>1430701288    1430701280     10
+</span></span><span style="display:flex;"><span>1430701293    1430701290     30
+</span></span><span style="display:flex;"><span>1430701301    1430701300     30
+</span></span></code></pre></div><p>Let&rsquo;s pretend those values are some system metric like the number of
+files open. The consequence of the 50 being dropped is that we will
+never know it existed, but towards the end of the 10 second interval
+it went down to 10, which is still a true fact. If we really wanted to
+know about the variations within a 10 second interval, we should have
+chosen a smaller step, e.g. 1 second. By deciding that the step is
+going to be 10 seconds, we thus declared that <em>variations within a
+smaller period are of no interest</em> to us, and from this perspective,
+Graphite <em>is correct</em>.</p>
+<p>But what if those numbers are the price of a stock: there may be
+hundreds of thousand of trades within a 10 second interval, yet we do
+not want to (or cannot, for technical reasons) record every single one
+of them? In this scenario having the last value override all previous
+ones doesn&rsquo;t exactly seem correct.</p>
+<p>Enter RRDTool which uses a different method. RRDTool keeps track of
+the last timestamp and calculates a weight for every incoming
+data point based on time since last update or beginning of the step and
+the step length. Here is what the same sequence of points looks like
+in RRDTool. The lines marked with a <code>*</code> are not actual data points,
+but are the last value for the preceding step, it&rsquo;s used for
+computing the value for the remainder of the step after a new one has
+begun.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>RRDTool, 10 second step.
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  Time          Value       Time since  Weight  Adjusted   Recorded
+</span></span><span style="display:flex;"><span>                            last                value      value
+</span></span><span style="display:flex;"><span>  1430701270    0           N/A
+</span></span><span style="display:flex;"><span>* 1430701280    50         10s          1       50* 1= 50
+</span></span><span style="display:flex;"><span>                                                           50
+</span></span><span style="display:flex;"><span>  1430701282    50          2s          .2      50*.2= 10
+</span></span><span style="display:flex;"><span>  1430701288    10          6s          .6      10*.6= 6
+</span></span><span style="display:flex;"><span>* 1430701290    30          2s          .2      30*.2= 6
+</span></span><span style="display:flex;"><span>                                                           10+6+6= 22
+</span></span><span style="display:flex;"><span>  1430701293    30          3s          .3      30*.3= 9
+</span></span><span style="display:flex;"><span>* 1430701300    30          7s          .7      30*.7= 21
+</span></span><span style="display:flex;"><span>                                                           9+21=   30
+</span></span><span style="display:flex;"><span>  1430701301    30   # this data point is incomplete
+</span></span></code></pre></div><p>Note, by the way, that the Whisper FAQ says that &ldquo;RRD will store your
+updates in a temporary workspace area and after the minute has passed,
+aggregate them and store them in the archive&rdquo;, which to me sounds like
+there is some sort of a temporary storage area holding all the unsaved
+updates. In fact, to be able to compute the weighted average, RRD only
+needs to store the time of the last update and the current sum, i.e.
+exactly just two variables, regardless of the number of updates in a
+single step. This is evident from the above figure.</p>
+<p>So to compare the results of the two tools:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Time Slot     Graphite    RRDTool
+</span></span><span style="display:flex;"><span>1430701270       N/A        50
+</span></span><span style="display:flex;"><span>1430701280       10         22
+</span></span><span style="display:flex;"><span>1430701290       30         30
+</span></span><span style="display:flex;"><span>1430701300       N/A        N/A
+</span></span></code></pre></div><p>Before you say &ldquo;so what, I don&rsquo;t really understand the difference&rdquo;,
+let&rsquo;s pretend that those numbers were actually the rate of sale of
+trinkets from our website (per second). Here is a horizontal ascii-art
+rendition of our timeline, 0 is 1430701270.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>0         10        20        30    time (seconds)
+</span></span><span style="display:flex;"><span>+.........+.........+.........+.....
+</span></span><span style="display:flex;"><span>|           |     |    |       |
+</span></span><span style="display:flex;"><span>0           50    10   30      30   data points
+</span></span></code></pre></div><p>At 12 seconds we recorded selling 50 trinkets per second. Assuming we
+started selling at the beginning of our timeline, i.e. 12 seconds
+earlier, we can state that during the first step we sold exactly 500
+trinkets. Then 2 seconds into the second step we sold another 100
+(we&rsquo;re still selling at 50/s). Then for the next 6 seconds we were
+selling at 10/s, thus another 60 trinkets, and for the last 2 seconds
+of the slot we sold another 60 at 30/s. In the third step we were
+selling steadily at 30/s, thus exactly 300 were sold.</p>
+<p>Comparing RRDTool and Graphite side-by-side, the stories are quite different:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Trinkets per second and sold:
+</span></span><span style="display:flex;"><span>   Time Slot     Graphite Trinkets     RRDTool Trinkets
+</span></span><span style="display:flex;"><span>1. 1430701270      N/A      N/A          50      500
+</span></span><span style="display:flex;"><span>2. 1430701280       10      100          22      220 (100+60+60)
+</span></span><span style="display:flex;"><span>3. 1430701290       30      300          30      300
+</span></span><span style="display:flex;"><span>4. 1430701300       30      N/A          N/A     N/A
+</span></span><span style="display:flex;"><span>                          -----                -----
+</span></span><span style="display:flex;"><span>   TOTAL SOLD:              400                 1020
+</span></span></code></pre></div><p>Two important observations here:</p>
+<ol>
+<li>The totals are vastly different.</li>
+<li>The rate recorded by RRDTool for the second slot (22/s), yields
+<em>exactly</em> the number of trinkets sold during that period: 220.</li>
+</ol>
+<p>Last, but hardly the least, consider what happens when we consolidate
+data points into larger intervals by averaging the values. Let&rsquo;s say
+20 seconds, twice our step. If we consolidate the second and the third
+steps, we would get:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>Graphite:  average(10,30) = 20  =&gt; 400 trinkets in 20 seconds
+</span></span><span style="display:flex;"><span>RRDTool:   average(22,30) = 26  =&gt; 520 trinkets in 20 seconds
+</span></span></code></pre></div><p>Since the Graphite numbers were off to begin with, we have no reason
+to trust the 400 trinkets number. But using the RRDTool data, the new
+number happens to still be 100% accurate even after the data points
+have been consolidated. This is a very useful property of <em>rates</em> in
+time series. It also explains why RRDTool does not permit updating
+data prior to the last update: RRD is <em>always accurate</em>.</p>
+<p>As an exercise, try seeing it for yourself: pretent the value of 10 in
+the second step never arrived, which should make the final value of
+the second slot 34. If the 10 arrived some time later, averaging it in
+will not give you the correct 22.</p>
+<p>Whisper allows past updates, but is quasi-accurate to begin with - I&rsquo;m
+not sure I understand which is better - <em>inaccurate</em> data with a data
+point missing, or the <em>whole inaccurate</em> data. RRD could accomplish
+the same thing by adding some <code>--inaccurate</code> flag, though it would
+seem like more of a bug than a feature to me.</p>
+<p>If you&rsquo;re interested in learning more about this, I recommend reading
+the documentation for
+<a href="http://oss.oetiker.ch/rrdtool/doc/rrdcreate.en.html">rrdtool create</a>, in
+particular the &ldquo;It&rsquo;s always a Rate&rdquo; section, as well as
+<a href="http://www.vandenbogaerdt.nl/rrdtool/process.php">this post</a>
+by Alex van den Bogaerdt.</p>
+<p>P.S. After this post was written, someone suggested that instead of
+storing a rate, we coud store a <em>count delta</em>. In other words, instead
+of recording that we&rsquo;re selling 10 trinkets per second for the past 6
+seconds, we would store the total count of trinkets sold, i.e. 60. At
+first this seems like the solution to being able to update historical
+data accurately: if later we found out that we sold another 75
+trinkets in the second time slot, we could just add it to the total
+and all would be well and most importantly <em>accurate</em>.</p>
+<p>Here is the problem with this approach: note that in the previous
+sentence I had to specify that the additional trinkets were sold <em>in
+the second time slot</em>, a small, but crucial detail. If time series
+data point is a timestamp and a value, then there isn&rsquo;t even a way to
+relay this information in a single data point - we&rsquo;d need two
+timestamps. On the other hand if every data point arrived with two
+timestamps, i.e. as a duration, then which to store, rate or count,
+becomes a moot point, we can infer one from the other.</p>
+<p>So perhaps another way of explaining the historical update problem is
+that it <em>is</em> possible, but the datapoint must specify a <em>time
+interval</em>. This is something that neither RRDTool or Graphite
+currently support, even though it&rsquo;d be a very useful feature in my
+opinion.</p>
+<p>[1] Perhaps the biggest misconception about time series is that it is
+a series of data points. What time series represent is <em>continuous</em>
+rather than <em>descrete</em>, i.e. it&rsquo;s the line that connects the points
+that matters, not the specific points themselves, they are just
+samples at semi-random intervals that help define the line. And as we
+know, a line cannot be defined by a single point.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

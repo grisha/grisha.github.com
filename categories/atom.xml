@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories on Gregory Trubetskoy</title>
+    <link>https://grisha.org/categories/</link>
+    <description>Recent content in Categories on Gregory Trubetskoy</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 10 Aug 2013 15:10:00 +0000</lastBuildDate>
+    <atom:link href="https://grisha.org/categories/atom.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Time-Management</title>
+      <link>https://grisha.org/categories/time-management/</link>
+      <pubDate>Sat, 10 Aug 2013 15:10:00 +0000</pubDate>
+      <guid>https://grisha.org/categories/time-management/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Big Memory</title>
+      <link>https://grisha.org/categories/big-memory/</link>
+      <pubDate>Mon, 25 Mar 2013 22:09:00 +0000</pubDate>
+      <guid>https://grisha.org/categories/big-memory/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Recommendations</title>
+      <link>https://grisha.org/categories/recommendations/</link>
+      <pubDate>Mon, 25 Mar 2013 22:09:00 +0000</pubDate>
+      <guid>https://grisha.org/categories/recommendations/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Redis</title>
+      <link>https://grisha.org/categories/redis/</link>
+      <pubDate>Mon, 25 Mar 2013 22:09:00 +0000</pubDate>
+      <guid>https://grisha.org/categories/redis/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Test</title>
+      <link>https://grisha.org/categories/test/</link>
+      <pubDate>Mon, 25 Mar 2013 11:46:00 +0000</pubDate>
+      <guid>https://grisha.org/categories/test/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

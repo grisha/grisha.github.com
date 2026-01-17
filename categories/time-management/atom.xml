@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Time-Management on Gregory Trubetskoy</title>
+    <link>https://grisha.org/categories/time-management/</link>
+    <description>Recent content in Time-Management on Gregory Trubetskoy</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 10 Aug 2013 15:10:00 +0000</lastBuildDate>
+    <atom:link href="https://grisha.org/categories/time-management/atom.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>The Next Smallest Step Problem</title>
+      <link>https://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</link>
+      <pubDate>Sat, 10 Aug 2013 15:10:00 +0000</pubDate>
+      <guid>https://grisha.org/blog/2013/08/10/the-next-smallest-step-problem/</guid>
+      <description>&lt;p&gt;&lt;em&gt;&lt;a href=&#34;http://en.wiktionary.org/wiki/a_journey_of_a_thousand_miles_begins_with_a_single_step&#34;&gt;&amp;ldquo;A journey of a thousand miles begins with a single step&amp;rdquo;&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;&#xA;&lt;p&gt;Most of my journeys never begin, or cannot continue because of that one&#xA;single step, be it first or next. Because it is hard, at times&#xA;excruciatingly so.&lt;/p&gt;&#xA;&lt;p&gt;Here I speak of software, but this applies to many other aspects of my&#xA;life just as well.&lt;/p&gt;&#xA;&lt;p&gt;I recon it&amp;rsquo;s because I do not think in steps. I think of a&#xA;destination.  I imagine the end-result. I can picture it with clarity&#xA;and in great detail. I know where I need to be. But what is the next&#xA;step to get there? And it doesn&amp;rsquo;t help that where I travel, there are&#xA;no signs.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>on prioritization - important vs urgent</title>
+      <link>https://grisha.org/blog/2013/03/27/on-prioritization/</link>
+      <pubDate>Wed, 27 Mar 2013 10:13:00 +0000</pubDate>
+      <guid>https://grisha.org/blog/2013/03/27/on-prioritization/</guid>
+      <description>&lt;p&gt;Every item on a TODO list can be classified as &lt;em&gt;urgent&lt;/em&gt;, &lt;em&gt;important&lt;/em&gt;&#xA;or &lt;em&gt;neither&lt;/em&gt;. We should act on important items first, urgent second and&#xA;ignore the rest.&lt;/p&gt;&#xA;&lt;p&gt;Sometimes an item lands on our TODO list described as extremely urgent&#xA;without any explanation of importance. In this case the important item&#xA;(and thus to be done &lt;em&gt;first&lt;/em&gt;) becomes &lt;em&gt;determining the importance of the&#xA;extremely urgent item in question&lt;/em&gt;, even if it means delaying it.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

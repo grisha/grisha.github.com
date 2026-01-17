@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Blockchain in PostgreSQL Part 2 | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Update: there is now a better write up
+of the PostgreSQL schema. This post was rather half-baked as much was
+still not understood when I wrote it.
+In a previous post I
+described a simplistic schema to store the Bitcoin blockchain in
+PostgreSQL. In this post I&rsquo;m investigating pushing the envelope
+with a bit of C programming.
+The Missing Functionality
+Postgres cannot do certain things required to fully handle
+transactions. The missing functionality is (at least):">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2017/10/20/blockchain-in-postgresql-part-2/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Blockchain in PostgreSQL Part 2">
+  <meta property="og:description" content="Update: there is now a better write up of the PostgreSQL schema. This post was rather half-baked as much was still not understood when I wrote it.
+In a previous post I described a simplistic schema to store the Bitcoin blockchain in PostgreSQL. In this post I’m investigating pushing the envelope with a bit of C programming.
+The Missing Functionality Postgres cannot do certain things required to fully handle transactions. The missing functionality is (at least):">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-10-20T08:05:00+00:00">
+    <meta property="article:modified_time" content="2017-10-20T08:05:00+00:00">
+
+  <meta itemprop="name" content="Blockchain in PostgreSQL Part 2">
+  <meta itemprop="description" content="Update: there is now a better write up of the PostgreSQL schema. This post was rather half-baked as much was still not understood when I wrote it.
+In a previous post I described a simplistic schema to store the Bitcoin blockchain in PostgreSQL. In this post I’m investigating pushing the envelope with a bit of C programming.
+The Missing Functionality Postgres cannot do certain things required to fully handle transactions. The missing functionality is (at least):">
+  <meta itemprop="datePublished" content="2017-10-20T08:05:00+00:00">
+  <meta itemprop="dateModified" content="2017-10-20T08:05:00+00:00">
+  <meta itemprop="wordCount" content="1313">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Blockchain in PostgreSQL Part 2">
+  <meta name="twitter:description" content="Update: there is now a better write up of the PostgreSQL schema. This post was rather half-baked as much was still not understood when I wrote it.
+In a previous post I described a simplistic schema to store the Bitcoin blockchain in PostgreSQL. In this post I’m investigating pushing the envelope with a bit of C programming.
+The Missing Functionality Postgres cannot do certain things required to fully handle transactions. The missing functionality is (at least):">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Blockchain in PostgreSQL Part 2</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2017-10-20T08:05:00Z">October 20, 2017</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Update: there is now a <a href="/blog/2017/12/15/blockchain-and-postgres/">better write up</a>
+of the PostgreSQL schema. This post was rather half-baked as much was
+still not understood when I wrote it.</p>
+<p>In a <a href="/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I
+described a simplistic schema to store the Bitcoin blockchain in
+PostgreSQL. In this post I&rsquo;m investigating pushing the envelope
+with a bit of C programming.</p>
+<h3 id="the-missing-functionality">The Missing Functionality</h3>
+<p>Postgres cannot do certain things required to fully handle
+transactions. The missing functionality is (at least):</p>
+<ol>
+<li>
+<p>Support for <a href="https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer">Variable Length Integer</a>
+used in the blockchain and more generally the binary encoding of a transaction or its components.</p>
+</li>
+<li>
+<p><a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">Elliptic Curve Signature</a>. Even
+though postgres integrates with OpenSSL, which has that functionality, there is no way to call
+the EC functions.</p>
+</li>
+<li>
+<p>Ability to parse and evaluate Bitcoin <a href="https://en.bitcoin.it/wiki/Script">script</a>. This is a biggie,
+as transaction verification requires it, and it is one of the more complex and bug-prone
+aspects of Bitcoin.</p>
+</li>
+</ol>
+<p>It is also important that all of the above be performant. Even though
+varints, script and even elliptic curve could be implemented in plain
+<a href="https://www.postgresql.org/docs/current/static/plpgsql.html">PL/pgSQL</a>,
+it probably wouldn&rsquo;t be fast enough for practical use. Which leaves us with the only possible option:
+a <a href="https://www.postgresql.org/docs/current/static/xfunc-c.html">C extension</a>.</p>
+<h3 id="avoid-reinventing-the-wheel">Avoid Reinventing the Wheel</h3>
+<p>Anything is possible in C, but can we avoid having to reimplement it
+from scratch? Are there libraries that could be leveraged?</p>
+<p>As it is now, the Bitcoin protocol is primarily specified by its
+source code, and the source of all truth is the <a href="https://github.com/bitcoin/bitcoin">Bitcoin Core</a>.
+It is <a href="https://www.postgresql.org/docs/current/static/xfunc-c.html#extend-cpp">possible</a> to use C++ in PG
+extensions, which means at least in theory the Bitcoin Core code could be leveraged somehow.</p>
+<p>My initial conclusion is that this would be a daunting task. Bitcoin
+Core code requires at least C++11, as well as Boost. It also seems
+that the core code assumes its own specific storage and caching mechanism and
+isn&rsquo;t easily abstracted away from it. Not to mention that using C++
+libs from Postgres has complexities of its own.</p>
+<p>I looked around for a plain C implementation of Bitcoin and found a few
+rather incomplete ones. The most functional one seems to be Jeff Garzik&rsquo;s
+<a href="https://github.com/jgarzik/picocoin">picocoin</a>. With the looming
+<a href="https://bitcointechtalk.com/how-segwit2x-replay-protection-works-1a5e41767103">Segwit2x fork</a>
+and all the controversy surrounding it this may seem like an odd
+choice of a library, but for the purpose of what we are doing, I think
+it&rsquo;s fine. It also seems like Picocoin isn&rsquo;t actively developed,
+which is not great. I would very much appreciate opinions/advice on this, if
+you know of a better C lib, do leave a comment.</p>
+<h3 id="the-c-extension">The C extension</h3>
+<p>Thanks to this excellent <a href="http://big-elephants.com/2015-10/writing-postgres-extensions-part-i/">series of posts</a>
+and Postgres&rsquo; superb documentation, I was able to put together a proof-of-concept extension,
+available at <a href="https://github.com/blkchain/pg_blkchain">https://github.com/blkchain/pg_blkchain</a>.
+While the C internals of it would be subject for a whole separate post (or
+few), suffice it to say that it is fairly rudimentary and all the
+heavy lifting is delegated to the picocoin lib.</p>
+<p>As of now, the extension provides a handful of functions:</p>
+<ul>
+<li>
+<p><code>get_vin(tx bytea)</code> This is a <a href="https://www.postgresql.org/docs/current/static/functions-srf.html">Set Returning Function</a> (SRF),
+which returns the transaction inputs as rows.</p>
+</li>
+<li>
+<p><code>get_vout(tx bytea)</code> Similarly to get_vin(), an SRF that returns outputs.</p>
+</li>
+<li>
+<p><code>parse_script(script bytea)</code> An SRF which parses a Bitcoin script and returns (more or less) human-readable rows.</p>
+</li>
+<li>
+<p><code>verify_sig(tx bytea, previous_tx bytea, n int)</code> Verifies a specific input of a transaction (denoted by <code>n</code>),
+given a the previous transaction to which the input refers. Returns a boolean.</p>
+</li>
+</ul>
+<p>This is hardly enough to support all of what would be required by a
+full node, but this is sufficient to do some interesting stuff.</p>
+<p>Note that the function names and signatures are not final, this is a
+work in progress and I expect this all to evolve and change. For
+example, initially I implemented get_vout() which returned an array,
+but in the end an SRF seemed like a more flexible approach.</p>
+<h3 id="the-schema">The Schema</h3>
+<p>In the last post I used separate tables for the transaction, inputs
+and outputs. With the ability to serialize/deserialize transactions at
+our disposal, there are more interesting options.</p>
+<p>The most compact way to store transactions is to just use the
+serialized binary form in a binary (bytea) column. We can get at any
+particulars of it by using our functions.</p>
+<p>The examples below are based on a single table created as</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> rtxs (
+</span></span><span style="display:flex;"><span>   id            BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>   tx            BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>);
+</span></span></code></pre></div><p>I imported the first 100K blocks or so into this table, how it was
+done I might describe in a separate post.</p>
+<p>I&rsquo;ll introduce the extension with my favorite example: the decoding of the
+signature of the genesis block <a href="https://blockchain.info/tx/4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b">input</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> (sig).op_sym, encode((sig).<span style="color:#66d9ef">data</span>, <span style="color:#e6db74">&#39;escape&#39;</span>)
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FROM</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">SELECT</span> parse_script((get_vin(tx)).scriptSig) <span style="color:#66d9ef">AS</span> sig <span style="color:#66d9ef">FROM</span> rtxs
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">WHERE</span> digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>), <span style="color:#e6db74">&#39;sha256&#39;</span>) <span style="color:#f92672">=</span> E<span style="color:#e6db74">&#39;\\x3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a&#39;</span>
+</span></span><span style="display:flex;"><span>  ) x;
+</span></span><span style="display:flex;"><span>   op_sym    <span style="color:#f92672">|</span>                                encode
+</span></span><span style="display:flex;"><span><span style="color:#75715e">-------------+-----------------------------------------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> OP_PUSHDATA <span style="color:#f92672">|</span> <span style="color:#960050;background-color:#1e0010">\</span><span style="color:#ae81ff">377</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#ae81ff">377</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#ae81ff">000</span><span style="color:#960050;background-color:#1e0010">\</span>x1D
+</span></span><span style="display:flex;"><span> OP_PUSHDATA <span style="color:#f92672">|</span> <span style="color:#960050;background-color:#1e0010">\</span>x04
+</span></span><span style="display:flex;"><span> OP_PUSHDATA <span style="color:#f92672">|</span> The Times <span style="color:#ae81ff">03</span><span style="color:#f92672">/</span>Jan<span style="color:#f92672">/</span><span style="color:#ae81ff">2009</span> Chancellor <span style="color:#66d9ef">on</span> brink <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">second</span> bailout <span style="color:#66d9ef">for</span> banks
+</span></span></code></pre></div><h3 id="expression-indexes">Expression Indexes</h3>
+<p>One neat feature of PostgreSQL is ability to
+<a href="https://www.postgresql.org/docs/current/static/indexes-expressional.html">index expressions</a>.
+For example, we know that we can compute a transaction hash with</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">select</span> digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>), <span style="color:#e6db74">&#39;sha256&#39;</span>) <span style="color:#66d9ef">from</span> rtxs <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span>                               digest
+</span></span><span style="display:flex;"><span><span style="color:#75715e">--------------------------------------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#960050;background-color:#1e0010">\</span>x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd
+</span></span></code></pre></div><p>Note that this is <a href="https://en.wikipedia.org/wiki/Endianness">little-endian</a>,
+while conventionally transaction id&rsquo;s are represented with bytes
+reversed (big-endian): <a href="https://blockchain.info/tx/fd6445c8eb3c4ac147ad06d314a9efe153e9752bab5f994483309e024ab0296e">fd6445c8eb3c4ac147ad06d314a9efe153e9752bab5f994483309e024ab0296e</a></p>
+<p>Now if we want to be able to look up transactions quickly by the
+transaction hash, as is the convention, we can create an expression
+index like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">INDEX</span> <span style="color:#66d9ef">ON</span> rtxs(digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>), <span style="color:#e6db74">&#39;sha256&#39;</span>));
+</span></span></code></pre></div><p>When we do this, PostgreSQL scans the entire table, computes the hash
+and stores it in the index. An index, after all, is just another table
+(of sorts), and there is nothing wrong with indexes containing values
+that do not exist in the table to which the index refers.</p>
+<p>Once we do this, any time the expression <code>digest(digest(tx, 'sha256'), 'sha256')</code>
+is used in reference to the <code>rtxs</code> table, PostgreSQL will not execute
+the <code>digest()</code> function, but would instead use the value stored in
+the index.</p>
+<p>We can attest to this with</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">explain</span> <span style="color:#66d9ef">analyze</span> <span style="color:#66d9ef">SELECT</span> id
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">FROM</span> rtxs
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">WHERE</span> digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>), <span style="color:#e6db74">&#39;sha256&#39;</span>) <span style="color:#f92672">=</span> E<span style="color:#e6db74">&#39;\\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span>;
+</span></span><span style="display:flex;"><span>                                                                    QUERY PLAN
+</span></span><span style="display:flex;"><span><span style="color:#75715e">--------------------------------------------------------------------------------------------------------------------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">Index</span> Scan <span style="color:#66d9ef">using</span> rtxs_digest_idx <span style="color:#66d9ef">on</span> rtxs  (cost<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">42</span>..<span style="color:#ae81ff">8</span>.<span style="color:#ae81ff">44</span> <span style="color:#66d9ef">rows</span><span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> width<span style="color:#f92672">=</span><span style="color:#ae81ff">8</span>) (actual time<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">020</span>..<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">020</span> <span style="color:#66d9ef">rows</span><span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> loops<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">Index</span> Cond: (digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>::text), <span style="color:#e6db74">&#39;sha256&#39;</span>::text) <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span>::bytea)
+</span></span><span style="display:flex;"><span> Planning time: <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">077</span> ms
+</span></span><span style="display:flex;"><span> Execution time: <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">037</span> ms
+</span></span><span style="display:flex;"><span>(<span style="color:#ae81ff">4</span> <span style="color:#66d9ef">rows</span>)
+</span></span></code></pre></div><p>This is pretty clever - even though we do not have an actual
+&ldquo;transaction hash&rdquo; column in our table, we do have the value and an
+index in the database.</p>
+<h3 id="views">Views</h3>
+<p>But what if we wanted to have a better readable representation of
+transactions, for example something that includes the transaction
+hash?</p>
+<p>The best way to do this is via a view:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">VIEW</span> tx_view <span style="color:#66d9ef">AS</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">SELECT</span> id, digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>), <span style="color:#e6db74">&#39;sha256&#39;</span>) <span style="color:#66d9ef">AS</span> txid, tx
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">FROM</span> rtxs;
+</span></span></code></pre></div><p>Postgres is clever enough to use the above index for the view:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">explain</span> <span style="color:#66d9ef">analyze</span> <span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> tx_view
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">WHERE</span> txid <span style="color:#f92672">=</span> E<span style="color:#e6db74">&#39;\\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#75715e">--------------------------------------------------------------------------------------------------------------------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> <span style="color:#66d9ef">Index</span> Scan <span style="color:#66d9ef">using</span> rtxs_digest_idx <span style="color:#66d9ef">on</span> rtxs  (cost<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">42</span>..<span style="color:#ae81ff">8</span>.<span style="color:#ae81ff">45</span> <span style="color:#66d9ef">rows</span><span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> width<span style="color:#f92672">=</span><span style="color:#ae81ff">318</span>) (actual time<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">045</span>..<span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">046</span> <span style="color:#66d9ef">rows</span><span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> loops<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">Index</span> Cond: (digest(digest(tx, <span style="color:#e6db74">&#39;sha256&#39;</span>::text), <span style="color:#e6db74">&#39;sha256&#39;</span>::text) <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;\x6e29b04a029e308344995fab2b75e953e1efa914d306ad47c14a3cebc84564fd&#39;</span>::bytea)
+</span></span><span style="display:flex;"><span> Planning time: <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">104</span> ms
+</span></span><span style="display:flex;"><span> Execution time: <span style="color:#ae81ff">0</span>.<span style="color:#ae81ff">067</span> ms
+</span></span></code></pre></div><p>A similar technique can applied to inputs and outputs, for example for
+outputs we could create a view like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">VIEW</span> rtxouts <span style="color:#66d9ef">AS</span>
+</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">SELECT</span> id, (vout).n, (vout).value, (vout).scriptpubkey
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FROM</span> ( <span style="color:#66d9ef">SELECT</span> id, get_vout(tx) vout <span style="color:#66d9ef">FROM</span> rtxs) x;
+</span></span></code></pre></div><p>The outputs are now easily accessibly as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f92672">#</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> rtxouts <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">3</span>;
+</span></span><span style="display:flex;"><span> id <span style="color:#f92672">|</span> n <span style="color:#f92672">|</span>   value    <span style="color:#f92672">|</span>                                                               scriptpubkey
+</span></span><span style="display:flex;"><span><span style="color:#75715e">----+---+------------+------------------------------------------------------------------------------------------------------------------------------------------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#ae81ff">1</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">5000000000</span> <span style="color:#f92672">|</span> <span style="color:#960050;background-color:#1e0010">\</span>x4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">2</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">5000000000</span> <span style="color:#f92672">|</span> <span style="color:#960050;background-color:#1e0010">\</span>x410496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858eeac
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">3</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">5000000000</span> <span style="color:#f92672">|</span> <span style="color:#960050;background-color:#1e0010">\</span>x41047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77ac
+</span></span><span style="display:flex;"><span>(<span style="color:#ae81ff">3</span> <span style="color:#66d9ef">rows</span>)
+</span></span></code></pre></div><p>Want to know the most popular opcode used in scripts?</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#75715e">--Note: this is obviously not the full blockchain
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">SELECT</span> (parse_script(scriptpubkey)).op_sym, <span style="color:#66d9ef">count</span>(<span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FROM</span> (<span style="color:#66d9ef">SELECT</span> scriptpubkey <span style="color:#66d9ef">FROM</span> rtxouts) x
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">GROUP</span> <span style="color:#66d9ef">BY</span> op_sym
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> <span style="color:#66d9ef">count</span>(<span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span>  op_sym     <span style="color:#f92672">|</span>  <span style="color:#66d9ef">count</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">----------------+---------
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span> OP_NOP         <span style="color:#f92672">|</span>       <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span> OP_DUP         <span style="color:#f92672">|</span> <span style="color:#ae81ff">1007586</span>
+</span></span><span style="display:flex;"><span> OP_EQUALVERIFY <span style="color:#f92672">|</span> <span style="color:#ae81ff">1007586</span>
+</span></span><span style="display:flex;"><span> OP_HASH160     <span style="color:#f92672">|</span> <span style="color:#ae81ff">1007586</span>
+</span></span><span style="display:flex;"><span> OP_PUSHDATA    <span style="color:#f92672">|</span> <span style="color:#ae81ff">1139431</span>
+</span></span><span style="display:flex;"><span> OP_CHECKSIG    <span style="color:#f92672">|</span> <span style="color:#ae81ff">1151434</span>
+</span></span><span style="display:flex;"><span>(<span style="color:#ae81ff">6</span> <span style="color:#66d9ef">rows</span>)
+</span></span></code></pre></div><p>Anyway, that&rsquo;s it for now. Please comment your questions/comments
+below, or via twitter, I am very curious on what people think on this
+approach!</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

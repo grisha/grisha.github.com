@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Notes to self.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+    
+      <link href="/posts/atom.xml" rel="alternate" type="application/rss+xml" title="Gregory Trubetskoy" />
+      <link href="/posts/atom.xml" rel="feed" type="application/rss+xml" title="Gregory Trubetskoy" />
+      
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/posts/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/posts/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Posts">
+  <meta property="og:description" content="Notes to self.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Posts">
+  <meta itemprop="description" content="Notes to self.">
+  <meta itemprop="datePublished" content="2020-05-08T12:22:00+00:00">
+  <meta itemprop="dateModified" content="2020-05-08T12:22:00+00:00">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Posts">
+  <meta name="twitter:description" content="Notes to self.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+
+  <header>
+    <div class="pb3-m pb6-l bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+      <div class="tc-l pv3 ph3 ph4-ns">
+        <h1 class="f2 f-subheadline-l fw2 light-silver mb0 lh-title">
+          Posts
+        </h1>
+        
+      </div>
+    </div>
+  </header>
+
+
+    <main class="pb7" role="main">
+      
+
+  <article class="pa3 pa4-ns nested-copy-line-height">
+    <section class="cf ph3 ph5-l pv3 pv4-l f4 tc-l center measure-wide lh-copy nested-links mid-gray">
+      
+    </section>
+    <aside class="flex-ns mt5 flex-wrap justify-around">
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        November 14, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/11/14/table-names-from-sql/" class="link black dim">
+        Parsing Table Names from SQL
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>Sometimes it is useful to extract table names from an SQL statement,
+for example if you are trying to figure out dependencies for your Hive
+or BigQuery (or whatever) tables.</p>
+<p>It is actually a lot simpler than it seems and you don&rsquo;t need to write
+your own SQL parser or find one out there. In SQL table names always
+follow the FROM and JOIN keywords. So all you have to do is split the
+statemement into tokens, and scan the list for any mention of FROM or
+JOIN and grab the next token.</p>
+    </div>
+  <a href="/blog/2016/11/14/table-names-from-sql/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        November 8, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/11/08/load-testing-tgres/" class="link black dim">
+        Load testing Tgres
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>Edit: There is an <a href="/blog/2017/02/23/can-tgres-outperform-graphite/">update</a> to this story.</p>
+<p>So I finally got around to some load testing of <a href="https://github.com/tgres/tgres">Tgres</a>. Load testing is
+mysterious, it never goes the way you think it would, and what you
+learn is completely unexpcted.</p>
+<p>Given that I presently don&rsquo;t have any spare big iron at my disposal
+and my &ldquo;servers&rdquo; are my macbook and an old thinkpad, all I really was
+after is making sure that Tgres is &ldquo;good enough&rdquo; whatever that
+means. And I think it is.</p>
+    </div>
+  <a href="/blog/2016/11/08/load-testing-tgres/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        September 22, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/09/22/golang-receiver-vs-function/" class="link black dim">
+        Golang receiver vs function argument
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>What is the difference between a Go <em>receiver</em> (as in &ldquo;method receiver&rdquo;)
+and a function <em>argument</em>? Consider these two bits of code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">d</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">duck</span>) <span style="color:#a6e22e">quack</span>() { <span style="color:#75715e">// receiver</span>
+</span></span><span style="display:flex;"><span>     <span style="color:#75715e">// do something</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>versus</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">quack</span>(<span style="color:#a6e22e">d</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">duck</span>) { <span style="color:#75715e">// funciton argument</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// do something</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The &ldquo;do something&rdquo; part above would work exactly the same regardless of
+how you declare the function. Which begs the question, which should
+you use?</p>
+<p>In the object-oriented world we were used to objects doing things, and
+in that context <code>d.quack()</code> may seem more intuitive or familiar than
+<code>quack(d)</code> because it &ldquo;reads better&rdquo;. After all, one could argue that
+the former is a duck quacking, but the latter reads like you&rsquo;re
+quacking a duck, and what does that even mean? I have learned that you
+should not think this way in the Go universe, and here is why.</p>
+    </div>
+  <a href="/blog/2016/09/22/golang-receiver-vs-function/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        August 4, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/08/04/data-points/" class="link black dim">
+        How Data Points Build Up
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>This silly SVG animation (animation not my strong suit) demonstrates
+what happens when multiple Tgres data points arrive within the same
+step (i.e. smallest time interval for this series, also known as PDP,
+primary data point).</p>
+<object data="/images/data_point.svg" type="image/svg+xml">
+  You browser does not support SVG objects?
+</object>
+<h3 id="explanation">Explanation</h3>
+<p>Let&rsquo;s say we have a series with a step of 100 seconds. We receive the
+following data points, all within the 100 second interval of a
+single step:</p>
+    </div>
+  <a href="/blog/2016/08/04/data-points/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        July 29, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/07/29/state-of-tgres-2016/" class="link black dim">
+        Introducing Tgres - A Time Series DB on top of PostgreSQL
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p><a href="http://github.com/tgres/tgres">Tgres</a> is a metrics collection and storage server, aka a time series
+database. I&rsquo;m not very comfortable with referring to it as a
+<em>database</em>, because at least in case of Tgres, the database is
+actually PostgreSQL. But also &ldquo;database&rdquo; to me is in the same category
+as &ldquo;operating system&rdquo; or &ldquo;compiler&rdquo;, a thing so advanced that only few
+can claim to be it without appearing pretentious. But for the sake of
+tautology avoidance, I might occasionally refer to Tgres as a TS
+database.</p>
+    </div>
+  <a href="/blog/2016/07/29/state-of-tgres-2016/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        April 19, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/" class="link black dim">
+        Deploying a Golang app to AWS ECS with Terraform
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>I&rsquo;ve put together a basic example of a &ldquo;Hello World&rdquo; Go program which
+runs in Amazon AWS Elastic Compute Service (ECS), which allows running
+applications in Docker containers and has the ability to scale on
+demand.</p>
+<p>I initially wanted to write about the components of this system and
+the tools you use to deploy your application, but soon realized that
+this would make for an extremely long post, as the number of
+components required for a simple &ldquo;Hello World&rdquo; is mind
+boggling. However problematic it may seem, it&rsquo;s par for the course,
+this is what takes to run an application in our cloudy times.</p>
+    </div>
+  <a href="/blog/2016/04/19/deploying-a-golang-app-to-aws-ecs-with-terraform/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        February 17, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/" class="link black dim">
+        Holt-Winters Forecasting for Dummies - Part III
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>If you haven&rsquo;t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a> and
+<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+you probably should, or the following will be hard to make sense of.</p>
+<p>In Part I we&rsquo;ve learned how to forceast one point, in Part II we&rsquo;ve
+learned how to forecast two points. In this part we&rsquo;ll learn how to
+forecast <em>many</em> points.</p>
+<h2 id="more-terminology">More Terminology</h2>
+<h3 id="season"><em>Season</em></h3>
+<p>If a series appears to be repetitive at regular intervals, such an
+interval is referred to as a <em>season</em>, and the series is said to be
+<em>seasonal</em>. <a href="https://en.wikipedia.org/wiki/Seasonality">Seasonality</a>
+is required for the Holt-Winters method to work, non-seasonal series
+(e.g. stock prices) cannot be forecasted using this method (would be
+nice though if they could be).</p>
+    </div>
+  <a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        February 16, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/" class="link black dim">
+        Holt-Winters Forecasting for Dummies - Part II
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>If you haven&rsquo;t read <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/">Part I</a>
+you probably should, or the following will be hard to make sense of.</p>
+<p>All the forecasting methods we covered so far, including single
+exponential smoothing, were only good at predicting a single
+point. We can do better than that, but first we need to be introduced to
+a couple of new terms.</p>
+<h2 id="more-terminology">More terminology</h2>
+<h3 id="level"><em>Level</em></h3>
+<p>Expected value has another name, which, again varies depending on who wrote the
+text book: <em>baseline</em>, <em>intercept</em> (as in
+<a href="https://en.wikipedia.org/wiki/Y-intercept">Y-intercept</a>) or
+<em>level</em>. We will stick with &ldquo;level&rdquo; here.</p>
+    </div>
+  <a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        January 29, 2016
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/" class="link black dim">
+        Holt-Winters Forecasting for Dummies (or Developers) - Part I
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>This three part write up [<a href="/blog/2016/02/16/triple-exponential-smoothing-forecasting-part-ii/">Part II</a>
+<a href="/blog/2016/02/17/triple-exponential-smoothing-forecasting-part-iii/">Part III</a>]
+is my attempt at a down-to-earth explanation (and Python code) of the
+Holt-Winters method for those of us who while hypothetically might be
+quite good at math, still try to avoid it at every opportunity. I had
+to dive into this subject while tinkering on
+<a href="https://github.com/tgres/tgres">tgres</a> (which features a Golang implementation). And
+having found it somewhat complex (and yet so brilliantly
+simple), figured that it&rsquo;d be good to share this knowledge, and
+in the process, to hopefully solidify it in my head as well.</p>
+    </div>
+  <a href="/blog/2016/01/29/triple-exponential-smoothing-forecasting/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+        <div class="w-100 w-30-l mb4 relative bg-white">
+            <div class="mb3 pa4 mid-gray overflow-hidden">
+    
+      <div class="f6">
+        September 23, 2015
+      </div>
+    
+    <h1 class="f3 near-black">
+      <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/" class="link black dim">
+        Storing Time Series in PostgreSQL efficiently
+      </a>
+    </h1>
+    <div class="nested-links f5 lh-copy nested-copy-line-height">
+      <p>With the latest advances in PostgreSQL (and other db&rsquo;s), a relational
+database begins to look like a very viable TS storage platform. In
+this write up I attempt to show how to store TS in PostgreSQL. (2016-12-17 Update:
+there is a <a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">part 2</a> of this article.)</p>
+<p>A TS is a series of [timestamp, measurement] pairs, where measurement
+is typically a floating point number. These pairs (aka &ldquo;data points&rdquo;)
+usually arrive at a high and steady rate. As time goes on, detailed
+data usually becomes less interesting and is often consolidated into
+larger time intervals until ultimately it is expired.</p>
+    </div>
+  <a href="/blog/2015/09/23/storing-time-series-in-postgresql-efficiently/" class="ba b--moon-gray bg-light-gray br2 color-inherit dib f7 hover-bg-moon-gray link mt2 ph2 pv1">read more</a>
+  </div>
+
+        </div>
+      
+    </aside>
+    
+    
+    <ul class="pagination pagination-default">
+      <li class="page-item">
+        <a href="/posts/" aria-label="First" class="page-link" role="button"><span aria-hidden="true">&laquo;&laquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/2/" aria-label="Previous" class="page-link" role="button"><span aria-hidden="true">&laquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/" aria-label="Page 1" class="page-link" role="button">1</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/2/" aria-label="Page 2" class="page-link" role="button">2</a>
+      </li>
+      <li class="page-item active">
+        <a aria-current="page" aria-label="Page 3" class="page-link" role="button">3</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/4/" aria-label="Page 4" class="page-link" role="button">4</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/5/" aria-label="Page 5" class="page-link" role="button">5</a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/4/" aria-label="Next" class="page-link" role="button"><span aria-hidden="true">&raquo;</span></a>
+      </li>
+      <li class="page-item">
+        <a href="/posts/page/6/" aria-label="Last" class="page-link" role="button"><span aria-hidden="true">&raquo;&raquo;</span></a>
+      </li>
+    </ul>
+  </article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

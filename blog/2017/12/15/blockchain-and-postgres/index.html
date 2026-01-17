@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>The Bitcoin Blockchain PostgresSQL Schema | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="In a previous post I wrote
+some initial thoughts on storing the blockchain in Postgres. It&rsquo;s been
+a couple of months and I&rsquo;ve made some progress on the
+import project. This post documents
+the latest incarnation of the SQL schema used to store the
+blockchain as well as thoughts on why it was decided to be this way.
+Blockchain Data Structure Overview
+The Bitcoin blockchain
+consists of blocks.
+A block is a set of transactions.
+A block also contains some block-specific information,
+such as the nonce for the Proof-Of-Work validating the block.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2017/12/15/blockchain-and-postgres/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2017/12/15/blockchain-and-postgres/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="The Bitcoin Blockchain PostgresSQL Schema">
+  <meta property="og:description" content="In a previous post I wrote some initial thoughts on storing the blockchain in Postgres. It’s been a couple of months and I’ve made some progress on the import project. This post documents the latest incarnation of the SQL schema used to store the blockchain as well as thoughts on why it was decided to be this way.
+Blockchain Data Structure Overview The Bitcoin blockchain consists of blocks. A block is a set of transactions. A block also contains some block-specific information, such as the nonce for the Proof-Of-Work validating the block.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-12-15T08:28:00+00:00">
+    <meta property="article:modified_time" content="2017-12-15T08:28:00+00:00">
+
+  <meta itemprop="name" content="The Bitcoin Blockchain PostgresSQL Schema">
+  <meta itemprop="description" content="In a previous post I wrote some initial thoughts on storing the blockchain in Postgres. It’s been a couple of months and I’ve made some progress on the import project. This post documents the latest incarnation of the SQL schema used to store the blockchain as well as thoughts on why it was decided to be this way.
+Blockchain Data Structure Overview The Bitcoin blockchain consists of blocks. A block is a set of transactions. A block also contains some block-specific information, such as the nonce for the Proof-Of-Work validating the block.">
+  <meta itemprop="datePublished" content="2017-12-15T08:28:00+00:00">
+  <meta itemprop="dateModified" content="2017-12-15T08:28:00+00:00">
+  <meta itemprop="wordCount" content="2465">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="The Bitcoin Blockchain PostgresSQL Schema">
+  <meta name="twitter:description" content="In a previous post I wrote some initial thoughts on storing the blockchain in Postgres. It’s been a couple of months and I’ve made some progress on the import project. This post documents the latest incarnation of the SQL schema used to store the blockchain as well as thoughts on why it was decided to be this way.
+Blockchain Data Structure Overview The Bitcoin blockchain consists of blocks. A block is a set of transactions. A block also contains some block-specific information, such as the nonce for the Proof-Of-Work validating the block.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">The Bitcoin Blockchain PostgresSQL Schema</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2017-12-15T08:28:00Z">December 15, 2017</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>In a <a href="/blog/2017/10/10/postgre-as-a-full-node/">previous post</a> I wrote
+some initial thoughts on storing the blockchain in Postgres. It&rsquo;s been
+a couple of months and I&rsquo;ve made some progress on the
+<a href="https://github.com/blkchain/blkchain">import project</a>. This post documents
+the latest incarnation of the SQL schema used to store the
+blockchain as well as thoughts on why it was decided to be this way.</p>
+<h2 id="blockchain-data-structure-overview">Blockchain Data Structure Overview</h2>
+<p>The <a href="https://bitcoin.org/en/developer-reference#block-chain">Bitcoin blockchain</a>
+consists of <em><a href="https://bitcoin.org/en/developer-reference#serialized-blocks">blocks</a></em>.
+A block is a set of <em><a href="https://bitcoin.org/en/developer-reference#raw-transaction-format">transactions</a></em>.
+A block also contains some <a href="https://bitcoin.org/en/developer-reference#block-headers">block-specific information</a>,
+such as the nonce for the <a href="https://en.bitcoin.it/wiki/Proof_of_work">Proof-Of-Work</a> validating the block.</p>
+<p>A transaction consist of <em>inputs</em> and <em>outputs</em>. The inputs reference
+outputs from prior transactions, which may include transactions in the
+same block. When an output is referenced by an input, the output is
+considered spent in its entirety, i.e. there is no way to spend a part
+of an output.</p>
+<p>When two <em>different</em> transactions&rsquo; inputs reference the same output, it is
+considered a <em><a href="https://en.wikipedia.org/wiki/Double-spending">double spend</a></em>,
+and only one of the spending transactions is valid (the details
+of how validity is determined are outside the scope of this write up).
+While double-spends do imply that one of the transactions is invalid,
+it is not uncommon for double-spends to exist at least for a period of time,
+thus the database schema needs to allow them.</p>
+<p>A transaction&rsquo;s input value is the sum of its inputs and the output
+value is the sum of its outputs. Naturally, the output value cannot
+exceed the input value, but it is normal for the output value to be
+<em>less</em> than the input value. The discrepancy between the input and the
+output is the transaction <em><a href="https://en.bitcoin.it/wiki/Transaction_fees">fee</a></em>
+and is taken by the miner solving the block in which the transaction is included.</p>
+<p>The first transaction in a block is referred to as the
+<em>coinbase</em>. Coinbase is a special transaction where the inputs refer
+to a (non-existent) transaction hash of all zeros. Coinbase outputs
+are the sum of all the fees and the <em><a href="https://en.bitcoin.it/wiki/Mining#Reward">miner reward</a></em>.</p>
+<p>Curiously it is possible for the same coinbase transaction to be
+included in more than one block, and there is at least
+<a href="https://blockchain.info/tx/e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468">one case</a>
+of this in the blockchain. The implication of this is that the second
+instance of such a transaction is unspendable. This oddity was
+addressed by a change in the consensus which requires the block
+<em>height</em> to be referenced in the coinbase and is since then no longer
+possible (see <a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">BIP30</a>).</p>
+<p>The same transaction can be included in more than one block. This is
+common during chain splits, i.e. when more than one miner solves a
+block. Eventually one of such blocks will become <em>orphaned</em>, but there
+is a period of time during which it is not known which chain is
+considered &ldquo;best&rdquo;, and the database structure needs to accommodate
+this. Chain splits also cause multiple blocks to have the same height
+which implies that height alone cannot identify a particular block or
+that it is unique.</p>
+<p>With introduction of <em>SegWit</em> transactions also include <em>witness</em>
+data. Witness is stored at the end of a transaction as a list where
+each entry corresponds to an input. A witness entry is in turn a list,
+because an input can have multiple signatures (aka witness). Presently
+per-input witness list is stored in the input record as a BYTEA.</p>
+<h2 id="row-ids-and-hashes">Row Ids and Hashes</h2>
+<p>In the blockchain blocks and transactions are always referred to
+through their <em>hash</em>. A hash is an array of 32 bytes. While in theory
+we could build a schema which relies on the hash as the record
+identifier, in practice it is cumbersome compared to the traditional
+integer ids. Firstly, 32 bytes is four times larger than a BIGINT and
+eight times larger than an INT, which impacts greatly the amount of
+space required to store inputs and outputs as well as degrades index
+performance. For this reason we use INT for block ids and BIGINT for
+transaction ids (INT is not big enough and would overflow in a few
+years).</p>
+<p>There is also an ambiguity in how the hash is printed versus how it is
+stored. While the SHA standard does not specify the endian-ness of the
+hash and refers to it as an array of bytes, Satoshi Nakomoto decided
+to treat hashes as little-endian 256-bit integers. The implication
+being that when the hash is printed (e.g. as a transaction id) the order of
+bytes is the reverse of how it is stored in the blockchain.</p>
+<p>Using integer ids creates a complication in how inputs reference
+outputs. Whereas in the blockchain it is done entirely via a
+transaction hash, here we need to also store the integer id of the
+referenced transaction (<code>prevout_tx_id</code>). This is an easily
+justifiable optimization, without it to lookup the input transaction
+would require first finding the transaction integer id. The downside
+is that during the initial import maintaining the hash to integer id
+correspondence in an efficient manner is bit of a challenge.</p>
+<h2 id="integers">Integers</h2>
+<p>Most integers in Core are defined as <code>uint32_t</code>, which is an unsigned
+4-byte integer. Postgres 4-byte <code>INT</code> is signed, which presents us
+with two options: (1) use <code>BIGINT</code> instead, or (2) use <code>INT</code> with the
+understanding that larger values may appear as negative. We are opting
+for the latter as preserving space is more important and for as long as
+all the bits are correct, whether the integer is interpreted as signed
+or unsigned is of no consequence.</p>
+<h2 id="blocks">Blocks</h2>
+<p>Blocks are collections of transactions. It is a many-to-many
+relationship as multiple blocks can include to the same transaction. The
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/block.h#L20">CBlockHeader</a>
+is defined in Core as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CBlockHeader</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// header
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int32_t</span> nVersion;
+</span></span><span style="display:flex;"><span>    uint256 hashPrevBlock;
+</span></span><span style="display:flex;"><span>    uint256 hashMerkleRoot;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint32_t</span> nTime;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint32_t</span> nBits;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint32_t</span> nNonce;
+</span></span></code></pre></div><p>Our <code>blocks</code> table is defined as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>  <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> blocks (
+</span></span><span style="display:flex;"><span>   id           SERIAL
+</span></span><span style="display:flex;"><span>  ,height       INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,hash         BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,<span style="color:#66d9ef">version</span>      INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,prevhash     BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,merkleroot   BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,time         INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,bits         INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,nonce        INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,orphan       BOOLEAN <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>  ,status       INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,filen        INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,filepos      INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  );
+</span></span></code></pre></div><p>Columns <code>orphan</code>, <code>status</code>, <code>filen</code> and <code>filepos</code> are from the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/chain.h#L170">CBlockIndex</a>
+class which is serialized in LevelDb and not formally part of the blockchain.
+It contains information about the file in which the block was stored
+on-disk as far as Core is concerned. This information is only
+necessary for debugging purposes, also note that it is unique to the
+particular instance of the Core database, i.e. if you were to wipe it
+and download the chain from scratch, location and even status of
+blocks is likely to be different.</p>
+<p>Note that the C++ <code>CBlockHeader</code> class does not actually include the
+hash, it is computed on-the-fly as needed. Same is true with respect
+to transaction id.</p>
+<p>We also need a many-to-many link to transactions, which is the
+<code>block_txs</code> table. Not only do we need to record that a transaction is
+included in a block, but also its exact position relative to other
+transactions, denoted by the <code>n</code> column:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>  <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> block_txs (
+</span></span><span style="display:flex;"><span>   block_id      INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,n             INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,tx_id         BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  );
+</span></span></code></pre></div><h3 id="transactions">Transactions</h3>
+<p>A transaction is a collection of inputs and outputs. The
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L264">CTransaction</a>
+C++ class is defined as follows:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CTransaction</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int32_t</span> nVersion;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>CTxIn<span style="color:#f92672">&gt;</span> vin;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> std<span style="color:#f92672">::</span>vector<span style="color:#f92672">&lt;</span>CTxOut<span style="color:#f92672">&gt;</span> vout;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">uint32_t</span> nLockTime;
+</span></span></code></pre></div><p>In Postgres transactions are in the <code>txs</code> table:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>  <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> txs (
+</span></span><span style="display:flex;"><span>   id            BIGSERIAL
+</span></span><span style="display:flex;"><span>  ,txid          BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,<span style="color:#66d9ef">version</span>       INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,locktime      INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  );
+</span></span></code></pre></div><p>The <code>txid</code> column is the transaction hash and should not be confused
+with <code>tx_id</code> in other tables referencing the transaction. (&ldquo;txid&rdquo; is
+what the transaction hash is typically called in code and
+documentation).</p>
+<h2 id="outputs">Outputs</h2>
+<p>In Core an output is represented by the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L131">CTxOut</a>
+class:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CTxOut</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    CAmount nValue;
+</span></span><span style="display:flex;"><span>    CScript scriptPubKey;
+</span></span></code></pre></div><p>The <code>CAmount</code> type above is a <code>typedef int64_t</code>, it is the value of
+the output in <em>satoshis</em> which can be as high as <code>21M * 100M</code> (the
+number of satoshis in a bitcoin).</p>
+<p>In SQL, an output looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>  <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> txouts (
+</span></span><span style="display:flex;"><span>   tx_id        BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,n            INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,value        BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,scriptpubkey BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,spent        BOOL <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  );
+</span></span></code></pre></div><p>The <code>tx_id</code> column is the transaction to which this output belongs, <code>n</code>
+is the position within the output list.</p>
+<p>The <code>spent</code> column is an optimization, it is not part of the
+blockchain. An output is spent if later in the blockchain there exists
+an input referencing it. Core maintains a separate LevelDb dataset
+called the <em>UTXO Set</em> (Unspent Transaction Output Set) which contains
+all unspent outputs. The reason Core does it this way is because by
+default it does not index transactions, i.e. Core actually does not
+have a way of quickly retrieving a transaction from the store as there
+generally is no need for such retrieval as part of a node operation,
+while the UTXO Set is both sufficient and smaller than a full
+transaction index. Since in Postgres we have no choice but to index
+transactions, there is no benefit in having UTXOs as a separate table,
+the <code>spent</code> flag serves this purpose instead.</p>
+<p>The UTXO Set does not include any outputs with the value of 0, since
+there is nothing to spend there even though no input refers to them
+and they are not technically spent.</p>
+<h2 id="inputs">Inputs</h2>
+<p>An input in Core is represented by the
+<a href="https://github.com/bitcoin/bitcoin/blob/0.15/src/primitives/transaction.h#L61">CTxIn</a>
+class, which looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c++" data-lang="c++"><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CTxIn</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+</span></span><span style="display:flex;"><span>    COutPoint prevout;
+</span></span><span style="display:flex;"><span>    CScript scriptSig;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">uint32_t</span> nSequence;
+</span></span><span style="display:flex;"><span>    CScriptWitness scriptWitness;
+</span></span></code></pre></div><p>The <code>COutPoint</code> class is a combination of a hash and an integer
+representing an output. <code>CScriptWitness</code> is an array of &ldquo;witnesses&rdquo; or
+(roughly speaking) signatures, which are byte arrays, just like the
+<code>scriptSig</code>.</p>
+<p>In our schema, an input is defined as:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>  <span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> txins (
+</span></span><span style="display:flex;"><span>   tx_id         BIGINT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,n             INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,prevout_hash  BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,prevout_n     INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,scriptsig     BYTEA <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,sequence      INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>
+</span></span><span style="display:flex;"><span>  ,witness       BYTEA
+</span></span><span style="display:flex;"><span>  ,prevout_tx_id BIGINT
+</span></span><span style="display:flex;"><span>  );
+</span></span></code></pre></div><p>As we already mentioned above <code>witness</code> is stored as opaque bytes. The
+<code>prevout_tx_id</code> is the database row id of the transaction this input
+is spending.</p>
+<h2 id="indexes-and-foreign-key-constraints">Indexes and Foreign Key Constraints</h2>
+<p>Blocks and transactions are indexed by <code>id</code> as their primary index.
+Blocks also need an index on <code>hash</code> (unique), as well as on <code>height</code>
+and on <code>prevhash</code> (not unique).  Transactions need a unique index on
+the <code>txid</code>.</p>
+<p>Inputs and outputs need <code>(tx_id, n)</code> as primary indexes. Inputs are
+also indexed on <code>(prevout_tx_id, prevout_n)</code> so that we can quickly
+identify the spending input given an output.</p>
+<p>Finally, we need a basic set of foreign key constraints that ensure
+the integrity between all the related tables.</p>
+<h2 id="triggers">Triggers</h2>
+<p>The <code>spent</code> column in the output and the <code>prevout_tx_id</code> of an input
+are maintained by a trigger on the <code>txins</code> table. Every time an input
+is inserted, it locates the database id of the transaction it spends
+as well as updates the <code>spent</code> flag of the corresponding output.</p>
+<p>Technically it is done using two triggers for performance
+reasons. This is because a trigger that modifies the row being
+inserted must be a BEFORE trigger, but BEFORE triggers are not allowed
+to be to be CONSTRAINT triggers. CONSTRAINT triggers have the
+advantage of being <em>deferrable</em>, i.e. they can be postponed until
+(database) transaction commit time. Deferring constraints can speed up
+inserts considerably, for this reason the code that updates <code>spent</code> is
+in a separate AFTER trigger.</p>
+<p>The trigger code is still rough around the edges, but here it is for
+posterity anyway:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">REPLACE</span> <span style="color:#66d9ef">FUNCTION</span> txins_before_trigger_func() <span style="color:#66d9ef">RETURNS</span> <span style="color:#66d9ef">TRIGGER</span> <span style="color:#66d9ef">AS</span> <span style="color:#960050;background-color:#1e0010">$$</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">BEGIN</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">IF</span> (TG_OP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;UPDATE&#39;</span> <span style="color:#66d9ef">OR</span> TG_OP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;INSERT&#39;</span>) <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">NEW</span>.prevout_n <span style="color:#f92672">&lt;&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">AND</span> <span style="color:#66d9ef">NEW</span>.prevout_tx_id <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">SELECT</span> id <span style="color:#66d9ef">INTO</span> <span style="color:#66d9ef">NEW</span>.prevout_tx_id <span style="color:#66d9ef">FROM</span> txs <span style="color:#66d9ef">WHERE</span> txid <span style="color:#f92672">=</span> <span style="color:#66d9ef">NEW</span>.prevout_hash;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">FOUND</span> <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>          RAISE <span style="color:#66d9ef">EXCEPTION</span> <span style="color:#e6db74">&#39;Unknown prevout_hash %&#39;</span>, <span style="color:#66d9ef">NEW</span>.prevout_hash;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">RETURN</span> <span style="color:#66d9ef">NEW</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">RETURN</span> <span style="color:#66d9ef">NULL</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">END</span>;
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">$$</span> <span style="color:#66d9ef">LANGUAGE</span> plpgsql;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TRIGGER</span> txins_before_trigger
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">BEFORE</span> <span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">UPDATE</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">ON</span> txins
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">EACH</span> <span style="color:#66d9ef">ROW</span> <span style="color:#66d9ef">EXECUTE</span> <span style="color:#66d9ef">PROCEDURE</span> txins_before_trigger_func();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">REPLACE</span> <span style="color:#66d9ef">FUNCTION</span> txins_after_trigger_func() <span style="color:#66d9ef">RETURNS</span> <span style="color:#66d9ef">TRIGGER</span> <span style="color:#66d9ef">AS</span> <span style="color:#960050;background-color:#1e0010">$$</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">BEGIN</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">IF</span> (TG_OP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;DELETE&#39;</span>) <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">OLD</span>.prevout_tx_id <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">UPDATE</span> txouts <span style="color:#66d9ef">SET</span> spent <span style="color:#f92672">=</span> <span style="color:#66d9ef">FALSE</span>
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">WHERE</span> tx_id <span style="color:#f92672">=</span> prevout_tx_id <span style="color:#66d9ef">AND</span> n <span style="color:#f92672">=</span> <span style="color:#66d9ef">OLD</span>.prevout_n;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">RETURN</span> <span style="color:#66d9ef">OLD</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">ELSIF</span> (TG_OP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;UPDATE&#39;</span> <span style="color:#66d9ef">OR</span> TG_OP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;INSERT&#39;</span>) <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">NEW</span>.prevout_tx_id <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">UPDATE</span> txouts <span style="color:#66d9ef">SET</span> spent <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>
+</span></span><span style="display:flex;"><span>         <span style="color:#66d9ef">WHERE</span> tx_id <span style="color:#f92672">=</span> <span style="color:#66d9ef">NEW</span>.prevout_tx_id <span style="color:#66d9ef">AND</span> n <span style="color:#f92672">=</span> <span style="color:#66d9ef">NEW</span>.prevout_n;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">FOUND</span> <span style="color:#66d9ef">THEN</span>
+</span></span><span style="display:flex;"><span>          RAISE <span style="color:#66d9ef">EXCEPTION</span> <span style="color:#e6db74">&#39;Unknown prevout_n % in txid % (id %)&#39;</span>, <span style="color:#66d9ef">NEW</span>.prevout_n, <span style="color:#66d9ef">NEW</span>.prevout_hash, <span style="color:#66d9ef">NEW</span>.prevout_tx_id;
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">RETURN</span> <span style="color:#66d9ef">NEW</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">RETURN</span> <span style="color:#66d9ef">NULL</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">END</span>;
+</span></span><span style="display:flex;"><span><span style="color:#960050;background-color:#1e0010">$$</span> <span style="color:#66d9ef">LANGUAGE</span> plpgsql;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">CONSTRAINT</span> <span style="color:#66d9ef">TRIGGER</span> txins_after_trigger
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">AFTER</span> <span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">UPDATE</span> <span style="color:#66d9ef">OR</span> <span style="color:#66d9ef">DELETE</span> <span style="color:#66d9ef">ON</span> txins <span style="color:#66d9ef">DEFERRABLE</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FOR</span> <span style="color:#66d9ef">EACH</span> <span style="color:#66d9ef">ROW</span> <span style="color:#66d9ef">EXECUTE</span> <span style="color:#66d9ef">PROCEDURE</span> txins_after_trigger_func();
+</span></span></code></pre></div><h2 id="identifying-orphaned-blocks">Identifying Orphaned Blocks</h2>
+<p>While this is not part of the schema, I thought it would be
+of interest to the readers. An orphaned block is a block to
+which no other <code>prevhash</code> refers. At the time of a chain split we
+start out with two blocks referring to the same block as previous, but
+the next block to arrive will identify one of the two as its previous
+thereby orphaning the other of the pair.</p>
+<p>To identify orphans we need to walk the chain backwards starting from
+the highest height. Any block that this walk does not visit is an
+orphan.</p>
+<p>In SQL this can be done using the <code>WITH RECURSIVE</code> query like so:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">UPDATE</span> blocks
+</span></span><span style="display:flex;"><span>   <span style="color:#66d9ef">SET</span> orphan <span style="color:#f92672">=</span> a.orphan
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FROM</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">SELECT</span> blocks.id, x.id <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">AS</span> orphan
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">FROM</span> blocks
+</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">LEFT</span> <span style="color:#66d9ef">JOIN</span> (
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">WITH</span> <span style="color:#66d9ef">RECURSIVE</span> recur(id, prevhash) <span style="color:#66d9ef">AS</span> (
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">SELECT</span> id, prevhash, <span style="color:#ae81ff">0</span> <span style="color:#66d9ef">AS</span> n
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">FROM</span> blocks
+</span></span><span style="display:flex;"><span>                            <span style="color:#75715e">-- this should be faster than MAX(height)
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>           <span style="color:#66d9ef">WHERE</span> height <span style="color:#66d9ef">IN</span> (<span style="color:#66d9ef">SELECT</span> height <span style="color:#66d9ef">FROM</span> blocks <span style="color:#66d9ef">ORDER</span> <span style="color:#66d9ef">BY</span> height <span style="color:#66d9ef">DESC</span> <span style="color:#66d9ef">LIMIT</span> <span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">UNION</span> <span style="color:#66d9ef">ALL</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">SELECT</span> blocks.id, blocks.prevhash, n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span> <span style="color:#66d9ef">AS</span> n
+</span></span><span style="display:flex;"><span>              <span style="color:#66d9ef">FROM</span> recur
+</span></span><span style="display:flex;"><span>              <span style="color:#66d9ef">JOIN</span> blocks <span style="color:#66d9ef">ON</span> blocks.hash <span style="color:#f92672">=</span> recur.prevhash
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">%</span>s
+</span></span><span style="display:flex;"><span>        )
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">SELECT</span> recur.id, recur.prevhash, n
+</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">FROM</span> recur
+</span></span><span style="display:flex;"><span>      ) x <span style="color:#66d9ef">ON</span> blocks.id <span style="color:#f92672">=</span> x.id
+</span></span><span style="display:flex;"><span>   ) a
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">WHERE</span> blocks.id <span style="color:#f92672">=</span> a.id;
+</span></span></code></pre></div><p>The WITH RECURSIVE part connects rows by joining prevhash to hash,
+thereby building a list which starts at the highest hight and going
+towards the beginning until no parent can be found.</p>
+<p>Then we LEFT JOIN the above to the blocks table, and where there is
+no match (x.id IS NULL) we mark it as orphan.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Devising this schema was surprisingly tedious and took many trial and
+error attempts to reimport the entire blockchain which collectively
+took weeks. Many different variations on how to optimize operations
+were attempted, for example using an <em>expression index</em> to only index
+a subset of a hash (first 10 bytes are still statistically unique),
+etc.</p>
+<p>I would love to hear comments from the database experts out there. I&rsquo;m
+not considering this version &ldquo;final&rdquo;, there is probably still room for
+improvement and new issues might be discovered as I progress to
+writing up how to insert new blocks and actually verify blocks and
+transactions.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Compiling Impala from Github | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I&rsquo;m presuming that code gets
+released to Github once undergone some level of internal scrutiny, but
+I&rsquo;ve not seen any documentation on how one could tie publically
+available code to the official Impala (binary) release, currently 1.0.
+Anyway, I tried compiling the github code last night, and here are the
+steps that worked for me.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="noindex, nofollow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="http://localhost:1313/blog/1/01/01/compiling-impala-from-github/">
+    
+
+    
+    
+    <meta property="og:url" content="http://localhost:1313/blog/1/01/01/compiling-impala-from-github/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Compiling Impala from Github">
+  <meta property="og:description" content="Apparently Impala has two versions of source code, one internal to Cloudera, the other available on Github. I’m presuming that code gets released to Github once undergone some level of internal scrutiny, but I’ve not seen any documentation on how one could tie publically available code to the official Impala (binary) release, currently 1.0.
+Anyway, I tried compiling the github code last night, and here are the steps that worked for me.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+
+  <meta itemprop="name" content="Compiling Impala from Github">
+  <meta itemprop="description" content="Apparently Impala has two versions of source code, one internal to Cloudera, the other available on Github. I’m presuming that code gets released to Github once undergone some level of internal scrutiny, but I’ve not seen any documentation on how one could tie publically available code to the official Impala (binary) release, currently 1.0.
+Anyway, I tried compiling the github code last night, and here are the steps that worked for me.">
+  <meta itemprop="wordCount" content="510">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Compiling Impala from Github">
+  <meta name="twitter:description" content="Apparently Impala has two versions of source code, one internal to Cloudera, the other available on Github. I’m presuming that code gets released to Github once undergone some level of internal scrutiny, but I’ve not seen any documentation on how one could tie publically available code to the official Impala (binary) release, currently 1.0.
+Anyway, I tried compiling the github code last night, and here are the steps that worked for me.">
+
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white development">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Compiling Impala from Github</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Apparently Impala has two versions of source code, one internal to
+Cloudera, the other available on Github. I&rsquo;m presuming that code gets
+released to Github once undergone some level of internal scrutiny, but
+I&rsquo;ve not seen any documentation on how one could tie publically
+available code to the official Impala (binary) release, currently 1.0.</p>
+<p>Anyway, I tried compiling the github code last night, and here are the
+steps that worked for me.</p>
+<p>My setup:</p>
+<ul>
+<li>
+<p>Linux CentOS 6.2 (running inside a VirtualBox instance on an Early 2011 MacBook, Intel i7).</p>
+</li>
+<li>
+<p>CDH 4.3 installed using Cloudera RPM&rsquo;s. No configuration was done, I
+just ran yum install as described in the installation guide.</p>
+</li>
+<li>
+<p>Impala checked out from Github, HEAD is 60cb0b75 (Mon May 13 09:36:37 2013).</p>
+</li>
+<li>
+<p>Boost 1.42, compiled and installed manually (see below).</p>
+</li>
+</ul>
+<p>The steps I followed:</p>
+<ul>
+<li>Check out Impala:</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>git clone git://github.com/cloudera/impala.git
+</span></span><span style="display:flex;"><span>&lt;...&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>git branch -v
+</span></span><span style="display:flex;"><span>* master 60cb0b7 Fixed formatting in README
+</span></span></code></pre></div><ul>
+<li>Install Impala pre-requisites as per Impala README, except for Boost:</li>
+</ul>
+
+
+
+<div class="goat svg-container ">
+  
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      font-family="Menlo,Lucida Console,monospace"
+      
+        viewBox="0 0 672 57"
+      >
+      <g transform='translate(8,16)'>
+<text text-anchor='middle' x='0' y='4' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='8' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='16' y='4' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='24' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='32' y='20' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='32' y='36' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='40' y='4' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='40' y='20' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='40' y='36' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='48' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='48' y='20' fill='currentColor' style='font-size:1em'>k</text>
+<text text-anchor='middle' x='48' y='36' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='56' y='4' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='56' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='56' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='64' y='36' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='72' y='4' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='72' y='20' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='72' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='80' y='4' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='80' y='20' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='80' y='36' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='88' y='4' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='88' y='20' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='88' y='36' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='96' y='4' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='96' y='20' fill='currentColor' style='font-size:1em'>k</text>
+<text text-anchor='middle' x='96' y='36' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='104' y='4' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='104' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='104' y='36' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='112' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='112' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='120' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='120' y='20' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='120' y='36' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='128' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='128' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='136' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='136' y='20' fill='currentColor' style='font-size:1em'>x</text>
+<text text-anchor='middle' x='136' y='36' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='144' y='4' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='144' y='20' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='152' y='4' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='152' y='20' fill='currentColor' style='font-size:1em'>g</text>
+<text text-anchor='middle' x='152' y='36' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='160' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='160' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='160' y='36' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='168' y='4' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='168' y='20' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='168' y='36' fill='currentColor' style='font-size:1em'>r</text>
+<text text-anchor='middle' x='176' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='176' y='20' fill='currentColor' style='font-size:1em'>.</text>
+<text text-anchor='middle' x='176' y='36' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='184' y='4' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='184' y='20' fill='currentColor' style='font-size:1em'>x</text>
+<text text-anchor='middle' x='184' y='36' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='192' y='4' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='192' y='20' fill='currentColor' style='font-size:1em'>8</text>
+<text text-anchor='middle' x='192' y='36' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='200' y='4' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='200' y='20' fill='currentColor' style='font-size:1em'>6</text>
+<text text-anchor='middle' x='200' y='36' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='208' y='4' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='208' y='20' fill='currentColor' style='font-size:1em'>_</text>
+<text text-anchor='middle' x='208' y='36' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='216' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='216' y='20' fill='currentColor' style='font-size:1em'>6</text>
+<text text-anchor='middle' x='216' y='36' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='224' y='4' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='224' y='20' fill='currentColor' style='font-size:1em'>4</text>
+<text text-anchor='middle' x='224' y='36' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='232' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='232' y='36' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='240' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='240' y='20' fill='currentColor' style='font-size:1em'>g</text>
+<text text-anchor='middle' x='240' y='36' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='248' y='20' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='248' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='256' y='4' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='256' y='20' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='256' y='36' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='264' y='4' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='264' y='20' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='264' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='272' y='4' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='272' y='20' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='272' y='36' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='280' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='280' y='20' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='288' y='4' fill='currentColor' style='font-size:1em'>m</text>
+<text text-anchor='middle' x='288' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='288' y='36' fill='currentColor' style='font-size:1em'>w</text>
+<text text-anchor='middle' x='296' y='4' fill='currentColor' style='font-size:1em'>a</text>
+<text text-anchor='middle' x='296' y='20' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='296' y='36' fill='currentColor' style='font-size:1em'>g</text>
+<text text-anchor='middle' x='304' y='4' fill='currentColor' style='font-size:1em'>k</text>
+<text text-anchor='middle' x='304' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='304' y='36' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='312' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='312' y='20' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='312' y='36' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='328' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='328' y='20' fill='currentColor' style='font-size:1em'>p</text>
+<text text-anchor='middle' x='328' y='36' fill='currentColor' style='font-size:1em'>g</text>
+<text text-anchor='middle' x='336' y='4' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='336' y='20' fill='currentColor' style='font-size:1em'>y</text>
+<text text-anchor='middle' x='336' y='36' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='344' y='4' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='344' y='20' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='344' y='36' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='352' y='4' fill='currentColor' style='font-size:1em'>t</text>
+<text text-anchor='middle' x='352' y='20' fill='currentColor' style='font-size:1em'>h</text>
+<text text-anchor='middle' x='360' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='360' y='20' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='360' y='36' fill='currentColor' style='font-size:1em'>u</text>
+<text text-anchor='middle' x='368' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='368' y='20' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='368' y='36' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='376' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='376' y='20' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='376' y='36' fill='currentColor' style='font-size:1em'>z</text>
+<text text-anchor='middle' x='384' y='20' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='384' y='36' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='392' y='4' fill='currentColor' style='font-size:1em'>f</text>
+<text text-anchor='middle' x='392' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='392' y='36' fill='currentColor' style='font-size:1em'>p</text>
+<text text-anchor='middle' x='400' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='400' y='20' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='408' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='408' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='416' y='4' fill='currentColor' style='font-size:1em'>x</text>
+<text text-anchor='middle' x='416' y='20' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='432' y='4' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='432' y='20' fill='currentColor' style='font-size:1em'>b</text>
+<text text-anchor='middle' x='440' y='4' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='440' y='20' fill='currentColor' style='font-size:1em'>z</text>
+<text text-anchor='middle' x='448' y='4' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='448' y='20' fill='currentColor' style='font-size:1em'>i</text>
+<text text-anchor='middle' x='456' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='456' y='20' fill='currentColor' style='font-size:1em'>p</text>
+<text text-anchor='middle' x='464' y='4' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='464' y='20' fill='currentColor' style='font-size:1em'>2</text>
+<text text-anchor='middle' x='472' y='20' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='480' y='4' fill='currentColor' style='font-size:1em'>g</text>
+<text text-anchor='middle' x='480' y='20' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='488' y='4' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='488' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='496' y='4' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='496' y='20' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='504' y='4' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='504' y='20' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='512' y='4' fill='currentColor' style='font-size:1em'>c</text>
+<text text-anchor='middle' x='512' y='20' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='520' y='4' fill='currentColor' style='font-size:1em'>+</text>
+<text text-anchor='middle' x='528' y='4' fill='currentColor' style='font-size:1em'>+</text>
+<text text-anchor='middle' x='528' y='20' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='536' y='20' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='544' y='4' fill='currentColor' style='font-size:1em'>o</text>
+<text text-anchor='middle' x='544' y='20' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='552' y='4' fill='currentColor' style='font-size:1em'>p</text>
+<text text-anchor='middle' x='560' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='560' y='20' fill='currentColor' style='font-size:1em'>\</text>
+<text text-anchor='middle' x='568' y='4' fill='currentColor' style='font-size:1em'>n</text>
+<text text-anchor='middle' x='576' y='4' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='584' y='4' fill='currentColor' style='font-size:1em'>s</text>
+<text text-anchor='middle' x='592' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='600' y='4' fill='currentColor' style='font-size:1em'>-</text>
+<text text-anchor='middle' x='608' y='4' fill='currentColor' style='font-size:1em'>d</text>
+<text text-anchor='middle' x='616' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='624' y='4' fill='currentColor' style='font-size:1em'>v</text>
+<text text-anchor='middle' x='632' y='4' fill='currentColor' style='font-size:1em'>e</text>
+<text text-anchor='middle' x='640' y='4' fill='currentColor' style='font-size:1em'>l</text>
+<text text-anchor='middle' x='656' y='4' fill='currentColor' style='font-size:1em'>\</text>
+</g>
+
+    </svg>
+  
+</div>
+<ul>
+<li>
+<p>Install LLVM. Follow the precise steps in the Impala README, it works.</p>
+</li>
+<li>
+<p>Make sure you have the Oracle JDK 6, not OpenJDK. I found <a href="http://www.if-not-true-then-false.com/2010/install-sun-oracle-java-jdk-jre-6-on-fedora-centos-red-hat-rhel/">this link</a> helpful.</p>
+</li>
+<li>
+<p>Remove the CentOS version of Boost (1.41) if you have it. Impala
+needs uuid, which is only supported in 1.42 and later:</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># YMMV - this is how I did it, you may want to be more cautious</span>
+</span></span><span style="display:flex;"><span>sudo yum erase <span style="color:#e6db74">`</span>rpm -qa | grep boost<span style="color:#e6db74">`</span>
+</span></span></code></pre></div><ul>
+<li>
+<p>Download and untar Boost 1.42 from <a href="http://www.boost.org/users/history/version_1_42_0.html">http://www.boost.org/users/history/version_1_42_0.html</a></p>
+</li>
+<li>
+<p>Compile and install Boost. Note that Boost <em>must</em> be compiled with multi-threaded support and the layout matters too. I ended up up using the following:</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>cd boost_1_42_0/
+</span></span><span style="display:flex;"><span>./bootstrap.sh
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># not sure how necessary the --libdir=/usr/lib64 is, there was a post mentioning it, i followed this advice blindly</span>
+</span></span><span style="display:flex;"><span>./bjam --libdir<span style="color:#f92672">=</span>/usr/lib64 threading<span style="color:#f92672">=</span>multi --layout<span style="color:#f92672">=</span>tagged
+</span></span><span style="display:flex;"><span>sudo ./bjam --libdir<span style="color:#f92672">=</span>/usr/lib64 threading<span style="color:#f92672">=</span>multi --layout<span style="color:#f92672">=</span>tagged install
+</span></span></code></pre></div><ul>
+<li>
+<p>Install Maven, just like the README says, only the URL didn&rsquo;t work, I used
+<a href="http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz">http://archive.apache.org/dist/maven/binaries/apache-maven-3.0.4-bin.tar.gz</a> instead</p>
+</li>
+<li>
+<p>Now you should be able to compile Impala - just follow the steps in the README starting with <code>. bin/impala-config.sh</code></p>
+</li>
+</ul>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="http://localhost:1313/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

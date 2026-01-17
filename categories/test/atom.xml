@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Test on Gregory Trubetskoy</title>
+    <link>https://grisha.org/categories/test/</link>
+    <description>Recent content in Test on Gregory Trubetskoy</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 25 Mar 2013 11:46:00 +0000</lastBuildDate>
+    <atom:link href="https://grisha.org/categories/test/atom.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Testing out Octopress</title>
+      <link>https://grisha.org/blog/2013/03/25/how-does-this-work/</link>
+      <pubDate>Mon, 25 Mar 2013 11:46:00 +0000</pubDate>
+      <guid>https://grisha.org/blog/2013/03/25/how-does-this-work/</guid>
+      <description>&lt;p&gt;Thanks to &lt;a href=&#34;http://octopress.org&#34;&gt;Octopress&lt;/a&gt; and &lt;a href=&#34;http://github.com&#34;&gt;Github&lt;/a&gt; I blog&amp;hellip;.&lt;/p&gt;&#xA;&lt;p&gt;And I Tweet, too?&lt;/p&gt;&#xA;&lt;blockquote class=&#34;twitter-tweet&#34;&gt;&lt;p&gt;Thanks to Octopress and Github pages I now have a blog: &lt;a href=&#34;http://t.co/yKm0TVRMMu&#34; title=&#34;http://grisha.org/&#34;&gt;grisha.org&lt;/a&gt;&lt;/p&gt;&amp;mdash; Grisha Trubetskoy (@humblehack) &lt;a href=&#34;https://twitter.com/humblehack/status/316339220371349508&#34;&gt;March 26, 2013&lt;/a&gt;&lt;/blockquote&gt;&#xA;&lt;script async src=&#34;//platform.twitter.com/widgets.js&#34; charset=&#34;utf-8&#34;&gt;&lt;/script&gt;&#xA;&lt;p&gt;&#xA;&lt;a href=&#34;https://www.youtube.com/channel/UCPL5zsiUm0Psny8xD3mK1pg&#34;&gt;A link to Gregory Trubetskoy videos&lt;/a&gt;&#xA;or &lt;a href=&#34;https://youtu.be/qFi8j3ebTng&#34;&gt;a particular video&lt;/a&gt;&#xA;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Hacking on mod_python (again) | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Nearly eight years after my last commit
+to Mod_python I&rsquo;ve decided to spend some time hacking on it again.
+Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2013/08/02/hacking-on-mod-python-again/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Hacking on mod_python (again)">
+  <meta property="og:description" content="Nearly eight years after my last commit to Mod_python I’ve decided to spend some time hacking on it again.
+Five years without active development and thirteen since its first release, it still seems to me an entirely useful and viable tool. The code is exceptionally clean, the documentation is amazing, and the test suite is awesome. Which is a real testament to the noble efforts of all the people who contributed to its development.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2013-08-02T16:19:00+00:00">
+    <meta property="article:modified_time" content="2013-08-02T16:19:00+00:00">
+
+  <meta itemprop="name" content="Hacking on mod_python (again)">
+  <meta itemprop="description" content="Nearly eight years after my last commit to Mod_python I’ve decided to spend some time hacking on it again.
+Five years without active development and thirteen since its first release, it still seems to me an entirely useful and viable tool. The code is exceptionally clean, the documentation is amazing, and the test suite is awesome. Which is a real testament to the noble efforts of all the people who contributed to its development.">
+  <meta itemprop="datePublished" content="2013-08-02T16:19:00+00:00">
+  <meta itemprop="dateModified" content="2013-08-02T16:19:00+00:00">
+  <meta itemprop="wordCount" content="406">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hacking on mod_python (again)">
+  <meta name="twitter:description" content="Nearly eight years after my last commit to Mod_python I’ve decided to spend some time hacking on it again.
+Five years without active development and thirteen since its first release, it still seems to me an entirely useful and viable tool. The code is exceptionally clean, the documentation is amazing, and the test suite is awesome. Which is a real testament to the noble efforts of all the people who contributed to its development.">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Hacking on mod_python (again)</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2013-08-02T16:19:00Z">August 2, 2013</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Nearly eight years after my last <a href="https://github.com/grisha/mod_python/commit/726e2697c0547dbbb4b09ce3348f76118bb911c4">commit</a>
+to <a href="http://www.modpython.org/">Mod_python</a> I&rsquo;ve decided to spend some time hacking on it again.</p>
+<p>Five years without active development and thirteen since its first
+release, it still seems to me an entirely useful and viable tool. The
+code is exceptionally clean, the documentation is amazing, and the
+test suite is awesome.  Which is a real testament to the noble efforts
+of all the people who contributed to its development.</p>
+<p>We live in this new
+<a href="http://en.wikipedia.org/wiki/C10k_problem">c10k</a> world now where
+Apache Httpd no longer has the market dominance it once enjoyed, while
+the latest Python web frameworks run without requiring or recommending
+Mod_python. My hunch, however, is that given a thorough dusting it
+could be quite useful (perhaps more than ever) and applied in very
+interesting ways to solve the new problems. I also think the Python
+language is at a very important inflection point. Pyhton 3 is now
+mature, and is slowly but steadily becoming the preferred language of
+many interesting communities such as data science, for example.</p>
+<p>The current status of Mod_python as an Apache project is that it&rsquo;s
+in the <a href="http://attic.apache.org/">attic</a>. This means that the
+<a href="http://www.apache.org/">ASF</a> isn&rsquo;t providing much in the way of
+infrastructure support any longer, nor will you see an &ldquo;official&rdquo; ASF
+release any time soon. (If ever - Mod_python would have to re-enter as
+an <a href="http://incubator.apache.org/">incubator</a> project and at this point
+it is entirely premature to even consider such an option).</p>
+<p>For now the main goal is to re-establish the community, and as part of
+that I will have to sort out how to do issue tracking, discussion
+groups, etc. At this point the only thing I&rsquo;ve decided is that the
+main repository will live on
+<a href="https://github.com/grisha/mod_python">github</a>.</p>
+<p>The latest code is in <a href="https://github.com/grisha/mod_python/tree/4.0.x">4.0.x branch</a>.  My initial
+development goal is to bring it up to compatibility with Python 2.7
+and Apache Httpd 2.4 (I&rsquo;m nearly there already), then potentially move
+on to Python 3 support. I have rolled back a few commits (most notably
+the new importer) because I did not understand them. There are still a
+few changes in Apache 2.4 that need to be addressed, but they seem
+relatively minor at this point. Authentication has been changed
+significantly in 2.4, though mod_python never had much coverage in that
+area.</p>
+<p>Let&rsquo;s see where this takes us? And if you like this, feel free to
+star and fork <a href="https://github.com/grisha/mod_python">Mod_python</a> on github and follow it on Twitter:</p>
+<p>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<iframe src="http://ghbtns.com/github-btn.html?user=grisha&repo=mod_python&type=fork&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+<p><a href="https://twitter.com/mod_python" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @mod_python</a></p>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

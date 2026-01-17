@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Simple Tgres Part II - A High Rate Counter | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Continuing on the the previous
+post on simple use of Tgres components, let&rsquo;s
+try to count something that goes by really fast.
+This time let&rsquo;s start out with creating a memory-based SerDe. This
+means that all our data is in memory and there is no database backing
+our series.
+package main
+
+import (
+    &#34;fmt&#34;
+    &#34;net/http&#34;
+    &#34;time&#34;
+
+    &#34;github.com/tgres/tgres/dsl&#34;
+    h &#34;github.com/tgres/tgres/http&#34;
+    &#34;github.com/tgres/tgres/receiver&#34;
+    &#34;github.com/tgres/tgres/rrd&#34;
+    &#34;github.com/tgres/tgres/serde&#34;
+)
+
+func main() {
+
+    step := 1 * time.Second // 1 second resolution
+    span := 600 * step      // spanning 10 minutes
+
+    // In-memory SerDe
+    ms := serde.NewMemSerDe()
+
+    // Create a receiver of our data points backed by the above
+    // memory SerDe
+    rcvr := receiver.New(ms, &amp;receiver.SimpleDSFinder{&amp;rrd.DSSpec{
+        Step: step,
+        RRAs: []rrd.RRASpec{
+            rrd.RRASpec{Function: rrd.WMEAN,
+                Step: step,
+                Span: span,
+            },
+        }}})
+    rcvr.Start()
+Now let&rsquo;s create a goroutine which creates data points as fast as it
+can, the difference from the previous blog post is that we are using
+QueueGauge(), which is a paced metric, meaning that it flushes to the
+time series only periodically (once per second by default) so as to
+not overwhelm the I/O and or network (even though in this case it doesn&rsquo;t
+really matter since we&rsquo;re using a memory-based SerDe anyway).">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Simple Tgres Part II - A High Rate Counter">
+  <meta property="og:description" content="Continuing on the the previous post on simple use of Tgres components, let’s try to count something that goes by really fast.
+This time let’s start out with creating a memory-based SerDe. This means that all our data is in memory and there is no database backing our series.
+package main import ( &#34;fmt&#34; &#34;net/http&#34; &#34;time&#34; &#34;github.com/tgres/tgres/dsl&#34; h &#34;github.com/tgres/tgres/http&#34; &#34;github.com/tgres/tgres/receiver&#34; &#34;github.com/tgres/tgres/rrd&#34; &#34;github.com/tgres/tgres/serde&#34; ) func main() { step := 1 * time.Second // 1 second resolution span := 600 * step // spanning 10 minutes // In-memory SerDe ms := serde.NewMemSerDe() // Create a receiver of our data points backed by the above // memory SerDe rcvr := receiver.New(ms, &amp;receiver.SimpleDSFinder{&amp;rrd.DSSpec{ Step: step, RRAs: []rrd.RRASpec{ rrd.RRASpec{Function: rrd.WMEAN, Step: step, Span: span, }, }}}) rcvr.Start() Now let’s create a goroutine which creates data points as fast as it can, the difference from the previous blog post is that we are using QueueGauge(), which is a paced metric, meaning that it flushes to the time series only periodically (once per second by default) so as to not overwhelm the I/O and or network (even though in this case it doesn’t really matter since we’re using a memory-based SerDe anyway).">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2016-12-28T17:06:00+00:00">
+    <meta property="article:modified_time" content="2016-12-28T17:06:00+00:00">
+
+  <meta itemprop="name" content="Simple Tgres Part II - A High Rate Counter">
+  <meta itemprop="description" content="Continuing on the the previous post on simple use of Tgres components, let’s try to count something that goes by really fast.
+This time let’s start out with creating a memory-based SerDe. This means that all our data is in memory and there is no database backing our series.
+package main import ( &#34;fmt&#34; &#34;net/http&#34; &#34;time&#34; &#34;github.com/tgres/tgres/dsl&#34; h &#34;github.com/tgres/tgres/http&#34; &#34;github.com/tgres/tgres/receiver&#34; &#34;github.com/tgres/tgres/rrd&#34; &#34;github.com/tgres/tgres/serde&#34; ) func main() { step := 1 * time.Second // 1 second resolution span := 600 * step // spanning 10 minutes // In-memory SerDe ms := serde.NewMemSerDe() // Create a receiver of our data points backed by the above // memory SerDe rcvr := receiver.New(ms, &amp;receiver.SimpleDSFinder{&amp;rrd.DSSpec{ Step: step, RRAs: []rrd.RRASpec{ rrd.RRASpec{Function: rrd.WMEAN, Step: step, Span: span, }, }}}) rcvr.Start() Now let’s create a goroutine which creates data points as fast as it can, the difference from the previous blog post is that we are using QueueGauge(), which is a paced metric, meaning that it flushes to the time series only periodically (once per second by default) so as to not overwhelm the I/O and or network (even though in this case it doesn’t really matter since we’re using a memory-based SerDe anyway).">
+  <meta itemprop="datePublished" content="2016-12-28T17:06:00+00:00">
+  <meta itemprop="dateModified" content="2016-12-28T17:06:00+00:00">
+  <meta itemprop="wordCount" content="378">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Simple Tgres Part II - A High Rate Counter">
+  <meta name="twitter:description" content="Continuing on the the previous post on simple use of Tgres components, let’s try to count something that goes by really fast.
+This time let’s start out with creating a memory-based SerDe. This means that all our data is in memory and there is no database backing our series.
+package main import ( &#34;fmt&#34; &#34;net/http&#34; &#34;time&#34; &#34;github.com/tgres/tgres/dsl&#34; h &#34;github.com/tgres/tgres/http&#34; &#34;github.com/tgres/tgres/receiver&#34; &#34;github.com/tgres/tgres/rrd&#34; &#34;github.com/tgres/tgres/serde&#34; ) func main() { step := 1 * time.Second // 1 second resolution span := 600 * step // spanning 10 minutes // In-memory SerDe ms := serde.NewMemSerDe() // Create a receiver of our data points backed by the above // memory SerDe rcvr := receiver.New(ms, &amp;receiver.SimpleDSFinder{&amp;rrd.DSSpec{ Step: step, RRAs: []rrd.RRASpec{ rrd.RRASpec{Function: rrd.WMEAN, Step: step, Span: span, }, }}}) rcvr.Start() Now let’s create a goroutine which creates data points as fast as it can, the difference from the previous blog post is that we are using QueueGauge(), which is a paced metric, meaning that it flushes to the time series only periodically (once per second by default) so as to not overwhelm the I/O and or network (even though in this case it doesn’t really matter since we’re using a memory-based SerDe anyway).">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Simple Tgres Part II - A High Rate Counter</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2016-12-28T17:06:00Z">December 28, 2016</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Continuing on the <a href="/blog/2016/12/21/simple-time-series-app-with-tgres/">the previous</a>
+post on simple use of <a href="https://github.com/tgres/tgres">Tgres</a> components, let&rsquo;s
+try to count something that goes by really fast.</p>
+<p>This time let&rsquo;s start out with creating a memory-based SerDe. This
+means that all our data is in memory and there is no database backing
+our series.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;net/http&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;time&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;github.com/tgres/tgres/dsl&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">h</span> <span style="color:#e6db74">&#34;github.com/tgres/tgres/http&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;github.com/tgres/tgres/receiver&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;github.com/tgres/tgres/rrd&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;github.com/tgres/tgres/serde&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">step</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span> <span style="color:#75715e">// 1 second resolution</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">span</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">600</span> <span style="color:#f92672">*</span> <span style="color:#a6e22e">step</span>      <span style="color:#75715e">// spanning 10 minutes</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// In-memory SerDe</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">ms</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">serde</span>.<span style="color:#a6e22e">NewMemSerDe</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// Create a receiver of our data points backed by the above</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// memory SerDe</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">rcvr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">receiver</span>.<span style="color:#a6e22e">New</span>(<span style="color:#a6e22e">ms</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">receiver</span>.<span style="color:#a6e22e">SimpleDSFinder</span>{<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">rrd</span>.<span style="color:#a6e22e">DSSpec</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">Step</span>: <span style="color:#a6e22e">step</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">RRAs</span>: []<span style="color:#a6e22e">rrd</span>.<span style="color:#a6e22e">RRASpec</span>{
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">rrd</span>.<span style="color:#a6e22e">RRASpec</span>{<span style="color:#a6e22e">Function</span>: <span style="color:#a6e22e">rrd</span>.<span style="color:#a6e22e">WMEAN</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">Step</span>: <span style="color:#a6e22e">step</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a6e22e">Span</span>: <span style="color:#a6e22e">span</span>,
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>        }}})
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">rcvr</span>.<span style="color:#a6e22e">Start</span>()
+</span></span></code></pre></div><p>Now let&rsquo;s create a goroutine which creates data points as fast as it
+can, the difference from the previous blog post is that we are using
+QueueGauge(), which is a <em>paced metric</em>, meaning that it flushes to the
+time series only periodically (once per second by default) so as to
+not overwhelm the I/O and or network (even though in this case it doesn&rsquo;t
+really matter since we&rsquo;re using a memory-based SerDe anyway).</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#a6e22e">start</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Now</span>()
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">end</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">start</span>.<span style="color:#a6e22e">Add</span>(<span style="color:#a6e22e">span</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">go</span> <span style="color:#66d9ef">func</span>() {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">n</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">t</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Now</span>(); <span style="color:#a6e22e">t</span>.<span style="color:#a6e22e">Before</span>(<span style="color:#a6e22e">end</span>); <span style="color:#a6e22e">t</span> = <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Now</span>() {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">rcvr</span>.<span style="color:#a6e22e">QueueGauge</span>(<span style="color:#a6e22e">serde</span>.<span style="color:#a6e22e">Ident</span>{<span style="color:#e6db74">&#34;name&#34;</span>:<span style="color:#e6db74">&#34;foo.bar&#34;</span>}, float64(<span style="color:#a6e22e">n</span>)<span style="color:#f92672">/</span>(<span style="color:#a6e22e">t</span>.<span style="color:#a6e22e">Sub</span>(<span style="color:#a6e22e">start</span>)).<span style="color:#a6e22e">Seconds</span>())
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">n</span><span style="color:#f92672">++</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }()
+</span></span></code></pre></div><p>And finally, as before, we need to hook up a couple of http handlers:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>    <span style="color:#a6e22e">db</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">dsl</span>.<span style="color:#a6e22e">NewNamedDSFetcher</span>(<span style="color:#a6e22e">ms</span>.<span style="color:#a6e22e">Fetcher</span>())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">HandleFunc</span>(<span style="color:#e6db74">&#34;/metrics/find&#34;</span>, <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">GraphiteMetricsFindHandler</span>(<span style="color:#a6e22e">db</span>))
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">HandleFunc</span>(<span style="color:#e6db74">&#34;/render&#34;</span>, <span style="color:#a6e22e">h</span>.<span style="color:#a6e22e">GraphiteRenderHandler</span>(<span style="color:#a6e22e">db</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">listenSpec</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;:8088&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Waiting for requests on %s\n&#34;</span>, <span style="color:#a6e22e">listenSpec</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">http</span>.<span style="color:#a6e22e">ListenAndServe</span>(<span style="color:#a6e22e">listenSpec</span>, <span style="color:#66d9ef">nil</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>} <span style="color:#75715e">// end of main()</span>
+</span></span></code></pre></div><p>Now if we run the above code with something like
+<code>go run simpletgres.go</code>, we&rsquo;ll notice that unlike with the previous
+example, the web server starts right away, and the data points are
+being written while the server is running. If we aim Grafana at it,
+we should be able to see the chart update in real time.</p>
+<p>After a couple of minutes, mine looks like this:</p>
+<p><img src="/images/simple-tgres01.png" alt=""></p>
+<p>So my macbook can crank these out at about 2.5 million per second.</p>
+<p>In my experience instrumenting my apps with simple counters like this
+and having them available directly from the app without having to send
+them to a separate statsd server somewhere has been extremely useful in
+helping understand performance and other issues.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

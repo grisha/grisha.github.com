@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head>
+	<meta name="generator" content="Hugo 0.146.0"><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Gregory Trubetskoy</title>
+
+<meta name="description" content="Notes to self.">
+<meta name="author" content="Gregory Trubetskoy">
+<link rel="canonical" href="http://localhost:1313/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/atom.xml" title="rss">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="Gregory Trubetskoy (Alt + H)">Gregory Trubetskoy</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Tgres Load Testing Follow Up
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>To follow up on the previous post, after a bunch of tweaking, here is Tgres (commit) receiving over 150,000 data points per second across 500,000 time series without any signs of the queue size or any other resource blowing up.
+This is both Tgres and Postgres running on the same i2.2xlarge EC2 instance (8 cores, 64GB, SSD).
+At this point I think there’s been enough load testing and optimization, and I am going to get back to crossing the t’s and dotting the i’s so that we can release the first version of Tgres.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2017-02-28 21:40:00 +0000 UTC'>February 28, 2017</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Tgres Load Testing Follow Up" href="http://localhost:1313/blog/2017/02/28/tgres-load-testing-follow-up/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">PostgreSQL vs Whisper, which is Faster?
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Note: there is an update to this post.
+TL;DR On a 8 CPU / 16 GB EC2 instance, Tgres can process 150,000 data points per second across 300,000 series (Postgres running on the same machine). With some tweaks we were able to get the number of series to half a million, flushing ~60K data points per second.
+Now the long version… If you were to ask me whether Tgres could outperform Graphite, just a couple of months ago my answer would have been “No”. Tgres uses Postgres to store time series data, while Graphite stores data by writing to files directly, the overhead of the relational database just seemed too great.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2017-02-23 09:49:00 +0000 UTC'>February 23, 2017</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to PostgreSQL vs Whisper, which is Faster?" href="http://localhost:1313/blog/2017/02/23/postgresql-vs-whisper-which-is-faster/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Storing Time Series in PostgreSQL - Optimize for Write
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Continuing on the previous write up on how time series data can be stored in Postgres efficiently, here is another approach, this time providing for extreme write performance.
+The “horizontal” data structure in the last article requires an SQL statement for every data point update. If you cache data points long enough, you might be able to collect a bunch for a series and write them out at once for a slight performance advantage. But there is no way to update multiple series with a single statement, it’s always at least one update per series. With a large number of series, this can become a performance bottleneck. Can we do better?
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2017-01-21 09:33:00 +0000 UTC'>January 21, 2017</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Storing Time Series in PostgreSQL - Optimize for Write" href="http://localhost:1313/blog/2017/01/21/storing-time-series-in-postgresql-optimize-for-write/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Simple Tgres Part II - A High Rate Counter
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Continuing on the the previous post on simple use of Tgres components, let’s try to count something that goes by really fast.
+This time let’s start out with creating a memory-based SerDe. This means that all our data is in memory and there is no database backing our series.
+package main import ( &#34;fmt&#34; &#34;net/http&#34; &#34;time&#34; &#34;github.com/tgres/tgres/dsl&#34; h &#34;github.com/tgres/tgres/http&#34; &#34;github.com/tgres/tgres/receiver&#34; &#34;github.com/tgres/tgres/rrd&#34; &#34;github.com/tgres/tgres/serde&#34; ) func main() { step := 1 * time.Second // 1 second resolution span := 600 * step // spanning 10 minutes // In-memory SerDe ms := serde.NewMemSerDe() // Create a receiver of our data points backed by the above // memory SerDe rcvr := receiver.New(ms, &amp;receiver.SimpleDSFinder{&amp;rrd.DSSpec{ Step: step, RRAs: []rrd.RRASpec{ rrd.RRASpec{Function: rrd.WMEAN, Step: step, Span: span, }, }}}) rcvr.Start() Now let’s create a goroutine which creates data points as fast as it can, the difference from the previous blog post is that we are using QueueGauge(), which is a paced metric, meaning that it flushes to the time series only periodically (once per second by default) so as to not overwhelm the I/O and or network (even though in this case it doesn’t really matter since we’re using a memory-based SerDe anyway).
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-12-28 17:06:00 +0000 UTC'>December 28, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Simple Tgres Part II - A High Rate Counter" href="http://localhost:1313/blog/2016/12/28/simple-tgres-part-ii-a-high-rate-counter/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Why is there no Formal Definition of Time Series?
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>If you’re reading this, chances are you may have searched for definition of “Time Series”. And, like me, you were probably disappointed by what you’ve found.
+The most popular “definition” I come across amongst our fellow programmer folk is that it’s “data points with timestamps”. Or something like that. And you can make charts from it. And that’s about it, alas.
+The word time suggests that is has something to do with time. At first it seems reasonable, I bite. The word series is a little more peculiar. A mathematician would argue that a series is a sum of a sequence. Most people though think “series” and “sequence” are the same thing, and that’s fine. But it’s a clue that time series is not a scientific term, because it would have been called time sequence most likely.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-12-23 09:13:00 +0000 UTC'>December 23, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Why is there no Formal Definition of Time Series?" href="http://localhost:1313/blog/2016/12/23/why-is-there-no-formal-definition-of-time-series/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Simple Time Series App with Tgres
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Did you know you can use Tgres components in your code without PostgreSQL, and in just a dozen lines of code instrument your program with a time series. This example shows a complete server emulating Graphite API which you can use with Grafana (or any other tool).
+In this example we will be using three Tgres packages like so (in addition to a few standard ones, I’m skipping them here for brevity - complete source code gist):
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-12-21 19:55:00 +0000 UTC'>December 21, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Simple Time Series App with Tgres" href="http://localhost:1313/blog/2016/12/21/simple-time-series-app-with-tgres/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Storing Time Series in PostgreSQL (Continued)
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Edit: there is now a part iii in this series of articles.
+I have previously written how time series can be stored in PostgreSQL efficiently using arrays.
+As a continuation of that article, I shall attempt to describe in detail the inner workings of an SQL view that Tgres uses to make an array of numbers appear as a regular table (link to code).
+In short, I will explain how incomprehensible data like this:
+=&gt; select * from ts; rra_id | n | dp --------&#43;---&#43;------------------------ 1 | 0 | {64,67,70,71,72,69,67} 1 | 1 | {65,60,58,59,62,68,70} 1 | 2 | {71,72,77,70,71,73,75} 1 | 3 | {79,82,90,69,75,80,81} … can be transformed in an SQL view to appear as so:
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-12-16 19:35:00 +0000 UTC'>December 16, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Storing Time Series in PostgreSQL (Continued)" href="http://localhost:1313/blog/2016/12/16/storing-time-series-in-postgresql-continued/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Parsing Table Names from SQL
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Sometimes it is useful to extract table names from an SQL statement, for example if you are trying to figure out dependencies for your Hive or BigQuery (or whatever) tables.
+It is actually a lot simpler than it seems and you don’t need to write your own SQL parser or find one out there. In SQL table names always follow the FROM and JOIN keywords. So all you have to do is split the statemement into tokens, and scan the list for any mention of FROM or JOIN and grab the next token.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-11-14 14:40:00 +0000 UTC'>November 14, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Parsing Table Names from SQL" href="http://localhost:1313/blog/2016/11/14/parsing-table-names-from-sql/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Load testing Tgres
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Edit: There is an update to this story.
+So I finally got around to some load testing of Tgres. Load testing is mysterious, it never goes the way you think it would, and what you learn is completely unexpcted.
+Given that I presently don’t have any spare big iron at my disposal and my “servers” are my macbook and an old thinkpad, all I really was after is making sure that Tgres is “good enough” whatever that means. And I think it is.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-11-08 14:41:00 +0000 UTC'>November 8, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Load testing Tgres" href="http://localhost:1313/blog/2016/11/08/load-testing-tgres/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Golang receiver vs function argument
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>What is the difference between a Go receiver (as in “method receiver”) and a function argument? Consider these two bits of code:
+func (d *duck) quack() { // receiver // do something } versus
+func quack(d *duck) { // funciton argument // do something } The “do something” part above would work exactly the same regardless of how you declare the function. Which begs the question, which should you use?
+In the object-oriented world we were used to objects doing things, and in that context d.quack() may seem more intuitive or familiar than quack(d) because it “reads better”. After all, one could argue that the former is a duck quacking, but the latter reads like you’re quacking a duck, and what does that even mean? I have learned that you should not think this way in the Go universe, and here is why.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2016-09-22 08:15:00 +0000 UTC'>September 22, 2016</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span></footer>
+  <a class="entry-link" aria-label="post link to Golang receiver vs function argument" href="http://localhost:1313/blog/2016/09/22/golang-receiver-vs-function-argument/"></a>
+</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="prev" href="http://localhost:1313/page/2/">
+      «&nbsp;Prev&nbsp;
+    </a>
+    <a class="next" href="http://localhost:1313/page/4/">Next&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">Gregory Trubetskoy</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

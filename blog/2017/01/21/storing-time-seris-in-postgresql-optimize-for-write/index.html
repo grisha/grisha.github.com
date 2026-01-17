@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Storing Time Series in PostgreSQL - Optimize for Write | Gregory Trubetskoy</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Continuing on the
+previous
+write up on how time series data can be stored in Postgres
+efficiently, here is another approach, this time providing for extreme
+write performance.
+The &ldquo;horizontal&rdquo; data structure in the last article requires an SQL
+statement for every data point update. If you cache data points long
+enough, you might be able to collect a bunch for a series and write
+them out at once for a slight performance advantage. But there is no
+way to update multiple series with a single statement, it&rsquo;s always
+at least one update per series. With a large number of series, this
+can become a performance bottleneck. Can we do better?">
+    <meta name="generator" content="Hugo 0.146.0">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    <meta name="author" content="Gregory Trubetskoy">
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.d05fb5f317fcf33b3a52936399bdf6f47dc776516e1692e412ec7d76f4a5faa2.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">
+    
+
+    
+    
+    <meta property="og:url" content="https://grisha.org/blog/2017/01/21/storing-time-seris-in-postgresql-optimize-for-write/">
+  <meta property="og:site_name" content="Gregory Trubetskoy">
+  <meta property="og:title" content="Storing Time Series in PostgreSQL - Optimize for Write">
+  <meta property="og:description" content="Continuing on the previous write up on how time series data can be stored in Postgres efficiently, here is another approach, this time providing for extreme write performance.
+The “horizontal” data structure in the last article requires an SQL statement for every data point update. If you cache data points long enough, you might be able to collect a bunch for a series and write them out at once for a slight performance advantage. But there is no way to update multiple series with a single statement, it’s always at least one update per series. With a large number of series, this can become a performance bottleneck. Can we do better?">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-01-21T09:33:00+00:00">
+    <meta property="article:modified_time" content="2017-01-21T09:33:00+00:00">
+
+  <meta itemprop="name" content="Storing Time Series in PostgreSQL - Optimize for Write">
+  <meta itemprop="description" content="Continuing on the previous write up on how time series data can be stored in Postgres efficiently, here is another approach, this time providing for extreme write performance.
+The “horizontal” data structure in the last article requires an SQL statement for every data point update. If you cache data points long enough, you might be able to collect a bunch for a series and write them out at once for a slight performance advantage. But there is no way to update multiple series with a single statement, it’s always at least one update per series. With a large number of series, this can become a performance bottleneck. Can we do better?">
+  <meta itemprop="datePublished" content="2017-01-21T09:33:00+00:00">
+  <meta itemprop="dateModified" content="2017-01-21T09:33:00+00:00">
+  <meta itemprop="wordCount" content="780">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Storing Time Series in PostgreSQL - Optimize for Write">
+  <meta name="twitter:description" content="Continuing on the previous write up on how time series data can be stored in Postgres efficiently, here is another approach, this time providing for extreme write performance.
+The “horizontal” data structure in the last article requires an SQL statement for every data point update. If you cache data points long enough, you might be able to collect a bunch for a series and write them out at once for a slight performance advantage. But there is no way to update multiple series with a single statement, it’s always at least one update per series. With a large number of series, this can become a performance bottleneck. Can we do better?">
+
+      
+      
+    
+	
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Gregory Trubetskoy
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white white-90 no-underline" href="/archives/" title="Archives page">
+              Archives
+            </a>
+          </li>
+          
+        </ul>
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  <article class="flex-l mw7 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Storing Time Series in PostgreSQL - Optimize for Write</h1>
+      
+      <p class="tracked"><strong>Gregory Trubetskoy</strong>
+      </p>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2017-01-21T09:33:00Z">January 21, 2017</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-100-l"><p>Continuing on the
+<a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">previous</a>
+write up on how time series data can be stored in Postgres
+efficiently, here is another approach, this time providing for extreme
+write performance.</p>
+<p>The &ldquo;horizontal&rdquo; data structure in the last article requires an SQL
+statement for every data point update. If you cache data points long
+enough, you might be able to collect a bunch for a series and write
+them out at once for a slight performance advantage. But there is no
+way to update multiple series with a single statement, it&rsquo;s always
+at least one update per series. With a large number of series, this
+can become a performance bottleneck. Can we do better?</p>
+<p>One observation we can make about incoming time series data is that
+commonly the data points are roughly from the same time period, the
+current time, give or take. If we&rsquo;re storing data at regularly-spaced
+intervals, then it is extremely likely that many if not all of the
+most current data points from various time series are going to belong
+to the exact same time slot. Considering this observation, what if we
+organized data points in rows of arrays, only now we would have a row
+per timestamp while the position within the array would determine the
+series?</p>
+<p>Lets create the tables:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> rra_bundle (
+</span></span><span style="display:flex;"><span>  id SERIAL <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+</span></span><span style="display:flex;"><span>  step_ms INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  steps_per_row INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">size</span> INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  latest TIMESTAMPTZ <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">NULL</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> rra (
+</span></span><span style="display:flex;"><span>  id SERIAL <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+</span></span><span style="display:flex;"><span>  ds_id INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  rra_bundle_id INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  pos INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> ts (
+</span></span><span style="display:flex;"><span>  rra_bundle_id INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  i INT <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+</span></span><span style="display:flex;"><span>  dp DOUBLE <span style="color:#66d9ef">PRECISION</span>[] <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#e6db74">&#39;{}&#39;</span>);
+</span></span></code></pre></div><p>Notice how the step and size now become properties of the bundle
+rather than the rra which now refers to a bundle. In the <code>ts</code> table,
+<code>i</code> is the index in the round-robin archive (which in the previous
+&ldquo;horizontal&rdquo; layout would be the array index).</p>
+<p>The data we used before was a bunch of temperatures, lets add two more
+series, one where temperature is 1 degree higher, and one where it&rsquo;s 1
+degree lower. (Not that it really matters).</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> rra_bundle <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">60000</span>, <span style="color:#ae81ff">1440</span>, <span style="color:#ae81ff">28</span>, <span style="color:#e6db74">&#39;2008-04-02 00:00:00-00&#39;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> rra <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> rra <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> rra <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#39;{64,65,63}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;{67,68,66}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#39;{70,71,69}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#39;{71,72,70}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#39;{72,73,71}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>, <span style="color:#e6db74">&#39;{69,70,68}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">6</span>, <span style="color:#e6db74">&#39;{67,68,66}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">7</span>, <span style="color:#e6db74">&#39;{65,66,64}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">8</span>, <span style="color:#e6db74">&#39;{60,61,59}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>, <span style="color:#e6db74">&#39;{58,59,57}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">10</span>, <span style="color:#e6db74">&#39;{59,60,58}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">11</span>, <span style="color:#e6db74">&#39;{62,63,61}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">12</span>, <span style="color:#e6db74">&#39;{68,69,67}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">13</span>, <span style="color:#e6db74">&#39;{70,71,69}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">14</span>, <span style="color:#e6db74">&#39;{71,72,70}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">15</span>, <span style="color:#e6db74">&#39;{72,73,71}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">16</span>, <span style="color:#e6db74">&#39;{77,78,76}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">17</span>, <span style="color:#e6db74">&#39;{70,71,69}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">18</span>, <span style="color:#e6db74">&#39;{71,72,70}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">19</span>, <span style="color:#e6db74">&#39;{73,74,72}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">20</span>, <span style="color:#e6db74">&#39;{75,76,74}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">21</span>, <span style="color:#e6db74">&#39;{79,80,78}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">22</span>, <span style="color:#e6db74">&#39;{82,83,81}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">23</span>, <span style="color:#e6db74">&#39;{90,91,89}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">24</span>, <span style="color:#e6db74">&#39;{69,70,68}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">25</span>, <span style="color:#e6db74">&#39;{75,76,74}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">26</span>, <span style="color:#e6db74">&#39;{80,81,79}&#39;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> ts <span style="color:#66d9ef">VALUES</span> (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">27</span>, <span style="color:#e6db74">&#39;{81,82,80}&#39;</span>);
+</span></span></code></pre></div><p>Notice that every INSERT adds data for all three of our series in a
+single database operation!</p>
+<p>Finally, let us create the view. (How it works is described in detail in the
+<a href="/blog/2016/12/16/storing-time-series-in-postgresql-part-ii/">previous article</a>)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">VIEW</span> tv <span style="color:#66d9ef">AS</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">SELECT</span> rra.id <span style="color:#66d9ef">as</span> rra_id,
+</span></span><span style="display:flex;"><span>     rra_bundle.latest <span style="color:#f92672">-</span> INTERVAL <span style="color:#e6db74">&#39;1 MILLISECOND&#39;</span> <span style="color:#f92672">*</span> rra_bundle.step_ms <span style="color:#f92672">*</span> rra_bundle.steps_per_row <span style="color:#f92672">*</span>
+</span></span><span style="display:flex;"><span>       <span style="color:#66d9ef">MOD</span>(rra_bundle.<span style="color:#66d9ef">size</span> <span style="color:#f92672">+</span> <span style="color:#66d9ef">MOD</span>(<span style="color:#66d9ef">EXTRACT</span>(EPOCH <span style="color:#66d9ef">FROM</span> rra_bundle.latest)::BIGINT<span style="color:#f92672">*</span><span style="color:#ae81ff">1000</span><span style="color:#f92672">/</span>(rra_bundle.step_ms <span style="color:#f92672">*</span> rra_bundle.steps_per_row),
+</span></span><span style="display:flex;"><span>       rra_bundle.<span style="color:#66d9ef">size</span>) <span style="color:#f92672">-</span> i, rra_bundle.<span style="color:#66d9ef">size</span>) <span style="color:#66d9ef">AS</span> t,
+</span></span><span style="display:flex;"><span>     dp[pos] <span style="color:#66d9ef">AS</span> r
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">FROM</span> rra <span style="color:#66d9ef">AS</span> rra
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">JOIN</span> rra_bundle <span style="color:#66d9ef">AS</span> rra_bundle <span style="color:#66d9ef">ON</span> rra_bundle.id <span style="color:#f92672">=</span> rra.rra_bundle_id
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">JOIN</span> ts <span style="color:#66d9ef">AS</span> ts <span style="color:#66d9ef">ON</span> ts.rra_bundle_id <span style="color:#f92672">=</span> rra_bundle.id;
+</span></span></code></pre></div><p>And now let&rsquo;s verify that it works:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f92672">=&gt;</span> <span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> tv <span style="color:#66d9ef">where</span> rra_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> t;
+</span></span><span style="display:flex;"><span> rra_id <span style="color:#f92672">|</span>           t            <span style="color:#f92672">|</span> r
+</span></span><span style="display:flex;"><span> <span style="color:#75715e">--------+------------------------+----
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>       <span style="color:#ae81ff">1</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">2008</span><span style="color:#f92672">-</span><span style="color:#ae81ff">03</span><span style="color:#f92672">-</span><span style="color:#ae81ff">06</span> <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span><span style="color:#f92672">-</span><span style="color:#ae81ff">00</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">64</span>
+</span></span><span style="display:flex;"><span>       <span style="color:#ae81ff">1</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">2008</span><span style="color:#f92672">-</span><span style="color:#ae81ff">03</span><span style="color:#f92672">-</span><span style="color:#ae81ff">07</span> <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span><span style="color:#f92672">-</span><span style="color:#ae81ff">00</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">67</span>
+</span></span><span style="display:flex;"><span>       <span style="color:#ae81ff">1</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">2008</span><span style="color:#f92672">-</span><span style="color:#ae81ff">03</span><span style="color:#f92672">-</span><span style="color:#ae81ff">08</span> <span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span>:<span style="color:#ae81ff">00</span><span style="color:#f92672">-</span><span style="color:#ae81ff">00</span> <span style="color:#f92672">|</span> <span style="color:#ae81ff">70</span>
+</span></span><span style="display:flex;"><span> ...
+</span></span></code></pre></div><p>This approach makes writes blazingly fast though it does have its
+drawbacks. For example there is no way to read a single series - even
+though the view selects a single array element, under the hood
+Postgres reads the whole row. Given that time series is more write
+intensive and rarely read, this may not be a bad compromise.</p>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div></article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://grisha.org/" >
+    &copy;  Gregory Trubetskoy 2026 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>

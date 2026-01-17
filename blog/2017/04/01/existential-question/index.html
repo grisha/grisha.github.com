@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Existential Question | Gregory Trubetskoy</title>
+<meta name="keywords" content="">
+<meta name="description" content="On a completely different subject, I find it remarkable how easily,
+we, as a society, can throw around assertions of existence or
+inexistence. As purveyors of goods entirely of conceptual nature us
+programmers ought to be particularly attuned to the subtleties
+involved.
+Think of a recently demolished building. Does it still exist? As a
+building, not really, yet all of its atoms are still around (possibly
+as energy). Both before and after demolition all that the building was
+made of existed physically, but what we refer to as a &ldquo;building&rdquo; is a
+particular physical configuration, which was no longer due to the
+demolition.">
+<meta name="author" content="Gregory Trubetskoy">
+<link rel="canonical" href="http://localhost:1313/blog/2017/04/01/existential-question/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/blog/2017/04/01/existential-question/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$', '$'] ],
+      displayMath: [ ['$$', '$$']],
+      processEscapes: true,
+    },
+    messageStyle: "none",
+    "HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML" type="text/javascript"></script>
+
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="Gregory Trubetskoy (Alt + H)">Gregory Trubetskoy</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Existential Question
+    </h1>
+    <div class="post-meta"><span title='2017-04-01 00:00:00 +0000 UTC'>April 1, 2017</span>&nbsp;·&nbsp;<span>Gregory Trubetskoy</span>
+
+</div>
+  </header> 
+  <div class="post-content"><p>On a completely different subject, I find it remarkable how easily,
+we, as a society, can throw around assertions of existence or
+inexistence. As purveyors of goods entirely of conceptual nature us
+programmers ought to be particularly attuned to the subtleties
+involved.</p>
+<p>Think of a recently demolished building. Does it still exist? As a
+building, not really, yet all of its atoms are still around (possibly
+as energy). Both before and after demolition all that the building was
+made of existed physically, but what we refer to as a &ldquo;building&rdquo; is a
+particular physical configuration, which was no longer due to the
+demolition.</p>
+<p>Does <a href="https://en.wikipedia.org/wiki/Tom_Sawyer">Tom Sawyer</a> exist?
+Wikipedia obviously thinks so, and most readers would recognize the
+name as that of a widely known fictional character. As a <em>concept</em>,
+Tom Sawer undeniably exists. Yet no particle has ever comprised
+him. In other words <em>physically</em> he does not exist. And if all the
+beings capable of conceptualizing Tom ceased to exist, would he follow
+their fate, or would he still be?</p>
+<p>Okay, Tom Sawyer being imaginary is one thing, but how about
+<a href="https://en.wikipedia.org/wiki/Mathematics">mathematics</a>?  Does math
+exist?  Could we state that math does not exist? That would sound
+crazy, though we could state that <em>physically</em> math does not
+exist. Unlike Tom Sawyer, however, we can&rsquo;t claim mathematics to have
+been imagined by us. The ratio of a circle&rsquo;s circumference to its
+diameter had existed as a <a href="https://en.wikipedia.org/wiki/Pi">constant</a>
+before any intelligent life and will continue to exist long after
+we&rsquo;re gone. Yet the statement that Pi <em>physically</em> does not exist
+somehow sounds slightly odd to my ear, after all Pi is fundamental to
+the laws of nature to which all things physical conform. One key
+subtelty here is whether existence implies recognition: before we
+understood algebra or geometry they didn&rsquo;t exist, but now, after
+millenia of scientific exploration and discovery they do? Or have they
+always existed, irrespective of anyone&rsquo;s understanding?</p>
+<p>And finally, what about the being whose existence is most contested:
+<a href="https://en.wikipedia.org/wiki/God">God</a>. Does God exist? As a concept
+God quite certainly exists. Regardless of whether you belive that God
+exists, you do recognize the concept. Physically though,
+it is not likely that God exists, after all, if you had god-like
+abilities and created your own universe including the mere concept of
+existence, it probably wouldn&rsquo;t apply to you and you wouldn&rsquo;t actually
+be in it? And so if physically God does not exist, is God in the same
+category as Pi? Has God never existed, always existed, only existed
+when recognized, existed irrespective of our understanding or neither
+of the above?</p>
+<p>Think carefully next time you use the word &ldquo;is&rdquo;&hellip;</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">Gregory Trubetskoy</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
